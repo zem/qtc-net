@@ -1,0 +1,202 @@
+
+Goal: 
+
+Getting an amateur radio Telegramm infrastructure that every 
+ham operator can use easily without special infrastructure. 
+
+That means that the delivery of a message is usually done via 
+radio by one operator talking to another operator, but the dirstibution 
+is done by a set of servers that are interconnected. 
+
+When an operator talks to another operator, he can easily check for 
+messages on one of the servers and transfer those messages to the remote 
+operator. A remote operator can also address several telegrams to 
+the local site.
+
+So basically, to send and receive Telegrams, you don't need an account by 
+yourself, but the Telegram operator needs one. You also need an account to 
+set your Callsign Alias records.
+
+If an operator wants to exchange Telegrams over the network he can call 
+CQ QTC CQ QTC CQ QTC CQ QTC de CALL CALL CALL k
+
+Basic thoughts: 
+
+There are several servers, each server has its own signature. 
+There are also sevreral message types that could be mapped directly 
+to an SQL table. And back, so we can verify a stored signature later on. 
+Which means we need a special Format, because yaml/json and XML are 
+to flexible. 
+
+Basicly one system is sending messages to the other system. Messages older 
+than 100 Days will be ignored and can be deleted by the system. 
+
+Basicly it is a Push-Push delivery, so if a Server gets a 
+message/status/alias/younamit it pushes its data to all the 
+connected severs, but only if the Data is new, if it is allready 
+in the local database it has already passed the local system once.
+
+There can be an automatic/semiautomatic server connection setup either 
+as a protocol extension, or as a transport protocol, so basically really 
+the message distribution is not defined here. It does not matter if you 
+upload your Key on a website or automatically via a polling protocol. As 
+long as the Server system itself thinks it is push-push operation. 
+
+Any new system should get a full set of data records. But this initial 
+compare can be triggered as well by hand.
+
+Record deletion is done locally, but there is some data that helps 
+you determining what records are going to be deleted. A Server 
+Blocklist, and a Server Goodlist. Aliass removing can be issued as 
+a special server message, if an alias was set wrong. 
+
+Server Traffic should be in order to get a consistant database.  
+
+Every server needs a key as well as a human readable identifier that 
+should be an FQDN. The Transport protocol is not specified, to be more 
+flexible on the integration side, UUCP is possible as well as a tcp 
+connection. 
+
+Because Amateur radio is desired to be public, no encryption can be made 
+on any of the messages, signatures using the same algorythm, but they are 
+designed to be verified and read by the public so those will fit into the 
+"public" rule. This means the design of the protocol is in a way that Servers 
+can be linked also by radio links, even if they are designed to be linked via 
+Internet in the first place.
+
+The Users are kept locally on each server, depending on the type of 
+frontend they use. If an alias for a user exists the add of a user 
+account should be denied.
+
+There must be a user removal operation there for each user as well as an 
+inactivity removal. This can also be used as a server ping. When a system 
+detects that an alias is getting to old, it removes them. If the deletion 
+comes to the originating system, the alias is readded. Aliasses should be 
+refreshed periodically. 
+
+Basically a user/callsign cann add or remove Aliasses. This is also one of the two 
+delete messages that exists in the network. The other one is issued by the server 
+itself for delivery approvals, for example if a user accidently approves a message 
+to be delivered.
+
+
+If an alias vanishes basicly nothing happens to the message, except that the 
+automatic search correllation is missing.  So the Move from one server to 
+another is in fact the removal of all aliasses on the old system and the 
+addition of the new ones. 
+
+A user can also query for messages, write messages to the board and announce 
+a successfully delivery to the delivery table. 
+
+A client/frontend can connect via an xmlrpc Interface, however the client 
+must be authenticated via its public key, but there are several clients 
+available that can operate in a different way, username/password for example. 
+But those accounts can not be distributed, obviously.
+
+There are Two times held for a message, the DateTime when a server receives 
+the message and the time when the message was issued. The First time is not 
+in the Signature scope obviously.
+
+A local account can be rejected by any server. Or in other words the basic 
+alias can be rejected if one account appers on two places at the same time. 
+This means the account must be newly created. 
+
+Enhancement News bulletins?!? Maybe. :) 
+
+Storage Tables: 
+
+- There are several tables: 
+
+One for the Messages itself. 
+
+- RCVD_DATE
+- MSG_DATE
+- MSG_SERIAL
+- MSG_SERVER
+- FROM
+- TO
+- VIA
+- MSG
+- SIGNATURE
+
+Then is the Table where all transmitted entrys are made into: 
+
+- RCVD_DATE
+- QSL_DATE
+- QSL_SERIAL
+- QSL_SERVER 
+- MSG_DATE
+- MSG_SERIAL
+- MSG_SERVER
+- VIA
+- LOG_REFERENCE
+- SIGNATURE
+
+
+To search for messages properly there should be an alias Table: 
+
+- RCVD_DATE
+- SERVER
+- CALL
+- ALIAS
+- SIGNATURE
+
+The exsistence of CALL at a server means that the user exists 
+on the issuer system, as described above. 
+
+User table, that one should not be exported. 
+and it must not be that way. 
+
+- CALL
+- E_MAIL
+- PASSWORD
+- LAST_SEEN
+
+
+Then are there Servers with their Keys: 
+
+- RCVD_DATE
+- SERVER
+- CALL
+- E_MAIL
+- PUBLIC_KEY
+- SIGNATURE
+
+
+There is a trust list: 
+
+- RCVD_DATE
+- SERVER
+- VIA
+- SIGNATURE
+
+
+and a mistrust list
+
+- RCVD_DATE
+- SERVER
+- VIA
+- SIGNATURE
+
+
+Finally there is a News Bulletin list where a call can be added to: 
+
+- RCVD_DATE
+- SERVER
+- CALL
+- LISTNAME
+- SIGNATURE
+
+Basically this leads o a message the servers are sending each other. 
+
+
+
+BeginQspMsg
+FROM:
+TO:
+MSG:
+USER:
+DATE:
+SERVER:
+SIGNATURE:
+EndQspMsg
