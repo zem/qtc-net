@@ -110,39 +110,52 @@ Storage Tables:
 One for the Messages itself. 
 
 - RCVD_DATE
+- SERVER
+- SIGNATURE
 - MSG_DATE
 - MSG_SERIAL
-- MSG_SERVER
 - FROM
 - TO
 - VIA
 - MSG
-- SIGNATURE
 
 Then is the Table where all transmitted entrys are made into: 
 
 - RCVD_DATE
+- SERVER
+- SIGNATURE
 - QSL_DATE
 - QSL_SERIAL
 - QSL_SERVER 
 - MSG_DATE
 - MSG_SERIAL
-- MSG_SERVER
 - VIA
 - LOG_REFERENCE
-- SIGNATURE
 
 
 To search for messages properly there should be an alias Table: 
 
 - RCVD_DATE
 - SERVER
+- SIGNATURE
 - CALL
 - ALIAS
-- SIGNATURE
 
-The exsistence of CALL at a server means that the user exists 
-on the issuer system, as described above. 
+The exsistence of CALL at a server means that a user exists 
+on the issuer system, as described above. Aliasses can only 
+be administrated on this one system. 
+
+
+There is a News Bulletin list where a call can be added to: 
+Note: CALL can be any aliased call. 
+
+- RCVD_DATE
+- SERVER
+- SIGNATURE
+- CALL
+- LISTNAME
+
+
 
 User table, that one should not be exported. 
 and it must not be that way. 
@@ -154,49 +167,128 @@ and it must not be that way.
 
 
 Then are there Servers with their Keys: 
+(E_MAIL is optional) 
 
 - RCVD_DATE
 - SERVER
+- SIGNATURE
+- URL
+- NETWORK
 - CALL
+- LOC
 - E_MAIL
 - PUBLIC_KEY
+
+The Neighbourhood table is propagated for Mapping reasons:
+
+- RCVD_DATE
+- SERVER
 - SIGNATURE
+- NEIGHBOR
+- STATUS
 
 
 There is a trust list: 
 
 - RCVD_DATE
 - SERVER
-- VIA
 - SIGNATURE
+- VIA
 
 
 and a mistrust list
 
 - RCVD_DATE
 - SERVER
+- SIGNATURE
 - VIA
-- SIGNATURE
-
-
-Finally there is a News Bulletin list where a call can be added to: 
-
-- RCVD_DATE
-- SERVER
-- CALL
-- LISTNAME
-- SIGNATURE
-
-Basically this leads o a message the servers are sending each other. 
 
 
 
-BeginQspMsg
-FROM:
-TO:
-MSG:
-USER:
-DATE:
-SERVER:
-SIGNATURE:
-EndQspMsg
+Basically this leads to the messages the servers are sending each other. 
+
+Example: 
+
+QTC_NET_TYPE: MESSAGE
+QTC_NET_VERSION: 0.1
+QTC_NET_ACTION: INSERT/UPDATE/DELETE
+MSG_DATE: 2014-02-18
+MSG_SERIAL: 1
+MSG_SERVER: CA6THSLD
+FROM: OE1SRC
+TO: OE1XGB
+VIA: OE1GIS
+MSG: hallo gaensebluemchen, das ist ein telegramm uebers qtc net
+SIGNATURE: uwz7628276dtsdt7wezqodhsutzer78zwerddg78e3z8zetr789wehr7dh98weuoujrd789zweorgfz4e78wighrf
+
+
+
+-------------------------------------------------------------------------------------------
+
+Important Traffic Q Groups:
+
+QTC?			Do you habe Messages for me? 
+QTC 3			I have 3 Messages for you
+QTC NIL		There are no messaes for you 
+QRU				Ther are no messages for you (I have nothing for you) 
+QSG 2			I am ready, please transmit 2 telegrams at once
+QSG				I am ready to receive all my messages. 
+QSG n			please transmit n messages 
+QSG N			I don't want to hear any message now (N is the letter N) 
+QUA CALL	Telegramm von CALL
+QZA CALL	Telegramm an CALL (importent when you transmit Bulletins or Clubcalls)
+QOZ				A Message itself maybe referred through a number
+QTA				Cancel this message, I have already heard it. (needs QSK obviously)
+QSL?			have you received everything (may collide with QSL Cards) 
+QSL				Yes I have received everything (may collide with QSL Cards) 
+=					STOP Sign, this means end of message, and/or Begin of message
+.					End of sentence, like in reality
+QSP?			Do you like to forward my telegrams via QTC Net?
+QSP				I can forward your messages via QTC Net.  
+
+A message must be able to be transmitted by the lowest available communication channel. 
+So it can have up to 300 Characters. Allowed Characters are the standard morse characters 
+everyone knows [a-z], [0-9], [/.,] and Space.
+
+No Line Breaks, No Nothing.
+
+With this it schould be possible to send a message across any imaginable Radio channel. 
+
+
+TODO: 
+
+A Perlish Subset of XMLRPC.... APSOX.....
+
+
+
+
+
+
+
+Estimation of the Network Traffic: 
+
+- 2800000 Number of Calls Worldwide
+- 30 Amount of Days to Keep the Messages
+- 300 Message Length
+
+
+Disk Space, for a Server Database:
+25200000000 B
+24609375 KB
+24032,59277 MB
+23,46932888 GB
+
+
+Estimated Traffic per Day:
+
+840000000 B
+820312,5 KB
+801,0864258 MB
+0,782310963 GB
+
+Internet as server link is not a Problem. The connection can also
+be done easily with a hamnet Link.
+
+A 115,2 KBit UKW Link may be used at Maximum load, there are some
+2 MBit Data link projects ongoing.
+
