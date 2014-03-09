@@ -242,8 +242,6 @@ sub content_as_xml {
 	$ret.="</".$obj->{type}.">";
 }
 
-
-
 sub as_xml {
 	# TO be implementes
 	my $obj=shift; 
