@@ -251,6 +251,7 @@ sub as_xml {
 	
 	my $ret="<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 	$ret.="<qtc>\n"; 
+	$ret.="<version>".$obj->version."</version>\n";	
 	$ret.="<call>".$obj->call."</call>\n";	
 	$ret.="<type>".$obj->type."</type>\n";	
 	$ret.="<signature>".$obj->signature."</signature>\n";	
