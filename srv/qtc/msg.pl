@@ -15,15 +15,17 @@ our $valid_integer=sub {
 	if ( ! /^\d+$/ ) { 
 		die "The Data $_ does contain values other than numbers\n"; 
 	}
-}
+};
+
 our $valid_date=sub {
-	$valid_integer->($1)
+	$valid_integer->($1);
 	my $now=gmtime; 
 	my $maxtime=$now+(3600*5);
 	if ( $date > $maxtime ){ die "This date $_ is somehow more than 5 hours in the future, I don't belive that time is syncronized that bad\n"; }
 	my $mintime=$now-(3600*24*120);
 	if ( $date < $mintime ){ die "This date $_ is somehow more than 120 days in the past, I don't belive that time is syncronized that bad\n"; }
-}
+};
+
 our $valid_call=sub {
 	if ( ! /^([A-Z]|[0-9]|\/)+$/ ) {
 		die "This call $_ has invalid characters\n"; 
@@ -32,7 +34,8 @@ our $valid_call=sub {
 		die "This call $_ is more than 20 Characters long. Even EA6/OE1SRC/AM is only 13 characters.\n"; 
 	}
 	#"TODO: add additional callback\n"; 
-}
+};
+
 our $valid_msg=sub {
 	if ( ! /^([A-Z]|[0-9]|\/|\.|,|\ )+$/ ) {
 		die "This message $_ has invalid characters\n"; 
@@ -40,10 +43,15 @@ our $valid_msg=sub {
 	if ( length > 300 ) { 
 		die "This message $_ is more than 300 Characters long.\n"; 
 	}
-}
+};
+
 our $valid_callset=sub {
-	foreach my $call (split(/\ /, $_)) { $valid_call->($call); }
-}
+	foreach my $call (split(/\ /)) { $valid_call->($call); }
+};
+
+our $valid_trustlevel=sub {
+	if ( ! /^((-1)|1|0)$/ ) { die "Trustlevel $_ can only be integer 1 0 or -1\n"; }
+};
 
 
 
@@ -62,7 +70,6 @@ our %msg_types=(
 		"msg_serial"=>$valid_integer, 
 		"from"=>$valid_call, 
 		"to"=>$valid_call, 
-		"via"=>$valid_call, 
 		"msg"=>$valid_msg,
 	}, 
 	# this is the qsp info where data is stored
@@ -71,33 +78,25 @@ our %msg_types=(
 		"qsl_serial"=>$valid_integer, 
 		"msg_date"=>$valid_date,
 		"msg_serial"=>$valid_integer, 
-		"via"=>$valid_call, 
-		"log_reference"=>sub{},
 	}, 
 	# aliases and delivery lists 
 	operator=>{
 		"record_date"=>$valid_date, 
-		"call"=>$valid_call, 
 		"set_of_aliases"=>$valid_callset, 
 		"set_of_lists"=>$valid_callset,
 	}, 
 	# keystorage
 	pubkey=>{
-		"call"=>$valid_call,
 		"type"=>$valid_rsa_or_dsa,  
 		"key"=>sub{},
 	},
 	revoke=>{
-		"call"=>$valid_call,
 		"type"=>$valid_rsa_or_dsa,  
 		"key"=>sub{},
 	},
 	# trust and untrust users 
 	trust=>{
-		"trusted_call"=>$valid_call,
-	},
-	suspect=>{
-		"suspected_call"=>$valid_call,
+		"trustlevel"=>$valid_trustlevel,
 	},
 );
 
@@ -105,7 +104,11 @@ our %msg_types=(
 ########################################################
 # obviously generic right now
 ########################################################
-sub new { my $class=shift; my %parm=(@_); return bless $class, $parm; }
+sub new { 
+	my $class=shift; 
+	my %parm=(@_); 
+	return bless $class, $parm; 
+}
 
 
 ########################################################
@@ -131,6 +134,20 @@ sub rcvd_date {
 sub signature {
 	my $obj=shift;
 
+}
+
+##################################################
+# This is the users call which is available in 
+# any QTC Net Message
+################################################## 
+sub call {
+	my $obj=shift; 
+	my $call=shift; 
+	if ($call){
+		$valid_call->($call);
+		$obj->{call} = $call;
+	} 
+	return $obj->{version};
 }
 
 sub version {
@@ -180,8 +197,35 @@ sub AUTOLOAD {
 	return $obj->{method};
 }
 
-sub get_as_text {
+# check every value of the object again. especially if the values are set
+sub is_object_valid {
+	my $obj=shift; 
+	$obj->has_valid_type; 
+	$valid_call->($obj->{call}); 
+	foreach my $field (keys %{$msg_types{$obj->{type}}}) {
+		$msg_types{$obj->{type}}->{$field}->($obj->{$field});
+	}
+}
+
+################################################################
+# The data that is going to be signed is represented as XML 
+# parseable but without namespacing, pi, header and spaces 
+# between the elements  even if there may some other 
+# message formats available, signatures should always be done 
+# in this format.  
+################################################################
+sub content_as_xml {
 	# TO be implementes
+	my $obj=shift; 
+	$obj->is_object_valid; # TODO fill in valid object types
+
+	$obj->has_valid_type; 
+	my $ret="<".$obj->{type}.">";
+	foreach my $field (sort keys %{$msg_types{$obj->{type}}}) {
+		$msg_types{$obj->{type}}->{$field}->($obj->{$field});
+		$ret.="<$field>".$obj->{$field}."</$field>"; 
+	}
+	$ret.="</".$obj->{type}.">";
 }
 
 1; 
