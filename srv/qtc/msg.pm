@@ -31,7 +31,7 @@ our $valid_date=sub {
 
 our $valid_call=sub {
 	$_=shift;
-	if ( ! /^([A-Z]|[0-9]|\/)+$/ ) {
+	if ( ! /^([a-z]|[0-9]|\/)+$/ ) {
 		die "This call $_ has invalid characters\n"; 
 	}
 	if ( length > 20 ) { 
@@ -42,7 +42,7 @@ our $valid_call=sub {
 
 our $valid_msg=sub {
 	$_=shift;
-	if ( ! /^([A-Z]|[0-9]|\/|\.|,|\ )+$/ ) {
+	if ( ! /^([a-z]|[0-9]|\/|\.|,|\ )+$/ ) {
 		die "This message $_ has invalid characters\n"; 
 	}
 	if ( length > 300 ) { 
