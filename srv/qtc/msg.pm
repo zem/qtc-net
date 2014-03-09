@@ -13,21 +13,24 @@ our $VERSION=1;
 # they can be used later within the field definitions 
 #####################################################################################################
 our $valid_integer=sub {
+	$_=shift;
 	if ( ! /^\d+$/ ) { 
 		die "The Data $_ does contain values other than numbers\n"; 
 	}
 };
 
 our $valid_date=sub {
-	$valid_integer->($1);
-	my $now=gmtime; 
+	$_=shift;
+	$valid_integer->($_);
+	my $now=time; 
 	my $maxtime=$now+(3600*5);
-	if ( $date > $maxtime ){ die "This date $_ is somehow more than 5 hours in the future, I don't belive that time is syncronized that bad\n"; }
+	if ( $_ > $maxtime ){ die "This date $_ is somehow more than 5 hours in the future, $maxtime, I don't belive that time is syncronized that bad\n"; }
 	my $mintime=$now-(3600*24*120);
-	if ( $date < $mintime ){ die "This date $_ is somehow more than 120 days in the past, I don't belive that time is syncronized that bad\n"; }
+	if ( $_ < $mintime ){ die "This date $_ is somehow more than 120 days in the past, $mintime, I don't belive that time is syncronized that bad\n"; }
 };
 
 our $valid_call=sub {
+	$_=shift;
 	if ( ! /^([A-Z]|[0-9]|\/)+$/ ) {
 		die "This call $_ has invalid characters\n"; 
 	}
@@ -38,6 +41,7 @@ our $valid_call=sub {
 };
 
 our $valid_msg=sub {
+	$_=shift;
 	if ( ! /^([A-Z]|[0-9]|\/|\.|,|\ )+$/ ) {
 		die "This message $_ has invalid characters\n"; 
 	}
@@ -47,10 +51,12 @@ our $valid_msg=sub {
 };
 
 our $valid_callset=sub {
+	$_=shift;
 	foreach my $call (split(/\ /)) { $valid_call->($call); }
 };
 
 our $valid_trustlevel=sub {
+	$_=shift;
 	if ( ! /^((-1)|1|0)$/ ) { die "Trustlevel $_ can only be integer 1 0 or -1\n"; }
 };
 
@@ -108,7 +114,7 @@ our %msg_types=(
 sub new { 
 	my $class=shift; 
 	my %parm=(@_); 
-	return bless $class, $parm; 
+	return bless \%parm, $class; 
 }
 
 
@@ -123,7 +129,7 @@ sub rcvd_date {
 		$obj->{rcvd_date} = $t;
 	}
 	if ( ! $obj->{rcvd_date} ) {
-		$obj->{rcvd_date}=gmtime;
+		$obj->{rcvd_date}=time;
 	}
 	return $obj->{rcvd_date}
 }
@@ -156,7 +162,7 @@ sub call {
 		$valid_call->($call);
 		$obj->{call} = $call;
 	} 
-	return $obj->{version};
+	return $obj->{call};
 }
 
 sub version {
