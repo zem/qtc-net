@@ -1,5 +1,6 @@
 package qtc::msg; 
 #use POSIX qw(strftime);
+use Digest::SHA qw(sha256_hex);
 
 # This is the version of this qtc::msg class, lower version numbers 
 # will be accepted higher will be denied. It is Integer. 
@@ -114,7 +115,6 @@ sub new {
 ########################################################
 # The method calls can either set or receive values
 #######################################################
-
 sub rcvd_date {
 	my $obj=shift;
 	my $t=shift; 
@@ -133,7 +133,16 @@ sub rcvd_date {
 # so atm this will be empty 
 sub signature {
 	my $obj=shift;
+	# TODO QTC Net Crypto Module
+	return ""; 
+}
 
+################################################
+# There is a big TODO here with the signature
+# so atm this will be empty 
+sub checksum {
+	my $obj=shift;
+	return sha256_hex($obj->content_as_xml);
 }
 
 ##################################################
@@ -217,15 +226,33 @@ sub is_object_valid {
 sub content_as_xml {
 	# TO be implementes
 	my $obj=shift; 
-	$obj->is_object_valid; # TODO fill in valid object types
-
-	$obj->has_valid_type; 
+	$obj->is_object_valid;
+	
 	my $ret="<".$obj->{type}.">";
 	foreach my $field (sort keys %{$msg_types{$obj->{type}}}) {
 		$msg_types{$obj->{type}}->{$field}->($obj->{$field});
 		$ret.="<$field>".$obj->{$field}."</$field>"; 
 	}
 	$ret.="</".$obj->{type}.">";
+}
+
+
+
+sub as_xml {
+	# TO be implementes
+	my $obj=shift; 
+	$obj->is_object_valid;
+	
+	my $ret="<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+	$ret.="<qtc>\n"; 
+	$ret.="<call>".$obj->call."</call>\n";	
+	$ret.="<type>".$obj->type."</type>\n";	
+	$ret.="<signature>".$obj->signature."</signature>\n";	
+	$ret.="<checksum>".$obj->checksum."</checksum>\n";	
+	$ret.=$obj->content_as_xml."\n"; 
+	$ret.="</qtc>\n"; 
+
+	return $ret; 
 }
 
 1; 
