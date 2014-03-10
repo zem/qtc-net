@@ -61,6 +61,11 @@ our $valid_trustlevel=sub {
 	if ( ! /^((-1)|1|0)$/ ) { die "Trustlevel $_ can only be integer 1 0 or -1\n"; }
 };
 
+our $valid_rsa_or_dsa=sub {
+	$_=shift; 
+	if ( ! /^(rsa)|(dsa)$/ ) { die "Unknown key type $_, only rsa and dsa are known and allowed\n"; }
+}
+
 
 
 ################################################################################################
@@ -90,16 +95,16 @@ our %msg_types=(
 	# aliases and delivery lists 
 	operator=>{
 		"record_date"=>$valid_date, 
-		"set_of_aliases"=>$valid_callset, 
+		a"set_of_aliases"=>$valid_callset, 
 		"set_of_lists"=>$valid_callset,
 	}, 
 	# keystorage
 	pubkey=>{
-		"type"=>$valid_rsa_or_dsa,  
+		"key_type"=>$valid_rsa_or_dsa,  
 		"key"=>sub{},
 	},
 	revoke=>{
-		"type"=>$valid_rsa_or_dsa,  
+		"key_type"=>$valid_rsa_or_dsa,  
 		"key"=>sub{},
 	},
 	# trust and untrust users 
