@@ -312,21 +312,20 @@ sub load_file {
 sub load_xml {
 	my $obj=shift; 
 	my $xml=shift; 
+	print $xml; 
 	if ( ! $xml ) { die "I need some xml data \n"; } 
-	my $xp=XML::XPath->new($xp) or die "can't create XPath object from message\n"; 
+	my $xp=XML::XPath->new(xml=>$xml) or die "can't create XPath object from message\n"; 
 	# let us store the common values
-	$obj->call($xp->getNodeText("call"));
-	$obj->type($xp->getNodeText("type"));
+	$obj->call($xp->getNodeText("qtc/call")->value());
+	$obj->type($xp->getNodeText("qtc/type")->value());
 	# we will copy every field then 
-	foreach my $field (sort keys %{$msg_types{$obj->{type}}}) {
-		$obj->{$field}=$xp->getNodeText($obj->type."/".$field);
+	foreach my $field (sort keys %{$msg_types{$obj->type}}) {
+		$obj->{$field}=$xp->getNodeText("qtc/".$obj->type."/".$field)->value();
 	}
 	# as well as checksum and signature 
-	$obj->checksum($xp->getNodeText("checksum"));
-	$obj->signature($xp->getNodeText("signature"));
+	$obj->checksum($xp->getNodeText("qtc/checksum")->value());
+	$obj->signature($xp->getNodeText("qtc/signature")->value());
 	# if we are not dead yet, well done 
 }
-
-
 
 1; 
