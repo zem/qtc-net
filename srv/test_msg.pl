@@ -23,5 +23,6 @@ $msg->msg("hallo zusammen, das ist eine testnachricht.");
 
 dprint "here we are \n \n";
 dprint Dumper($msg);  
-print $msg->as_xml; 
+
+print $msg->to_filesystem("."); 
 

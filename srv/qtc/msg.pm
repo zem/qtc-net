@@ -1,6 +1,7 @@
 package qtc::msg; 
 #use POSIX qw(strftime);
 use Digest::SHA qw(sha256_hex);
+use XML::XPath; 
 
 # This is the version of this qtc::msg class, lower version numbers 
 # will be accepted higher will be denied. It is Integer. 
@@ -114,7 +115,15 @@ our %msg_types=(
 sub new { 
 	my $class=shift; 
 	my %parm=(@_); 
-	return bless \%parm, $class; 
+	my $obj=bless \%parm, $class; 
+	if ($obj->{filename}) { 
+		# try loading data from file
+		$obj->load_file($obj->{filename}); 
+	} elsif ($obj->{xml}) { 
+		# try loading data from string
+		$obj->load_xml($obj->{xml}); 
+	}
+	return $obj; 
 }
 
 
@@ -277,11 +286,47 @@ sub to_filesystem {
 	my $obj=shift; 
 	my $target=shift; 
 	$obj->is_object_valid;
-	my $filename=$obj->type."_".$obj->call."_".$obj->checksum.".xml"
+	my $filename=$obj->type."_".$obj->call."_".$obj->checksum.".xml";
 	
 	open(WRITE, "> ".$target."/".$filename) or die "cant open $target/$filename\n"; 
 	print WRITE $obj->as_xml or die "Can't write data to disk\n"; 
 	close(WRITE); 
 }
+
+
+# load data from string or filesystem 
+sub load_file {
+	my $obj=shift; 
+	my $filename=shift; 
+	if ( ! $filename ) { die "I need a filename\n"; } 
+	my $xml; 	
+
+	open(READ, "< $filename") or die "cant open $filename\n"; 
+	while(<READ>) { $xml.=$_; }
+	close(READ); 
+
+	$obj->load_xml($xml); 
+}
+
+# load data from string or filesystem 
+sub load_xml {
+	my $obj=shift; 
+	my $xml=shift; 
+	if ( ! $xml ) { die "I need some xml data \n"; } 
+	my $xp=XML::XPath->new($xp) or die "can't create XPath object from message\n"; 
+	# let us store the common values
+	$obj->call($xp->getNodeText("call"));
+	$obj->type($xp->getNodeText("type"));
+	# we will copy every field then 
+	foreach my $field (sort keys %{$msg_types{$obj->{type}}}) {
+		$obj->{$field}=$xp->getNodeText($obj->type."/".$field);
+	}
+	# as well as checksum and signature 
+	$obj->checksum($xp->getNodeText("checksum"));
+	$obj->signature($xp->getNodeText("signature"));
+	# if we are not dead yet, well done 
+}
+
+
 
 1; 
