@@ -2,6 +2,7 @@ package qtc::msg;
 #use POSIX qw(strftime);
 use Digest::SHA qw(sha256_hex);
 use XML::XPath; 
+use qtc::signature; 
 
 # This is the version of this qtc::msg class, lower version numbers 
 # will be accepted higher will be denied. It is Integer. 
@@ -64,7 +65,7 @@ our $valid_trustlevel=sub {
 our $valid_rsa_or_dsa=sub {
 	$_=shift; 
 	if ( ! /^(rsa)|(dsa)$/ ) { die "Unknown key type $_, only rsa and dsa are known and allowed\n"; }
-}
+};
 
 
 
@@ -95,7 +96,7 @@ our %msg_types=(
 	# aliases and delivery lists 
 	operator=>{
 		"record_date"=>$valid_date, 
-		a"set_of_aliases"=>$valid_callset, 
+		"set_of_aliases"=>$valid_callset, 
 		"set_of_lists"=>$valid_callset,
 	}, 
 	# keystorage
@@ -153,8 +154,18 @@ sub rcvd_date {
 # so atm this will be empty 
 sub signature {
 	my $obj=shift;
-	# TODO QTC Net Crypto Module
-	return ""; 
+	my $signature=shift; 
+	my $skip_verification=shift; 
+	
+	if ( ! $signature ) {
+		# we may need to sign this object 
+		if ( ! $obj->{signature} ) { 
+			#$obj->{qtc_signature};
+		}
+	} else { 
+		$obj->{signature}=$signature; 
+	}
+	return $obj->{signature};
 }
 
 ################################################

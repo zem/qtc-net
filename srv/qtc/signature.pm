@@ -1,8 +1,9 @@
 #Signature abstraction module for qtc net. 
 package qtc::signature; 
 
-use Crypt::Openssl::RSA;
-use Crypt::Openssl::DSA;
+use Crypt::OpenSSL::RSA;
+use Crypt::OpenSSL::DSA;
+use MIME::Base64;
 
 #######################################################
 # obviously generic right now
@@ -29,7 +30,7 @@ sub sign {
 		
 		my $rsa=Crypt::OpenSSL::RSA->new_private_key($obj->{privkey}) or die "Can't read use private key\n"; 
 		$rsa->use_sha256_hash; 
-		return $rsa->sign($checksum); 
+		return encode_base64($rsa->sign($checksum)); 
 
 	} elsif ($obj->{privkey_type} eq "dsa") {
 		die "This is possible but not yet implemented \n"; 
@@ -41,6 +42,7 @@ sub verify {
 	my $obj=shift; 
 	my $checksum=shift;
 	my $signature=shift;
+	$signature=decode_base64($signature); 
 	
 	if ( $#{$obj->{pubkey}} < 0 ) { die "I do not know the key to sign with\n"; }
 
