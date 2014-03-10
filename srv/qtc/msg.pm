@@ -148,7 +148,19 @@ sub signature {
 # so atm this will be empty 
 sub checksum {
 	my $obj=shift;
-	return sha256_hex($obj->content_as_xml);
+	my $checksum=shift; 
+	$obj->is_object_valid; 
+	if ( ! $obj->{checksum} ) {
+		if ( $checksum ) { 
+			$obj->{checksum}=$checksum; 
+		} else {
+			$obj->{checksum}=sha256_hex($obj->signed_content_xml);
+		}
+	} 
+	if ($obj->{checksum}!=sha256_hex($obj->signed_content_xml)) {
+		die "object checksum mismatch\n"; 
+	} 
+	return $obj->{checksum}
 }
 
 ##################################################
@@ -229,7 +241,7 @@ sub is_object_valid {
 # message formats available, signatures should always be done 
 # in this format.  
 ################################################################
-sub content_as_xml {
+sub signed_content_xml {
 	# TO be implementes
 	my $obj=shift; 
 	$obj->is_object_valid;
@@ -250,14 +262,26 @@ sub as_xml {
 	my $ret="<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 	$ret.="<qtc>\n"; 
 	$ret.="<version>".$obj->version."</version>\n";	
+	#$ret.="<rcvd_date>".$obj->rcvd_date."</rcvd_date>\n";	
 	$ret.="<call>".$obj->call."</call>\n";	
 	$ret.="<type>".$obj->type."</type>\n";	
 	$ret.="<signature>".$obj->signature."</signature>\n";	
 	$ret.="<checksum>".$obj->checksum."</checksum>\n";	
-	$ret.=$obj->content_as_xml."\n"; 
+	$ret.=$obj->signed_content_xml."\n"; 
 	$ret.="</qtc>\n"; 
 
 	return $ret; 
+}
+
+sub to_filesystem {
+	my $obj=shift; 
+	my $target=shift; 
+	$obj->is_object_valid;
+	my $filename=$obj->type."_".$obj->call."_".$obj->checksum.".xml"
+	
+	open(WRITE, "> ".$target."/".$filename) or die "cant open $target/$filename\n"; 
+	print WRITE $obj->as_xml or die "Can't write data to disk\n"; 
+	close(WRITE); 
 }
 
 1; 
