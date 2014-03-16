@@ -203,6 +203,14 @@ sub call {
 	return $obj->{call};
 }
 
+# an escaped call for filesystem purposes
+sub escaped_call {
+	my $obj=shift; 
+	my $call=$obj->call; 
+	$call=~s/\//-/g; 
+	return $call; 
+}
+
 sub version {
 	my $obj=shift;
 	my $v=shift; 
@@ -299,28 +307,58 @@ sub as_xml {
 	return $ret; 
 }
 
-sub to_filesystem {
-	my $obj=shift; 
-	my $target=shift; 
+sub filename {
+	my $obj=shift;
 	$obj->is_object_valid;
-	my $filename=$obj->type."_".$obj->call."_".$obj->checksum.".xml";
 	
-	open(WRITE, "> ".$target."/.".$filename.".tmp") or die "cant open $target/$filename\n"; 
-	print WRITE $obj->as_xml or die "Can't write data to disk\n"; 
-	close(WRITE); 
-	link($target."/.".$filename.".tmp", $target."/".$filename) or die "Can't link to target\n"; 
-	unlink($target."/.".$filename.".tmp") or die "Can't unlink tmpfile, this should never happen\n"; 
+	my $filename=$obj->type."_".$obj->escaped_call."_".$obj->checksum.".xml";
+
+	if ( ! $obj->{filename} ) { 
+		$obj->{filename}=$filename; 
+	} else {
+		if ( $obj->{filename} ne $filename ) { 
+			die "somehow the object filename $obj->{filename} does not match with the generated $filename\n"; 
+		}
+	}
+	return $filename; 
 }
 
+sub to_filesystem {
+	my $obj=shift; 
+	my $path=shift; 
+	$obj->is_object_valid;
+	my $filename=$obj->filename;
+	$obj->{path}=$path; 
+	
+	open(WRITE, "> ".$path."/.".$filename.".tmp") or die "cant open $path/$filename\n"; 
+	print WRITE $obj->as_xml or die "Can't write data to disk\n"; 
+	close(WRITE); 
+	link($path."/.".$filename.".tmp", $path."/".$filename) or die "Can't link to path\n"; 
+	unlink($path."/.".$filename.".tmp") or die "Can't unlink tmpfile, this should never happen\n"; 
+}
+
+sub link_to_path {
+	my $obj=shift;
+	if ( ! $obj->{path} ) { die "please store object first\n"; }
+	foreach my $path (@_) {
+		if ( ! -e $path."/".$obj->filename ) {
+			link($obj->{path}."/".$obj->filename, $path."/".$obj->filename) or die "I cant link this file to $path\n"; 
+		}
+	}
+}
 
 # load data from string or filesystem 
 sub load_file {
 	my $obj=shift; 
+	my $path=shift; 
 	my $filename=shift; 
+	if ( ! $path ) { die "I need a path to load a message\n"; }
+	if ( -d $path ) { die "Path $path is not a directory or not there\n"; } 
+	$obj->{path}=$path; 
 	if ( ! $filename ) { die "I need a filename\n"; } 
 	my $xml; 	
 
-	open(READ, "< $filename") or die "cant open $filename\n"; 
+	open(READ, "< $path/$filename") or die "cant open $filename\n"; 
 	while(<READ>) { $xml.=$_; }
 	close(READ); 
 
