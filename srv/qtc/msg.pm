@@ -92,6 +92,7 @@ our %msg_types=(
 		"qsl_serial"=>$valid_integer, 
 		"msg_date"=>$valid_date,
 		"msg_serial"=>$valid_integer, 
+		"to"=>$valid_call,  #the to field is important for lists 
 	}, 
 	# aliases and delivery lists 
 	operator=>{
@@ -304,9 +305,11 @@ sub to_filesystem {
 	$obj->is_object_valid;
 	my $filename=$obj->type."_".$obj->call."_".$obj->checksum.".xml";
 	
-	open(WRITE, "> ".$target."/".$filename) or die "cant open $target/$filename\n"; 
+	open(WRITE, "> ".$target."/.".$filename.".tmp") or die "cant open $target/$filename\n"; 
 	print WRITE $obj->as_xml or die "Can't write data to disk\n"; 
 	close(WRITE); 
+	link($target."/.".$filename.".tmp", $target."/".$filename) or die "Can't link to target\n"; 
+	unlink($target."/.".$filename.".tmp") or die "Can't unlink tmpfile, this should never happen\n"; 
 }
 
 

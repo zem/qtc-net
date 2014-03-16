@@ -292,3 +292,36 @@ be done easily with a hamnet Link.
 A 115,2 KBit UKW Link may be used at Maximum load, there are some
 2 MBit Data link projects ongoing.
 
+--------------------------------------------------------------
+
+Directorys: 
+
+There are two directory spaces, one for public access, this is the 
+one where data can be downloaded from, ans one private directory where 
+for example where incoming and bad QTC messages are stored. 
+
+pub/
+	out/       # all the processed good messages ready to got rsynced by others
+	call/
+		OE1SRC/ # one directory named like the call / exchanged with -
+		.../
+			# current operator_file 
+			# directory signature file 
+			pubkey/
+			revoke/
+			allmsg/     # all messages of that user 
+			newmsg/     # all the messages that are not delivered yet 
+			qspsent/    # all qsps this user sent 
+			qsprcvd/    # all qsps this user qot
+			trust/      # all the trust levels of this user 
+		ALIAS -> CALL/ # alias directorys should be symlinked to have easy access on aliased calls.  
+
+	lists/
+		LISTNAME/      # one directory per list containing the operator files / -> - 	
+
+in/               # inbound messages are synced into this directory
+bad/              # all messages that have errors to be checked
+
+
+
+
