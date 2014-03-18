@@ -13,7 +13,7 @@ sub new {
    my %parm=(@_); 
    my $obj=bless \%parm, $class; 
 	if ( -d $obj->{root} ) { 
-		die "I need a root folder to run the processor\n"; 
+		$obj->{root}=$ENV{HOME}."/.qtc"; 
 	}
    return $obj; 
 }
