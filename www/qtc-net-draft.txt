@@ -309,10 +309,10 @@ pub/
 			# directory signature file 
 			pubkey/
 			revoke/
-			allmsg/     # all messages of that user 
-			newmsg/     # all the messages that are not delivered yet 
-			qspsent/    # all qsps this user sent 
-			qsprcvd/    # all qsps this user qot
+			sent/
+			archive/    # all messages to that call
+			inbox/      # all the messages that are not delivered to that call
+			qsprcvd/    # all qsps this user got
 			trust/      # all the trust levels of this user 
 		ALIAS -> CALL/ # alias directorys should be symlinked to have easy access on aliased calls.  
 

@@ -3,6 +3,9 @@ package qtc::msg;
 use Digest::SHA qw(sha256_hex);
 use XML::XPath; 
 use qtc::signature; 
+use File::Basename; 
+use qtc::misc;
+@ISA=(qtc::misc); 
 
 # This is the version of this qtc::msg class, lower version numbers 
 # will be accepted higher will be denied. It is Integer. 
@@ -76,12 +79,10 @@ our $valid_rsa_or_dsa=sub {
 #
 # Basically it is {messagetypename}->¬{fieldname}->{validitycheckptr}
 ################################################################################################
-  
 our %msg_types=(
 	# this is the message itself with required fields
 	msg=>{
 		"msg_date"=>$valid_date, 
-		"msg_serial"=>$valid_integer, 
 		"from"=>$valid_call, 
 		"to"=>$valid_call, 
 		"msg"=>$valid_msg,
@@ -89,9 +90,7 @@ our %msg_types=(
 	# this is the qsp info where data is stored
 	qsp=>{
 		"qsl_date"=>$valid_date, 
-		"qsl_serial"=>$valid_integer, 
-		"msg_date"=>$valid_date,
-		"msg_serial"=>$valid_integer, 
+		"msg_checksum"=>$valid_checksum,
 		"to"=>$valid_call,  #the to field is important for lists 
 	}, 
 	# aliases and delivery lists 
@@ -123,9 +122,9 @@ sub new {
 	my $class=shift; 
 	my %parm=(@_); 
 	my $obj=bless \%parm, $class; 
-	if ($obj->{filename}) { 
+	if ($obj->{filename} and $obj->{path}) { 
 		# try loading data from file
-		$obj->load_file($obj->{filename}); 
+		$obj->load_file($obj->{path}, $obj->{filename}); 
 	} elsif ($obj->{xml}) { 
 		# try loading data from string
 		$obj->load_xml($obj->{xml}); 
@@ -169,6 +168,10 @@ sub signature {
 	return $obj->{signature};
 }
 
+# TODO: place a signature verification option here
+# This method is called whenever a signature needs 
+# to be checked. 
+
 ################################################
 # There is a big TODO here with the signature
 # so atm this will be empty 
@@ -206,9 +209,7 @@ sub call {
 # an escaped call for filesystem purposes
 sub escaped_call {
 	my $obj=shift; 
-	my $call=$obj->call; 
-	$call=~s/\//-/g; 
-	return $call; 
+	return $obj->call2fname($obj->call); 
 }
 
 sub version {
@@ -337,10 +338,12 @@ sub to_filesystem {
 	unlink($path."/.".$filename.".tmp") or die "Can't unlink tmpfile, this should never happen\n"; 
 }
 
+
 sub link_to_path {
 	my $obj=shift;
 	if ( ! $obj->{path} ) { die "please store object first\n"; }
 	foreach my $path (@_) {
+		$obj->ensure_path($path); 
 		if ( ! -e $path."/".$obj->filename ) {
 			link($obj->{path}."/".$obj->filename, $path."/".$obj->filename) or die "I cant link this file to $path\n"; 
 		}
@@ -353,7 +356,7 @@ sub load_file {
 	my $path=shift; 
 	my $filename=shift; 
 	if ( ! $path ) { die "I need a path to load a message\n"; }
-	if ( -d $path ) { die "Path $path is not a directory or not there\n"; } 
+	if ( -e $path ) { die "Path $path does not exist\n"; } 
 	$obj->{path}=$path; 
 	if ( ! $filename ) { die "I need a filename\n"; } 
 	my $xml; 	

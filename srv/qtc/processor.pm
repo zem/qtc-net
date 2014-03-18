@@ -1,6 +1,8 @@
 package qtc::processor; 
 use qtc::msg; 
 use File::Basename; 
+use qtc::misc;
+@ISA=(qtc::misc);
 
 # this package does all the linking of a qtc-net message to its right folders 
 ########################################################
@@ -105,28 +107,81 @@ sub process {
 ################
 # importing rules
 sub import_msg {
-
-
+	my $obj=shift; 
+	my $msg=shift; 
+	# TODO: Place signature verification call here
+	
+	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/newmsg");
+	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/allmsg");
+	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->from)."/sent");
+	
+	$msg->link_to_path($obj->{root}."/out");
 }
 
 sub import_pubkey {
-
+	my $obj=shift; 
+	my $msg=shift; 
+	# TODO: Place signature verification call here
+	
+	$msg->link_to_path($obj->{root}."/call/".$msg->call."/pubkey");
+	
+	$msg->link_to_path($obj->{root}."/out");
 }
 
 sub import_revoke {
+	my $obj=shift; 
+	my $msg=shift; 
+	# TODO: Place signature verification call here
 
+	# TODO: Place Key revokation code here
+
+	$msg->link_to_path($obj->{root}."/call/".$msg->call."/revoke");
+	$msg->link_to_path($obj->{root}."/out");
 }
 
 sub import_qtc {
+	my $obj=shift; 
+	my $msg=shift; 
+	# TODO: Place signature verification call here
 
+	# TODO: not working, implementing lookup via sha256 hashes first
+	
+	$msg->link_to_path($obj->{root}."/call/".$msg->signature."/newmsg");
+	$msg->link_to_path($obj->{root}."/call/".$msg->from."/allmsg");
+	$msg->link_to_path($obj->{root}."/call/".$msg->from."/sent");
+	
+	$msg->link_to_path($obj->{root}."/out");
 }
 
 sub import_operator {
+	my $obj=shift; 
+	my $msg=shift; 
+	# TODO: Place signature verification call here
 
+	# TODO: place aliassing code here
+
+	$msg->link_to_path($obj->{root}."/call/".$msg->call);
+
+	foreach my $alias (split(/ /, $msg->set_of_aliases)) {
+		# TODO:Symlink directorys 
+	}
+	
+	foreach my $list (split(/ /, $msg->set_of_lists)) {
+		# TODO:Symlink directorys 
+		$msg->link_to_path($obj->{root}."/lists/".$list);
+	}
+	
+	$msg->link_to_path($obj->{root}."/out");
 }
 
 sub import_trust {
+	my $obj=shift; 
+	my $msg=shift; 
+	# TODO: Place signature verification call here
 
+	$msg->link_to_path($obj->{root}."/call/".$msg->call."/trust");
+
+	$msg->link_to_path($obj->{root}."/out");
 }
 
 1; 
