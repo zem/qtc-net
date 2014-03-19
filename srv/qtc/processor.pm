@@ -5,9 +5,6 @@ use qtc::misc;
 @ISA=(qtc::misc);
 
 # this package does all the linking of a qtc-net message to its right folders 
-########################################################
-# obviously generic right now
-########################################################
 sub new { 
    my $class=shift; 
    my %parm=(@_); 
@@ -111,12 +108,51 @@ sub import_msg {
 	my $msg=shift; 
 	# TODO: Place signature verification call here
 	
-	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/newmsg");
 	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/allmsg");
 	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->from)."/sent");
-	
+	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/newmsg");
 	$msg->link_to_path($obj->{root}."/out");
 }
+
+################
+# importing rules
+sub remove_msg {
+	my $obj=shift; 
+	my $msg=shift; 
+	
+	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/allmsg");
+	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->from)."/sent");
+	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/newmsg");
+	$msg->unlink_at_path($obj->{root}."/out");
+}
+
+
+sub import_qsp {
+	my $obj=shift; 
+	my $msg=shift; 
+	# TODO: Place signature verification call here
+
+	# TODO: not working, implementing lookup via sha256 hashes first
+	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/qsprcvd");
+	my @newmsgs=$obj->scan_dir(
+		$obj->{root}."/call/".$obj->call2fname($msg->to)."/newmsg",
+		"msg_([a-z]|[0-9]|\/)+_".$msg->msg_checksum.".xml"
+	);
+	foreach my $newmsg (@newmsgs) {
+		unlink($newmsg) or die "removing of transmitted message failed"; 
+	}
+	$msg->link_to_path($obj->{root}."/out");
+}
+################
+# importing rules
+sub remove_qsp {
+	my $obj=shift; 
+	my $msg=shift; 
+	
+	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/qsprcvd");
+	$msg->unlink_at_path($obj->{root}."/out");
+}
+
 
 sub import_pubkey {
 	my $obj=shift; 
@@ -124,8 +160,14 @@ sub import_pubkey {
 	# TODO: Place signature verification call here
 	
 	$msg->link_to_path($obj->{root}."/call/".$msg->call."/pubkey");
-	
 	$msg->link_to_path($obj->{root}."/out");
+}
+sub remove_pubkey {
+	my $obj=shift; 
+	my $msg=shift; 
+	
+	$msg->unlink_at_path($obj->{root}."/call/".$msg->call."/pubkey");
+	$msg->unlink_at_path($obj->{root}."/out");
 }
 
 sub import_revoke {
@@ -133,24 +175,26 @@ sub import_revoke {
 	my $msg=shift; 
 	# TODO: Place signature verification call here
 
-	# TODO: Place Key revokation code here
-
+	my @qtcmsgs=$obj->scan_dir(
+		$obj->{root}."/out",
+		".+_".$obj->call2fname($msg->call)."_.+.xml"
+	);
+	foreach my $filename (@qtcmsgs) {
+		my $qtcmsg=qtc::msg->new(
+			path=>$obj->{root}."/out",
+			filename=>$filename, 
+		);
+		# TODO: remove messages accourding to their type
+	}
 	$msg->link_to_path($obj->{root}."/call/".$msg->call."/revoke");
 	$msg->link_to_path($obj->{root}."/out");
 }
-
-sub import_qtc {
+sub remove_revoke {
 	my $obj=shift; 
 	my $msg=shift; 
-	# TODO: Place signature verification call here
-
-	# TODO: not working, implementing lookup via sha256 hashes first
 	
-	$msg->link_to_path($obj->{root}."/call/".$msg->signature."/newmsg");
-	$msg->link_to_path($obj->{root}."/call/".$msg->from."/allmsg");
-	$msg->link_to_path($obj->{root}."/call/".$msg->from."/sent");
-	
-	$msg->link_to_path($obj->{root}."/out");
+	$msg->unlink_at_path($obj->{root}."/call/".$msg->call."/revoke");
+	$msg->unlink_at_path($obj->{root}."/out");
 }
 
 sub import_operator {
@@ -173,6 +217,13 @@ sub import_operator {
 	
 	$msg->link_to_path($obj->{root}."/out");
 }
+sub remove_operator {
+	my $obj=shift; 
+	my $msg=shift; 
+	
+	$msg->unlink_at_path($obj->{root}."/call/".$msg->call);
+	$msg->unlink_at_path($obj->{root}."/out");
+}
 
 sub import_trust {
 	my $obj=shift; 
@@ -182,6 +233,21 @@ sub import_trust {
 	$msg->link_to_path($obj->{root}."/call/".$msg->call."/trust");
 
 	$msg->link_to_path($obj->{root}."/out");
+}
+sub remove_trust {
+	my $obj=shift; 
+	my $msg=shift; 
+	
+	$msg->unlink_at_path($obj->{root}."/call/".$msg->call."/trust");
+	$msg->unlink_at_path($obj->{root}."/out");
+}
+
+sub is_message_new {
+	my $obj=shift;
+	my $msg=shift; 
+	
+	if ( $msg->type ne "msg" ) { die "Message must be type message\n"; }
+
 }
 
 1; 

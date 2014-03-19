@@ -114,10 +114,6 @@ our %msg_types=(
 	},
 );
 
-
-########################################################
-# obviously generic right now
-########################################################
 sub new { 
 	my $class=shift; 
 	my %parm=(@_); 
@@ -346,6 +342,16 @@ sub link_to_path {
 		$obj->ensure_path($path); 
 		if ( ! -e $path."/".$obj->filename ) {
 			link($obj->{path}."/".$obj->filename, $path."/".$obj->filename) or die "I cant link this file to $path\n"; 
+		}
+	}
+}
+
+sub unlink_at_path {
+	my $obj=shift;
+	foreach my $path (@_) {
+		$obj->ensure_path($path); 
+		if ( -e $path."/".$obj->filename ) {
+			unlink($path."/".$obj->filename) or die "I cant unlink this file to $path\n"; 
 		}
 	}
 }

@@ -33,5 +33,24 @@ sub ensure_path {
 	# it is ok otherwise
 }
 
+sub scan_dir {
+	my $objSelf=shift;
+	my $sDir=shift;
+	my $sPrefix=shift; 
+	my @aFiles=shift; 
+
+	if ( ! $sDir ) { die "I need a directory to scan\n"; }
+	if ( ! $sPrefix ) { die "I need an expression to scan for\n"; }
+
+	opendir(DIR, $sDir) or die "directory $sDir to scan is not there\n";
+
+	eval "\@aFiles = grep { /$sPrefix/ } readdir DIR";
+		
+	closedir DIR;
+	
+	@aFiles = grep { ! /^(\.|\.\.)$/ } @aFiles;	# filter . and ..
+
+	return (1, @aFiles);
+}
 
 1; 
