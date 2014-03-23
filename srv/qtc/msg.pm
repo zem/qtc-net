@@ -70,6 +70,12 @@ our $valid_rsa_or_dsa=sub {
 	if ( ! /^(rsa)|(dsa)$/ ) { die "Unknown key type $_, only rsa and dsa are known and allowed\n"; }
 };
 
+our $valid_key=sub {
+	$_=shift; 
+	if ( ! /-----BEGIN (RSA)|(DSA) PUBLIC KEY-----.+-----END (RSA)|(DSA) PUBLIC KEY-----/s ) { 
+		die "Invalid public key format\n"; 
+	}
+};
 
 
 ################################################################################################
@@ -102,11 +108,11 @@ our %msg_types=(
 	# keystorage
 	pubkey=>{
 		"key_type"=>$valid_rsa_or_dsa,  
-		"key"=>sub{},
+		"key"=>$valid_key,
 	},
 	revoke=>{
 		"key_type"=>$valid_rsa_or_dsa,  
-		"key"=>sub{},
+		"key"=>$valid_key,
 	},
 	# trust and untrust users 
 	trust=>{

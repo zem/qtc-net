@@ -9,8 +9,11 @@ sub new {
    my $class=shift; 
    my %parm=(@_); 
    my $obj=bless \%parm, $class; 
-	if ( -d $obj->{root} ) { 
+	if ( ! $obj->{root} ) { 
 		$obj->{root}=$ENV{HOME}."/.qtc"; 
+	}
+	if ( ! $obj->{key} ) { 
+		$obj->{key}=$ENV{HOME}."/.qtckey"; 
 	}
    return $obj; 
 }
@@ -27,20 +30,33 @@ sub process_file {
 	); 
 	$obj->write_msg_to_in($msg); 
 	$obj->process($msg); 
-	
-	
+}
+
+# this is to be used for any message that is in /in
+sub process_one_msg_from_in { 
+	my $obj=shift; 
+	my $file=shift; 
+
+	$msg=qtc::msg->new(
+		filename=>$file, 
+		path=>$obj->{root}."/in",
+	); 
+	$obj->process($msg);
 }
 
 # this is to be used for any message that is in /in
 sub process_in { 
 	my $obj=shift; 
-	my $file=shift; 
-	
-	$msg=qtc::msg->new(
-		xml=>$xml,
-		path=>$obj->{root}."/in"
-	); 
-	$obj->process($msg); 
+
+	foreach my $file ($obj->scan_dir($obj->{root}."/in", '.*\.xml')){
+		if (( ! -e $obj->{root}."/out" ) and ( ! -e $obj->{root}."/bad" )) { 
+			$msg=qtc::msg->new(
+				filename=>$file, 
+				path=>$obj->{root}."/in",
+			); 
+			$obj->process($msg);
+		}
+	} 
 }
 
 sub process_xml { 
@@ -159,14 +175,14 @@ sub import_pubkey {
 	my $msg=shift; 
 	# TODO: Place signature verification call here
 	
-	$msg->link_to_path($obj->{root}."/call/".$msg->call."/pubkey");
+	$msg->link_to_path($obj->{root}."/call/".$msg->escaped_call."/pubkey");
 	$msg->link_to_path($obj->{root}."/out");
 }
 sub remove_pubkey {
 	my $obj=shift; 
 	my $msg=shift; 
 	
-	$msg->unlink_at_path($obj->{root}."/call/".$msg->call."/pubkey");
+	$msg->unlink_at_path($obj->{root}."/call/".$msg->escaped_call."/pubkey");
 	$msg->unlink_at_path($obj->{root}."/out");
 }
 
@@ -184,16 +200,41 @@ sub import_revoke {
 			path=>$obj->{root}."/out",
 			filename=>$filename, 
 		);
-		# TODO: remove messages accourding to their type
+		if ( $msg->type eq "msg" ) { 
+			$obj->remove_msg($qtcmsg); 
+			return; 
+		}
+		if ( $msg->type eq "qsp" ) { 
+			$obj->remove_qsp($qtcmsg); 
+			return; 
+		}
+		if ( $msg->type eq "operator" ) { 
+			$obj->remove_operator($qtcmsg); 
+			return; 
+		}
+		if ( $msg->type eq "pubkey" ) { 
+			$obj->remove_pubkey($qtcmsg); 
+			return; 
+		}
+		if ( $msg->type eq "revoke" ) { 
+			$obj->remove_revoke($qtcmsg); 
+			return; 
+		}
+		if ( $msg->type eq "trust" ) { 
+			$obj->remove_trust($qtcmsg); 
+			return; 
+		}
 	}
-	$msg->link_to_path($obj->{root}."/call/".$msg->call."/revoke");
+	$msg->link_to_path($obj->{root}."/call/".$msg->escaped_call."/revoke");
 	$msg->link_to_path($obj->{root}."/out");
 }
+
+# normally this is not called.... i think 
 sub remove_revoke {
 	my $obj=shift; 
 	my $msg=shift; 
 	
-	$msg->unlink_at_path($obj->{root}."/call/".$msg->call."/revoke");
+	$msg->unlink_at_path($obj->{root}."/call/".$msg->escaped_call."/revoke");
 	$msg->unlink_at_path($obj->{root}."/out");
 }
 
@@ -203,16 +244,14 @@ sub import_operator {
 	# TODO: Place signature verification call here
 
 	# TODO: place aliassing code here
-
-	$msg->link_to_path($obj->{root}."/call/".$msg->call);
+	$msg->link_to_path($obj->{root}."/call/".$msg->escaped_call);
 
 	foreach my $alias (split(/ /, $msg->set_of_aliases)) {
-		# TODO:Symlink directorys 
+		#TODO link aliases 
 	}
 	
 	foreach my $list (split(/ /, $msg->set_of_lists)) {
-		# TODO:Symlink directorys 
-		$msg->link_to_path($obj->{root}."/lists/".$list);
+		$msg->link_to_path($obj->{root}."/lists/".$obj->call2fname($list));
 	}
 	
 	$msg->link_to_path($obj->{root}."/out");
@@ -221,7 +260,7 @@ sub remove_operator {
 	my $obj=shift; 
 	my $msg=shift; 
 	
-	$msg->unlink_at_path($obj->{root}."/call/".$msg->call);
+	$msg->unlink_at_path($obj->{root}."/call/".$msg->escaped_call);
 	$msg->unlink_at_path($obj->{root}."/out");
 }
 
@@ -230,7 +269,7 @@ sub import_trust {
 	my $msg=shift; 
 	# TODO: Place signature verification call here
 
-	$msg->link_to_path($obj->{root}."/call/".$msg->call."/trust");
+	$msg->link_to_path($obj->{root}."/call/".$msg->escaped_call."/trust");
 
 	$msg->link_to_path($obj->{root}."/out");
 }
@@ -238,7 +277,7 @@ sub remove_trust {
 	my $obj=shift; 
 	my $msg=shift; 
 	
-	$msg->unlink_at_path($obj->{root}."/call/".$msg->call."/trust");
+	$msg->unlink_at_path($obj->{root}."/call/".$msg->escaped_call."/trust");
 	$msg->unlink_at_path($obj->{root}."/out");
 }
 
