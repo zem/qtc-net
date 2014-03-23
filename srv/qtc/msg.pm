@@ -70,6 +70,13 @@ our $valid_rsa_or_dsa=sub {
 	if ( ! /^(rsa)|(dsa)$/ ) { die "Unknown key type $_, only rsa and dsa are known and allowed\n"; }
 };
 
+our $valid_signature_type=sub {
+	$_=shift; 
+	if ( ! /^(selfsigned)|(regular)$/ ) { 
+		die "Unknown signature_type $_, only selfsigned and regular are known and allowed\n"; 
+	}
+};
+
 our $valid_key=sub {
 	$_=shift; 
 	if ( ! /-----BEGIN (RSA)|(DSA) PUBLIC KEY-----.+-----END (RSA)|(DSA) PUBLIC KEY-----/s ) { 
@@ -108,6 +115,7 @@ our %msg_types=(
 	# keystorage
 	pubkey=>{
 		"key_type"=>$valid_rsa_or_dsa,  
+		"signature_type"=>$valid_signature_type,  
 		"key"=>$valid_key,
 	},
 	revoke=>{
