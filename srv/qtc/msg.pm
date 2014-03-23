@@ -115,7 +115,7 @@ our %msg_types=(
 	# keystorage
 	pubkey=>{
 		"key_type"=>$valid_rsa_or_dsa,  
-		"signature_type"=>$valid_signature_type,  
+		"key_id"=>$valid_checksum,  
 		"key"=>$valid_key,
 	},
 	revoke=>{
@@ -165,17 +165,21 @@ sub rcvd_date {
 sub signature {
 	my $obj=shift;
 	my $signature=shift; 
-	my $skip_verification=shift; 
-	
+	my $signature_key_id=shift; 
 	if ( ! $signature ) {
 		# we may need to sign this object 
-		if ( ! $obj->{signature} ) { 
-			#$obj->{qtc_signature};
-		}
+		if ( ! $obj->{signature} ) { die "this object is not signed\n"; }
+		return $obj->{signature};
 	} else { 
+		if ( ! $signature_key_id ) { die "this function call also needs a signature key id\n"; }
 		$obj->{signature}=$signature; 
+		$obj->{signature_key_id}=$signature_key_id; 
 	}
-	return $obj->{signature};
+}
+
+sub signature_key_id {
+	my $obj=shift;
+	return $obj->{signature_key_id}; 
 }
 
 # TODO: place a signature verification option here
@@ -311,6 +315,7 @@ sub as_xml {
 	$ret.="<call>".$obj->call."</call>\n";	
 	$ret.="<type>".$obj->type."</type>\n";	
 	$ret.="<signature>".$obj->signature."</signature>\n";	
+	$ret.="<signature_key_id>".$obj->signature_key_id."</signature_key_id>\n";	
 	$ret.="<checksum>".$obj->checksum."</checksum>\n";	
 	$ret.=$obj->signed_content_xml."\n"; 
 	$ret.="</qtc>\n"; 

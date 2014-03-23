@@ -51,7 +51,11 @@ sub verify {
  			my $rsa->new_public_key($pubkey->key) or die "Cant load public Key\n";
 			$rsa->use_sha256_hash; 
 			if ($rsa->verify($checksum, $signature)) {
-				return 1; 
+				if ( $pubkey->signature_type="selfsigned" ) {
+					return $pubkey->checksum;
+				} else {
+					return 1;
+				} 
 			}
 		} elsif ($pubkey->key_type eq "dsa" ) {
 			die "dsa verification not yet implemented\n"; 
@@ -59,6 +63,5 @@ sub verify {
 	}
 	return 0; 
 }
-
 
 1; 
