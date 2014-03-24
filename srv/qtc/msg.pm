@@ -84,6 +84,16 @@ our $valid_key=sub {
 	}
 };
 
+our $valid_checksum=sub {
+	$_=shift; 
+	if ( ! /^([a-f]|[0-9])+$/ ) { 
+		die "Invalid checksum format $_ \n"; 
+	}
+	if ( length != 64 ) { 
+		die "Invalid checksum length $_ \n"; 
+	}
+};
+
 
 ################################################################################################
 # There are several message types in QTC net, all of them are electronically signed by the 
@@ -279,6 +289,7 @@ sub is_object_valid {
 	$obj->has_valid_type; 
 	$valid_call->($obj->{call}); 
 	foreach my $field (keys %{$msg_types{$obj->{type}}}) {
+		#DEBUG print STDERR $field."\n" ; 
 		$msg_types{$obj->{type}}->{$field}->($obj->{$field});
 	}
 }

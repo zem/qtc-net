@@ -26,6 +26,7 @@ my $pubkey=qtc::msg->new(
 $pubkey->signature(encode_base64($rsa->sign($pubkey->checksum)), $key_id); 
 
 my $path=$ENV{HOME}."/.qtc_private";
+print STDERR "Writing Keys to $path\n"; 
 
 $pubkey->ensure_path($path); 
 $pubkey->to_filesystem($path); 

@@ -1,4 +1,5 @@
 package qtc::misc; 
+use File::Basename; 
 
 sub new { 
 	my $class=shift; 
