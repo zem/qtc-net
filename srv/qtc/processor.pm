@@ -1,6 +1,8 @@
 package qtc::processor; 
 use qtc::msg; 
 use File::Basename; 
+use qtc::signature; 
+use qtc::keyring; 
 use qtc::misc;
 @ISA=(qtc::misc);
 
@@ -15,9 +17,50 @@ sub new {
 	if ( ! $obj->{key} ) { 
 		$obj->{key}=$ENV{HOME}."/.qtckey"; 
 	}
+	
    return $obj; 
 }
 
+sub keyring {
+	my $obj=shift;
+	my $msg=shift;
+	my $call=$msg->call; 
+	my @keys;  
+
+	# we may have a public key here that we should handle at generation
+	if ( $msg->type eq "pubkey" ) { push @keys, $msg; }
+	
+	if ( ! $call ) { die "I need a call to get a keyring for\n"; }
+
+	if ( ! $obj->{keyring}->{$call} ) { 
+		$obj->{keyring}->{$call}=qtc::keyring->new(
+			call=>$call,
+			root=>$obj->{root},
+			keys=>\@keys, 
+		);
+	}
+	return $obj->{keyring}->{$call};
+}
+
+sub keyring_clear {
+	my $obj=shift; 
+	my $call=shift; 
+
+	delete $obj->{keyring}->{$call};
+}
+
+sub verify_signature {
+	my $obj=shift; 
+	my $msg=shift;
+	
+	my $keyhash=shift; 
+	my $sig=qtc::signature->new(
+		pubkey=>$obj->keyring($msg)->keyhash,
+	);
+	if ( $sig->verify($msg->checksum, $msg->signature, $msg->signature_key_id) ) { 
+		die "Signature verification for message ".$msg->checksum." failed\n"; 
+	}
+}
 
 # this is to be used for any message that is not in /in
 sub process_file { 
@@ -122,7 +165,8 @@ sub process {
 sub import_msg {
 	my $obj=shift; 
 	my $msg=shift; 
-	# TODO: Place signature verification call here
+
+	$obj->verify_signature($msg)	
 	
 	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/allmsg");
 	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->from)."/sent");
@@ -146,7 +190,7 @@ sub remove_msg {
 sub import_qsp {
 	my $obj=shift; 
 	my $msg=shift; 
-	# TODO: Place signature verification call here
+	$obj->verify_signature($msg)	
 
 	# TODO: not working, implementing lookup via sha256 hashes first
 	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/qsprcvd");
@@ -169,14 +213,16 @@ sub remove_qsp {
 	$msg->unlink_at_path($obj->{root}."/out");
 }
 
-
 sub import_pubkey {
 	my $obj=shift; 
 	my $msg=shift; 
-	# TODO: Place signature verification call here
+	$obj->verify_signature($msg)	
 	
 	$msg->link_to_path($obj->{root}."/call/".$msg->escaped_call."/pubkey");
 	$msg->link_to_path($obj->{root}."/out");
+
+	# keyring cache must be cleared now 
+	$obj->keyring_clear($msg->call); 
 }
 sub remove_pubkey {
 	my $obj=shift; 
@@ -184,12 +230,15 @@ sub remove_pubkey {
 	
 	$msg->unlink_at_path($obj->{root}."/call/".$msg->escaped_call."/pubkey");
 	$msg->unlink_at_path($obj->{root}."/out");
+	
+	# keyring cache must be cleared now 
+	$obj->keyring_clear($msg->call); 
 }
 
 sub import_revoke {
 	my $obj=shift; 
 	my $msg=shift; 
-	# TODO: Place signature verification call here
+	$obj->verify_signature($msg)	
 
 	my @qtcmsgs=$obj->scan_dir(
 		$obj->{root}."/out",
@@ -241,7 +290,7 @@ sub remove_revoke {
 sub import_operator {
 	my $obj=shift; 
 	my $msg=shift; 
-	# TODO: Place signature verification call here
+	$obj->verify_signature($msg)	
 
 	# TODO: place aliassing code here
 	$msg->link_to_path($obj->{root}."/call/".$msg->escaped_call);
@@ -267,7 +316,7 @@ sub remove_operator {
 sub import_trust {
 	my $obj=shift; 
 	my $msg=shift; 
-	# TODO: Place signature verification call here
+	$obj->verify_signature($msg)	
 
 	$msg->link_to_path($obj->{root}."/call/".$msg->escaped_call."/trust");
 

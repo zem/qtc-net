@@ -13,7 +13,8 @@ sub new {
 	my %parm=(@_); 
 	my $obj=bless \%parm, $class; 
 	
-	# expect an pubkey array [] that contains key qtc::msg objects for signature verification
+	# expect an pubkey hash {} that contains key validated qtc::msg objects for 
+	#       signature verification, ordered by their key ID
 	# expect a privkey string for object signing 
 	# expect a privkey_type = rsa|dsa
 
@@ -42,24 +43,21 @@ sub verify {
 	my $obj=shift; 
 	my $checksum=shift;
 	my $signature=shift;
+	my $signature_key_id=shift;
 	$signature=decode_base64($signature); 
 	
-	if ( $#{$obj->{pubkey}} < 0 ) { die "I do not know the key to sign with\n"; }
+	if ( ! $obj->{pubkey}->{$signature_key_id} ) { die "I do not have a key to verify with\n"; }
 
-	foreach my $pubkey (@{$obj->{pubkey}}){
-		if ( $pubkey->key_type eq "rsa" ) {
- 			my $rsa->new_public_key($pubkey->key) or die "Cant load public Key\n";
-			$rsa->use_sha256_hash; 
-			if ($rsa->verify($checksum, $signature)) {
-				if ( $pubkey->signature_type="selfsigned" ) {
-					return $pubkey->checksum;
-				} else {
-					return 1;
-				} 
-			}
-		} elsif ($pubkey->key_type eq "dsa" ) {
-			die "dsa verification not yet implemented\n"; 
+	my $pubkey=$obj->{pubkey}->{$signature_key_id};
+
+	if ( $pubkey->key_type eq "rsa" ) {
+ 		my $rsa->new_public_key($pubkey->key) or die "Cant load public Key\n";
+		$rsa->use_sha256_hash; 
+		if ($rsa->verify($checksum, $signature)) {
+			return 1;
 		}
+	} elsif ($pubkey->key_type eq "dsa" ) {
+		die "dsa verification not yet implemented\n"; 
 	}
 	return 0; 
 }
