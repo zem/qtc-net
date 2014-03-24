@@ -1,5 +1,6 @@
 #Signature abstraction module for qtc net. 
 package qtc::signature; 
+use Data::Dumper;
 
 use Crypt::OpenSSL::RSA;
 use Crypt::OpenSSL::DSA;
@@ -44,6 +45,7 @@ sub verify {
 	my $checksum=shift;
 	my $signature=shift;
 	my $signature_key_id=shift;
+	#print STDERR "$checksum $signature\n"; 
 	$signature=decode_base64($signature); 
 	
 	if ( ! $obj->{pubkey}->{$signature_key_id} ) { die "I do not have a key to verify with\n"; }
@@ -51,11 +53,13 @@ sub verify {
 	my $pubkey=$obj->{pubkey}->{$signature_key_id};
 
 	if ( $pubkey->key_type eq "rsa" ) {
- 		my $rsa->new_public_key($pubkey->key) or die "Cant load public Key\n";
+ 		my $rsa=Crypt::OpenSSL::RSA->new_public_key($pubkey->key) or die "Cant load public Key\n";
 		$rsa->use_sha256_hash; 
 		if ($rsa->verify($checksum, $signature)) {
+			#print STDERR "verification succeeded\n"; 
 			return 1;
 		}
+		#print STDERR Dumper($pubkey); 
 	} elsif ($pubkey->key_type eq "dsa" ) {
 		die "dsa verification not yet implemented\n"; 
 	}

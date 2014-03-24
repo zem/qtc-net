@@ -57,7 +57,7 @@ sub verify_signature {
 	my $sig=qtc::signature->new(
 		pubkey=>$obj->keyring($msg)->keyhash,
 	);
-	if ( $sig->verify($msg->checksum, $msg->signature, $msg->signature_key_id) ) { 
+	if (! $sig->verify($msg->checksum, $msg->signature, $msg->signature_key_id) ) { 
 		die "Signature verification for message ".$msg->checksum." failed\n"; 
 	}
 }
@@ -89,15 +89,26 @@ sub process_one_msg_from_in {
 
 # this is to be used for any message that is in /in
 sub process_in { 
-	my $obj=shift; 
+	my $obj=shift;
+	$obj->ensure_path($obj->{root}."/bad"); 
+	$obj->ensure_path($obj->{root}."/in"); 
 
 	foreach my $file ($obj->scan_dir($obj->{root}."/in", '.*\.xml')){
-		if (( ! -e $obj->{root}."/out" ) and ( ! -e $obj->{root}."/bad" )) { 
-			$msg=qtc::msg->new(
-				filename=>$file, 
-				path=>$obj->{root}."/in",
-			); 
-			$obj->process($msg);
+		if (( ! -e $obj->{root}."/out/".$file ) and ( ! -e $obj->{root}."/bad/".$file )) { 
+			print STDERR "processing file $file\n"; 
+			eval { 
+				$msg=qtc::msg->new(
+					filename=>$file, 
+					path=>$obj->{root}."/in",
+				); 
+				$obj->process($msg);
+			};
+			if ( $@ ) { 
+				# an error occured
+				print STDERR $@; 
+				link($obj->{root}."/in/".$file,  $obj->{root}."/bad/".$file) or die "yes really this link fail leads to death\n"; 
+
+			}
 		}
 	} 
 }
@@ -166,7 +177,7 @@ sub import_msg {
 	my $obj=shift; 
 	my $msg=shift; 
 
-	$obj->verify_signature($msg)	
+	$obj->verify_signature($msg);
 	
 	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/allmsg");
 	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->from)."/sent");
@@ -190,7 +201,7 @@ sub remove_msg {
 sub import_qsp {
 	my $obj=shift; 
 	my $msg=shift; 
-	$obj->verify_signature($msg)	
+	$obj->verify_signature($msg); 	
 
 	# TODO: not working, implementing lookup via sha256 hashes first
 	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/qsprcvd");
@@ -216,7 +227,7 @@ sub remove_qsp {
 sub import_pubkey {
 	my $obj=shift; 
 	my $msg=shift; 
-	$obj->verify_signature($msg)	
+	$obj->verify_signature($msg);	
 	
 	$msg->link_to_path($obj->{root}."/call/".$msg->escaped_call."/pubkey");
 	$msg->link_to_path($obj->{root}."/out");
@@ -238,7 +249,7 @@ sub remove_pubkey {
 sub import_revoke {
 	my $obj=shift; 
 	my $msg=shift; 
-	$obj->verify_signature($msg)	
+	$obj->verify_signature($msg);	
 
 	my @qtcmsgs=$obj->scan_dir(
 		$obj->{root}."/out",
@@ -290,7 +301,7 @@ sub remove_revoke {
 sub import_operator {
 	my $obj=shift; 
 	my $msg=shift; 
-	$obj->verify_signature($msg)	
+	$obj->verify_signature($msg);	
 
 	# TODO: place aliassing code here
 	$msg->link_to_path($obj->{root}."/call/".$msg->escaped_call);
@@ -316,7 +327,7 @@ sub remove_operator {
 sub import_trust {
 	my $obj=shift; 
 	my $msg=shift; 
-	$obj->verify_signature($msg)	
+	$obj->verify_signature($msg);	
 
 	$msg->link_to_path($obj->{root}."/call/".$msg->escaped_call."/trust");
 

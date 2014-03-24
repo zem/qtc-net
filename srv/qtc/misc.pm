@@ -51,7 +51,7 @@ sub scan_dir {
 	
 	@aFiles = grep { ! /^(\.|\.\.)$/ } @aFiles;	# filter . and ..
 
-	return (1, @aFiles);
+	return (@aFiles);
 }
 
 1; 

@@ -280,7 +280,7 @@ sub AUTOLOAD {
 		$msg_types{$obj->{type}}->{$method}->($value);
 		$obj->{$method}=$value; 
 	}
-	return $obj->{method};
+	return $obj->{$method};
 }
 
 # check every value of the object again. especially if the values are set
@@ -392,7 +392,7 @@ sub load_file {
 	my $path=shift; 
 	my $filename=shift; 
 	if ( ! $path ) { die "I need a path to load a message\n"; }
-	if ( -e $path ) { die "Path $path does not exist\n"; } 
+	if ( ! -e $path ) { die "Path $path does not exist\n"; } 
 	$obj->{path}=$path; 
 	if ( ! $filename ) { die "I need a filename\n"; } 
 	my $xml; 	
@@ -420,7 +420,7 @@ sub load_xml {
 	}
 	# as well as checksum and signature 
 	$obj->checksum($xp->getNodeText("qtc/checksum")->value());
-	$obj->signature($xp->getNodeText("qtc/signature")->value());
+	$obj->signature($xp->getNodeText("qtc/signature")->value(), $xp->getNodeText("qtc/signature_key_id")->value());
 	# if we are not dead yet, well done 
 }
 

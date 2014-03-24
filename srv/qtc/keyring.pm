@@ -2,6 +2,7 @@ package qtc::keyring;
 use qtc::msg; 
 use qtc::signature; 
 use File::Basename; 
+use Data::Dumper; 
 use qtc::misc;
 @ISA=(qtc::misc);
 
@@ -33,6 +34,7 @@ sub new {
 sub load_keys {
 	my $obj=shift;
 	my $path=$obj->{root}."/call/".$obj->call2fname($obj->{call})."/pubkey";
+	$obj->ensure_path($path); 
 	foreach my $filename (
 		$obj->scan_dir(
 			$path,
@@ -41,10 +43,12 @@ sub load_keys {
 	) {
 			my $key=qtc::msg->new(path=>$path, filename=>$filename);
 			push @{$obj->{keys}}, $key;
-			if ( $key->key_id eq $key->signature_key_id ) {
-				# this key is self signed and therefor it is a root key
-				$obj->{tree}->{$key->key_id}->{key_obj}=$key; 
-			}
+	}
+	foreach my $key (@{$obj->{keys}}) {
+		if ( $key->key_id eq $key->signature_key_id ) {
+			# this key is self signed and therefor it is a root key
+			$obj->{tree}->{$key->key_id}->{key_obj}=$key; 
+		}
 	}
 	$obj->{selfsigned_to_delete}=[]; 
 	foreach my $key_id (keys %{$obj->{tree}}) {
@@ -74,23 +78,30 @@ sub build_tree {
 	my $obj=shift; 
 	my $hashref=shift; 
 	
+	#print STDERR "Build tree called with: ".Dumper($hashref);
+	#die "uargg"; 
+
 	foreach my $key ($obj->grep_signed_by($hashref->{key_obj}->key_id)) {
 		$hashref->{$key->key_id}->{key_obj}=$key;
 		if ($key->key_id ne $key->signature_key_id ) {
 			# if the key is not self signed we can store this Key ID for later deletion
 			push @{$obj->{selfsigned_to_delete}}, $key->key_id;
 			# key deletion is done in load_keys()
-		}
-		$obj->build_tree($hashref->{$key->key_id});
+			# we can also build a subtree selfsigned keys are ignored if they are not in the tree root
+			$obj->build_tree($hashref->{$key->key_id});
+		} 
 	}
 }
 
 sub validate_tree {
-	my $obj=shift; 
-	if ( $#{$obj->{tree}} == -1 ) { 
+	my $obj=shift;
+
+	my @tree=keys %{$obj->{tree}};
+	if ( $#tree == -1 ) { 
+		print STDERR Dumper($obj);
 		die "Uuuuuuups there are no keys there for $obj->{call}\n";
 	}
-	if ( $#{$obj->{tree}} > 0 ) { 
+	if ( $#tree > 0 ) { 
 		die "There is more than one root in our Tree this can't be\n"; 
 	}
 	# ok here we are
