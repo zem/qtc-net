@@ -11,21 +11,26 @@ my $call="oe1src";
 my $rsa = Crypt::OpenSSL::RSA->generate_key(2048);
 $rsa->use_sha256_hash; 
 my $keystring=$rsa->get_public_key_string;
+#print STDERR $keystring; 
 chomp($keystring); 
-my $key_id=sha256_hex($pubkey);
+$keystring=~s/^(-----BEGIN RSA PUBLIC KEY-----)|(-----END RSA PUBLIC KEY-----)$//g;
+
+my $keydata=decode_base64($keystring) or die "Cant decode keystring\n"; 
+my $key_id=sha256_hex($keydata);
+
 
 my $pubkey=qtc::msg->new(
 	type=>"pubkey",
 	call=>$call,
 	key_type=>"rsa",
 	key_id=>$key_id,
-	key=>$keystring,
+	key=>unpack("H*", $keydata),
 ); 
 
 # selfsign message first
 #print STDERR length($pubkey->checksum)."\n";
 #print STDERR length($rsa->sign($pubkey->checksum.$pubkey->checksum.$pubkey->checksum.$pubkey->checksum.$pubkey->checksum))."\n";
-$pubkey->signature(encode_base64($rsa->sign($pubkey->checksum)), $key_id); 
+$pubkey->signature(unpack("H*", $rsa->sign($pubkey->signed_content_xml)), $key_id); 
 
 my $path=$ENV{HOME}."/.qtc_private";
 

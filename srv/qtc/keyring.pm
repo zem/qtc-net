@@ -125,7 +125,7 @@ sub validate_subtree {
 
 	foreach my $key_id (@key_ids) {
 		my $key=$hashref->{$key_id}->{key_obj}; 
-		my $return=$signature->verify($key->checksum, $key->signature, $key->signature_key_id);
+		my $return=$signature->verify($key->signed_content_xml, $key->signature, $key->signature_key_id);
 		if ( ! $return ) { die "Key with checksum ".$key->checksum." could not be verified\n"; }
 		push 	@{$obj->{keys}}, $key;
 		$obj->{keyhash}->{$key->key_id}=$key;

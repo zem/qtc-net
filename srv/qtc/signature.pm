@@ -24,7 +24,7 @@ sub new {
 
 sub sign {
 	my $obj=shift; 
-	my $checksum=shift;
+	my $signed_content_xml=shift;
 	
 	if ( ! $obj->{privkey} ) { die "I do not know the key to sign with\n"; }
 	if ( 	$obj->{privkey_type} !~ /^(rsa|dsa)$/ ) { die "privkey_type eq $obj->{privkey_type} use rsa|dsa\n"; }
@@ -32,7 +32,7 @@ sub sign {
 		
 		my $rsa=Crypt::OpenSSL::RSA->new_private_key($obj->{privkey}) or die "Can't read use private key\n"; 
 		$rsa->use_sha256_hash; 
-		return encode_base64($rsa->sign($checksum)); 
+		return unpack("H*", $rsa->sign($signed_content_xml)); 
 
 	} elsif ($obj->{privkey_type} eq "dsa") {
 		die "This is possible but not yet implemented \n"; 
@@ -42,20 +42,22 @@ sub sign {
 
 sub verify {
 	my $obj=shift; 
-	my $checksum=shift;
+	my $signed_content_xml=shift;
 	my $signature=shift;
 	my $signature_key_id=shift;
-	#print STDERR "$checksum $signature\n"; 
-	$signature=decode_base64($signature); 
+	#print STDERR "$signed_content_xml $signature\n"; 
+	$signature=pack("H*", $signature); 
 	
 	if ( ! $obj->{pubkey}->{$signature_key_id} ) { die "I do not have a key to verify with\n"; }
 
 	my $pubkey=$obj->{pubkey}->{$signature_key_id};
 
 	if ( $pubkey->key_type eq "rsa" ) {
- 		my $rsa=Crypt::OpenSSL::RSA->new_public_key($pubkey->key) or die "Cant load public Key\n";
+		#print STDERR $obj->prepare_rsa_pubkey($pubkey->key);
+ 		my $rsa=Crypt::OpenSSL::RSA->new_public_key($obj->prepare_rsa_pubkey($pubkey->key)) or die "Cant load public Key\n";
+		#print "foo\n"; 
 		$rsa->use_sha256_hash; 
-		if ($rsa->verify($checksum, $signature)) {
+		if ($rsa->verify($signed_content_xml, $signature)) {
 			#print STDERR "verification succeeded\n"; 
 			return 1;
 		}
@@ -64,6 +66,18 @@ sub verify {
 		die "dsa verification not yet implemented\n"; 
 	}
 	return 0; 
+}
+
+sub prepare_rsa_pubkey {
+	my $obj=shift; 
+	my $key=shift; 
+	return "-----BEGIN RSA PUBLIC KEY-----\n".encode_base64(pack("H*", $key))."-----END RSA PUBLIC KEY-----\n"
+}
+
+sub prepare_dsa_pubkey {
+	my $obj=shift; 
+	my $key=shift; 
+	return "-----BEGIN DSA PUBLIC KEY-----\n".encode_base64(pack("H*", $key))."-----END DSA PUBLIC KEY-----\n"
 }
 
 1; 

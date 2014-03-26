@@ -4,6 +4,7 @@ use Digest::SHA qw(sha256_hex);
 use XML::XPath; 
 use qtc::signature; 
 use File::Basename; 
+use MIME::Base64; 
 use qtc::misc;
 @ISA=(qtc::misc); 
 
@@ -77,18 +78,16 @@ our $valid_signature_type=sub {
 	}
 };
 
-our $valid_key=sub {
+our $valid_hex=sub {
 	$_=shift; 
-	if ( ! /-----BEGIN (RSA)|(DSA) PUBLIC KEY-----.+-----END (RSA)|(DSA) PUBLIC KEY-----/s ) { 
-		die "Invalid public key format\n"; 
+	if ( ! /^([a-f]|[0-9])+$/ ) { 
+		die "Invalid hexadecimal data $_ \n"; 
 	}
 };
 
 our $valid_checksum=sub {
 	$_=shift; 
-	if ( ! /^([a-f]|[0-9])+$/ ) { 
-		die "Invalid checksum format $_ \n"; 
-	}
+	$valid_hex->($_);
 	if ( length != 64 ) { 
 		die "Invalid checksum length $_ \n"; 
 	}
@@ -126,11 +125,11 @@ our %msg_types=(
 	pubkey=>{
 		"key_type"=>$valid_rsa_or_dsa,  
 		"key_id"=>$valid_checksum,  
-		"key"=>$valid_key,
+		"key"=>$valid_hex,
 	},
 	revoke=>{
 		"key_type"=>$valid_rsa_or_dsa,  
-		"key"=>$valid_key,
+		"key"=>$valid_hex,
 	},
 	# trust and untrust users 
 	trust=>{
@@ -179,9 +178,12 @@ sub signature {
 	if ( ! $signature ) {
 		# we may need to sign this object 
 		if ( ! $obj->{signature} ) { die "this object is not signed\n"; }
+		$valid_hex->($obj->{signature}); 
 		return $obj->{signature};
 	} else { 
 		if ( ! $signature_key_id ) { die "this function call also needs a signature key id\n"; }
+		$valid_hex->($signature); 
+		$valid_checksum->($signature_key_id); 
 		$obj->{signature}=$signature; 
 		$obj->{signature_key_id}=$signature_key_id; 
 	}

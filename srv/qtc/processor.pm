@@ -57,7 +57,7 @@ sub verify_signature {
 	my $sig=qtc::signature->new(
 		pubkey=>$obj->keyring($msg)->keyhash,
 	);
-	if (! $sig->verify($msg->checksum, $msg->signature, $msg->signature_key_id) ) { 
+	if (! $sig->verify($msg->signed_content_xml, $msg->signature, $msg->signature_key_id) ) { 
 		die "Signature verification for message ".$msg->checksum." failed\n"; 
 	}
 }
