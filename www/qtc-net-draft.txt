@@ -235,8 +235,8 @@ QSG 2			I am ready, please transmit 2 telegrams at once
 QSG				I am ready to receive all my messages. 
 QSG n			please transmit n messages 
 QSG N			I don't want to hear any message now (N is the letter N) 
-QUA CALL	Telegramm von CALL
-QZA CALL	Telegramm an CALL (importent when you transmit Bulletins or Clubcalls)
+QUA CALL	   Telegramm von CALL
+QZA CALL	    Telegramm an CALL (important when you transmit Bulletins or Clubcalls)
 QOZ				A Message itself maybe referred through a number
 QTA				Cancel this message, I have already heard it. (needs QSK obviously)
 QSL?			have you received everything (may collide with QSL Cards) 
