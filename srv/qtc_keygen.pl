@@ -34,13 +34,15 @@ $pubkey->signature(unpack("H*", $rsa->sign($pubkey->signed_content_xml)), $key_i
 
 my $path=$ENV{HOME}."/.qtc_private";
 
-if ( -e "$path/rsa_$call.key" ) { die "ther is already a key, it may be a bad idea to write a new one\n"; }
+my @dir=$pubkey->scan_dir($path, 'rsa_'.$call.'.*'); 
+if ( $#dir >= 0 ) { die "ther is already a key, it may be a bad idea to write a new one\n"; }
+
 print STDERR "Writing Keys to $path\n"; 
 
 $pubkey->ensure_path($path); 
 $pubkey->to_filesystem($path); 
 
-open(WRITE, "> $path/rsa_$call.key");
+open(WRITE, "> $path/rsa_$call_".$key_id.".key");
 print WRITE $rsa->get_private_key_string; 
 close WRITE;
 

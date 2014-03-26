@@ -1,6 +1,7 @@
 #Signature abstraction module for qtc net. 
 package qtc::signature; 
 use Data::Dumper;
+use File::Basename; 
 
 use Crypt::OpenSSL::RSA;
 use Crypt::OpenSSL::DSA;
@@ -18,21 +19,35 @@ sub new {
 	#       signature verification, ordered by their key ID
 	# expect a privkey string for object signing 
 	# expect a privkey_type = rsa|dsa
+	# and a key_id for signing of data 
+
+	if ( $obj->{privkey_file} ) {
+		open(IN, "< $obj->{privkey_file}") or die "can't read privkey\n"; 
+		$obj->{privkey}=""; 
+		while (<IN>) { $obj->{privkey}.=$_; }
+		close IN; 
+		my $basename=basename($obj->{privkey_file}); 
+		$basename=~s/\.key$//g; 
+		my ($ttyp, $tcall, $tkey_id) = split(/_/, $basename); 
+		if ( ( ! $obj->{privkey_type}) and ( $ttyp) ) {$obj->{privkey_type}=$ttyp; }
+		if ( ( ! $obj->{key_id}) and ( $tkey_id) ) {$obj->{key_id}=$tkey_id; }
+	}
 
 	return $obj; 
 }
 
 sub sign {
 	my $obj=shift; 
-	my $signed_content_xml=shift;
+	my $msg=shift;
 	
 	if ( ! $obj->{privkey} ) { die "I do not know the key to sign with\n"; }
+	if ( ! $obj->{key_id} ) { die "I do not know the key_id to sign with\n"; }
 	if ( 	$obj->{privkey_type} !~ /^(rsa|dsa)$/ ) { die "privkey_type eq $obj->{privkey_type} use rsa|dsa\n"; }
 	if ( $obj->{privkey_type} eq "rsa" ) {
 		
 		my $rsa=Crypt::OpenSSL::RSA->new_private_key($obj->{privkey}) or die "Can't read use private key\n"; 
 		$rsa->use_sha256_hash; 
-		return unpack("H*", $rsa->sign($signed_content_xml)); 
+		$msg->signature(unpack("H*", $rsa->sign($msg->signed_content_xml)), $obj->{key_id}); 
 
 	} elsif ($obj->{privkey_type} eq "dsa") {
 		die "This is possible but not yet implemented \n"; 
