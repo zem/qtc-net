@@ -216,6 +216,17 @@ sub checksum {
 	return $obj->{checksum}
 }
 
+# this is a human readable two digit number to identify 
+# this message between 0 and 99. 
+sub hr_refnum {
+	my $obj=shift; 
+	my $num=hex(substr($obj->checksum, 0, 4));
+	$num=int($num/hex("ffff"))*99;
+	# fill numberstring with zeros
+	while ( length($num) < 2 ) { $num="0".$num; }
+	return $num; 
+}
+
 ##################################################
 # This is the users call which is available in 
 # any QTC Net Message
