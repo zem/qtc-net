@@ -181,7 +181,9 @@ sub import_msg {
 	
 	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/allmsg");
 	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->from)."/sent");
-	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/newmsg");
+	if ( $obj->msg_has_no_qsp($msg) ) {
+		$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/newmsg");
+	}
 	$msg->link_to_path($obj->{root}."/out");
 }
 
@@ -197,6 +199,25 @@ sub remove_msg {
 	$msg->unlink_at_path($obj->{root}."/out");
 }
 
+sub msg_has_no_qsp {
+	my $obj=shift; 
+	my $msg=shift; 
+	
+	my @files=$obj->scan_dir(
+		$obj->{root}."/call/".$obj->call2fname($msg->to)."/qsprcvd",
+		'qsp_([a-z]|[0-9]|-)+_([0-9]|[a-f])+\.xml'
+	);
+	foreach my $file (@files) {
+		my $qsp=qtc::msg->new(
+			path=>$obj->{root}."/call/".$obj->call2fname($msg->to)."/qsprcvd",
+			filename=>$file,
+		); 
+		#print "Compare ".$qsp->msg_checksum." and ".$msg->checksum."\n"; 
+		if ($qsp->msg_checksum eq $msg->checksum) { return 0; }
+	}
+	return 1; 
+}
+
 
 sub import_qsp {
 	my $obj=shift; 
@@ -207,10 +228,10 @@ sub import_qsp {
 	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/qsprcvd");
 	my @newmsgs=$obj->scan_dir(
 		$obj->{root}."/call/".$obj->call2fname($msg->to)."/newmsg",
-		"msg_([a-z]|[0-9]|\/)+_".$msg->msg_checksum.".xml"
+		"msg_([a-z]|[0-9]|-)+_".$msg->msg_checksum.".xml"
 	);
 	foreach my $newmsg (@newmsgs) {
-		unlink($newmsg) or die "removing of transmitted message failed"; 
+		unlink($obj->{root}."/call/".$obj->call2fname($msg->to)."/newmsg/".$newmsg) or die "removing of transmitted message $newmsg failed"; 
 	}
 	$msg->link_to_path($obj->{root}."/out");
 }

@@ -223,7 +223,7 @@ sub checksum {
 sub hr_refnum {
 	my $obj=shift; 
 	my $num=hex(substr($obj->checksum, 0, 4));
-	$num=int($num/hex("ffff"))*99;
+	$num=int(($num/hex("ffff"))*99);
 	# fill numberstring with zeros
 	while ( length($num) < 2 ) { $num="0".$num; }
 	return $num; 
@@ -421,7 +421,7 @@ sub load_file {
 sub load_xml {
 	my $obj=shift; 
 	my $xml=shift; 
-	print $xml; 
+	#print $xml; 
 	if ( ! $xml ) { die "I need some xml data \n"; } 
 	my $xp=XML::XPath->new(xml=>$xml) or die "can't create XPath object from message\n"; 
 	# let us store the common values
