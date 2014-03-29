@@ -118,8 +118,8 @@ our %msg_types=(
 	# aliases and delivery lists 
 	operator=>{
 		"record_date"=>$valid_date, 
-		"set_of_aliases"=>$valid_callset, 
-		"set_of_lists"=>$valid_callset,
+		"set_of_aliases"=>[$valid_call], 
+		"set_of_lists"=>[$valid_call],
 	}, 
 	# keystorage
 	pubkey=>{
@@ -134,6 +134,7 @@ our %msg_types=(
 	# trust and untrust users 
 	trust=>{
 		"trustlevel"=>$valid_trustlevel,
+		"set_of_key_ids"=>[$valid_checksum],
 	},
 );
 
@@ -281,19 +282,27 @@ sub has_valid_type {
 our $AUTOLOAD; 
 sub AUTOLOAD {
 	my $obj=shift; 
-	my $value=shift;
 	my $method=$AUTOLOAD =~ s/.*:://r; 
 	$obj->has_valid_type; 
 	# check if the field is valid
 	if ( ! $msg_types{$obj->{type}}->{$method} ) { 
 		die "Unknown method $method please set one of the known for ".$obj->{type}." \n"; 
 	}
-	if ( $value ) { 
-		# We have to check the validity of the value
-		$msg_types{$obj->{type}}->{$method}->($value);
-		$obj->{$method}=$value; 
+	if ( ref($msg_types{$obj->{type}}->{$method}) eq "ARRAY" ) {
+		foreach my $dat ( @_ ) {
+			# We have to check the validity of the value
+			$msg_types{$obj->{type}}->{$method}->[0]->($dat);
+			push @{$obj->{$method}}, $dat;
+		}
+		return @{$obj->{$method}};
+	} else {
+		if ( $_[0] ) { 
+			# We have to check the validity of the value
+			$msg_types{$obj->{type}}->{$method}->($_[0]);
+			$obj->{$method}=$_[0]; 
+		}
+		return $obj->{$method};
 	}
-	return $obj->{$method};
 }
 
 # check every value of the object again. especially if the values are set
@@ -302,9 +311,24 @@ sub is_object_valid {
 	$obj->has_valid_type; 
 	$valid_call->($obj->{call}); 
 	foreach my $field (keys %{$msg_types{$obj->{type}}}) {
-		#DEBUG print STDERR $field."\n" ; 
+		#DEBUG print STDERR $field."\n" ;
+		$obj->is_field_valid($field); 
+	}
+}
+
+sub is_field_valid {
+	my $obj=shift; 
+	my $field=shift; 
+	$obj->has_valid_type; 
+
+	if ( ref($msg_types{$obj->{type}}->{$field}) eq "ARRAY" ) {
+		foreach my $dat (@{$obj->{field}}) { 
+			$msg_types{$obj->{type}}->{$field}->[0]->($dat); 
+		}
+	} else {
 		$msg_types{$obj->{type}}->{$field}->($obj->{$field});
 	}
+
 }
 
 ################################################################
@@ -321,8 +345,13 @@ sub signed_content_xml {
 	
 	my $ret="<".$obj->{type}.">";
 	foreach my $field (sort keys %{$msg_types{$obj->{type}}}) {
-		$msg_types{$obj->{type}}->{$field}->($obj->{$field});
-		$ret.="<$field>".$obj->{$field}."</$field>"; 
+		if ( ref($msg_types{$obj->{type}}->{$field}) eq "ARRAY" ) { 
+			foreach my $dat (@{$obj->{$field}}) {
+				$ret.="<$field>".$dat."</$field>"; 
+			}
+		} else {
+			$ret.="<$field>".$obj->{$field}."</$field>"; 
+		}
 	}
 	$ret.="</".$obj->{type}.">";
 }
@@ -429,7 +458,14 @@ sub load_xml {
 	$obj->type($xp->getNodeText("qtc/type")->value());
 	# we will copy every field then 
 	foreach my $field (sort keys %{$msg_types{$obj->type}}) {
-		$obj->{$field}=$xp->getNodeText("qtc/".$obj->type."/".$field)->value();
+		if ( ref($msg_types{$obj->{type}}->{$field}) eq "ARRAY" ) {
+			my @nodes=$xp->findnodes("qtc/".$obj->type."/".$field);
+			foreach my $node (@nodes) {
+				push @{$obj->{$field}}, $node->string_value; 
+			}
+		} else {
+			$obj->{$field}=$xp->getNodeText("qtc/".$obj->type."/".$field)->value();
+		}
 	}
 	# as well as checksum and signature 
 	$obj->checksum($xp->getNodeText("qtc/checksum")->value());
