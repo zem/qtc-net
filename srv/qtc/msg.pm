@@ -4,7 +4,6 @@ use Digest::SHA qw(sha256_hex);
 use XML::XPath; 
 use qtc::signature; 
 use File::Basename; 
-use MIME::Base64; 
 use qtc::misc;
 @ISA=(qtc::misc); 
 
@@ -101,18 +100,19 @@ our $valid_checksum=sub {
 #
 # Basically it is {messagetypename}->¬{fieldname}->{validitycheckptr}
 ################################################################################################
+# or msg_layout
 our %msg_types=(
 	# this is the message itself with required fields
-	msg=>{
-		"msg_date"=>$valid_date, 
+	telegram=>{
+		"telegram_date"=>$valid_date, 
 		"from"=>$valid_call, 
 		"to"=>$valid_call, 
-		"msg"=>$valid_msg,
+		"telegram"=>$valid_msg,
 	}, 
 	# this is the qsp info where data is stored
 	qsp=>{
 		"qsl_date"=>$valid_date, 
-		"msg_checksum"=>$valid_checksum,
+		"telegram_checksum"=>$valid_checksum,
 		"to"=>$valid_call,  #the to field is important for lists 
 	}, 
 	# aliases and delivery lists 
@@ -129,6 +129,7 @@ our %msg_types=(
 	},
 	revoke=>{
 		"key_type"=>$valid_rsa_or_dsa,  
+		"key_id"=>$valid_checksum,  
 		"key"=>$valid_hex,
 	},
 	# trust and untrust users 
@@ -137,6 +138,114 @@ our %msg_types=(
 		"set_of_key_ids"=>[$valid_checksum],
 	},
 );
+
+
+#########################################################################
+# enumerations are to order the identification numbers of fields 
+# from 0 to n 
+#########################################################################
+our %msg_data_types=(
+	"type"=>{
+		enum=>1,
+		data_type=>"enumeration",
+		values=>[
+			"telegram",
+			"qsp",
+			"operator",
+			"pubkey",
+			"revoke",
+			"trust",
+		],
+	},
+	"version"=>{
+		enum=>2,
+		data_type=>"integer",
+	},
+	"call"=>{
+		enum=>3,
+		data_type=>"string",
+	}, 
+	"signature"=>{
+		enum=>4,
+		data_type=>"binary",
+	}, 
+	"signature_key_id"=>{
+		enum=>5,
+		data_type=>"binary",
+	},
+	"checksum"=>{
+		enum=>6,
+		data_type=>"binary",
+	},
+	"from"=>{
+		enum=>7,
+		data_type=>"string",
+	}, 
+	"to"=>{
+		enum=>8,
+		data_type=>"string",
+	},
+	"telegram_date"=>{
+		enum=>9,
+		data_type=>"integer",
+	},
+	"telegram"=>{
+		enum=>10,
+		data_type=>"string",
+	},
+	"qsl_date"=>{
+		enum=>11,
+		data_type=>"integer",
+	},
+	"telegram_checksum"=>{
+		enum=>12,
+		data_type=>"binary",
+	},
+	"record_date"=>{
+		enum=>13,
+		data_type=>"integer",
+	}, 
+	"set_of_aliases"=>{
+		enum=>14,
+		data_type=>"string",
+		multiple_times=>1,
+	}, 
+	"set_of_lists"=>{
+		enum=>15,
+		data_type=>"string",
+		multiple_times=>1,
+	}, 
+	"key_type"=>{
+		enum=>16,
+		data_type=>"enumeration",
+		values=>["rsa", "dsa"],
+	}, 
+	"key_id"=>{
+		enum=>17,
+		data_type=>"binary",
+	}, 
+	"key"=>{
+		enum=>18,
+		data_type=>"binary",
+	}, 
+	"trustlevel"=>{
+		enum=>19,
+		data_type=>"signedinteger",
+	},
+	"set_of_key_ids"=>{
+		enum=>20,
+		data_type=>"binary",
+		multiple_times=>1,
+	},
+);
+
+
+###################################################
+# Data Storage Types
+###################################################
+# binary
+# integer
+# string
 
 sub new { 
 	my $class=shift; 
