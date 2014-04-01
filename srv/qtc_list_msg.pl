@@ -9,7 +9,7 @@ my $misc=qtc::misc->new();
 my $call="oe1gis"; 
 
 my @msgs;
-foreach my $file ($misc->scan_dir($ENV{HOME}."/.qtc/call/$call/newmsg", '.+\.xml')){
+foreach my $file ($misc->scan_dir($ENV{HOME}."/.qtc/call/$call/newmsg", '.+\.qtc')){
 	push @msgs, qtc::msg->new(path=>$ENV{HOME}."/.qtc/call/$call/newmsg", filename=>$file); 
 }
 
@@ -24,7 +24,7 @@ foreach my $msg (@msgs) {
 	print "Date:\t".strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($msg->msg_date))."\n"; 
 	print "from:\t".$msg->from."\n"; 
 	print "to:\t".$msg->to."\n"; 
-	print "text:\t".$msg->msg."\n"; 
+	print "text:\t".$msg->telegram."\n"; 
 	print "\n"; 
 }
 

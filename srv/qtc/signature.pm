@@ -47,7 +47,7 @@ sub sign {
 		
 		my $rsa=Crypt::OpenSSL::RSA->new_private_key($obj->{privkey}) or die "Can't read use private key\n"; 
 		$rsa->use_sha256_hash; 
-		$msg->signature(unpack("H*", $rsa->sign($msg->signed_content_xml)), $obj->{key_id}); 
+		$msg->signature(unpack("H*", $rsa->sign($msg->signed_content_bin)), $obj->{key_id}); 
 
 	} elsif ($obj->{privkey_type} eq "dsa") {
 		die "This is possible but not yet implemented \n"; 
@@ -57,10 +57,10 @@ sub sign {
 
 sub verify {
 	my $obj=shift; 
-	my $signed_content_xml=shift;
+	my $signed_content_bin=shift;
 	my $signature=shift;
 	my $signature_key_id=shift;
-	#print STDERR "$signed_content_xml $signature\n"; 
+	#print STDERR "$signed_content_bin $signature\n"; 
 	$signature=pack("H*", $signature); 
 	
 	if ( ! $obj->{pubkey}->{$signature_key_id} ) { die "I do not have a key to verify with\n"; }
@@ -72,7 +72,7 @@ sub verify {
  		my $rsa=Crypt::OpenSSL::RSA->new_public_key($obj->prepare_rsa_pubkey($pubkey->key)) or die "Cant load public Key\n";
 		#print "foo\n"; 
 		$rsa->use_sha256_hash; 
-		if ($rsa->verify($signed_content_xml, $signature)) {
+		if ($rsa->verify($signed_content_bin, $signature)) {
 			#print STDERR "verification succeeded\n"; 
 			return 1;
 		}

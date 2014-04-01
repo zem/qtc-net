@@ -8,12 +8,10 @@ sub dprint {
 	print @_; 
 }
 #print "hi\n"; 
-my $msg=qtc::msg->new(call=>"oe1src", type=>"msg"); 
+my $msg=qtc::msg->new(call=>"oe1src", type=>"telegram"); 
 
 dprint "have obj set date \n"; 
-$msg->msg_date($msg->rcvd_date); 
-dprint "serial \n"; 
-$msg->msg_serial(1); 
+$msg->telegram_date($msg->rcvd_date); 
 dprint "from \n"; 
 $msg->from("oe1xgb"); 
 dprint "to \n"; 

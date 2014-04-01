@@ -30,7 +30,7 @@ my $pubkey=qtc::msg->new(
 # selfsign message first
 #print STDERR length($pubkey->checksum)."\n";
 #print STDERR length($rsa->sign($pubkey->checksum.$pubkey->checksum.$pubkey->checksum.$pubkey->checksum.$pubkey->checksum))."\n";
-$pubkey->signature(unpack("H*", $rsa->sign($pubkey->signed_content_xml)), $key_id); 
+$pubkey->signature(unpack("H*", $rsa->sign($pubkey->signed_content_bin)), $key_id); 
 
 my $path=$ENV{HOME}."/.qtc_private";
 

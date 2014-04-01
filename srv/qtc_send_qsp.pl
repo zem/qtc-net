@@ -20,7 +20,7 @@ my $number = $term->readline("number: ");
 
 # ok lets find the message to approve.....
 my @msgs;
-foreach my $file ($misc->scan_dir($ENV{HOME}."/.qtc/call/$to/newmsg", '.+\.xml')){
+foreach my $file ($misc->scan_dir($ENV{HOME}."/.qtc/call/$to/newmsg", '.+\.qtc')){
 	push @msgs, qtc::msg->new(path=>$ENV{HOME}."/.qtc/call/$to/newmsg", filename=>$file); 
 }
 
@@ -37,7 +37,7 @@ my $qsp=qtc::msg->new(
 	call=>"oe1src",
 	qsl_date=>time,
 	to=>$to,
-	msg_checksum=>$qtc->checksum, 
+	telegram_checksum=>$qtc->checksum, 
 );
 $signature->sign($qsp); 
 

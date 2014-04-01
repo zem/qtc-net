@@ -38,7 +38,7 @@ sub load_keys {
 	foreach my $filename (
 		$obj->scan_dir(
 			$path,
-			'.*\.xml',
+			'.*\.qtc',
 		) 
 	) {
 			my $key=qtc::msg->new(path=>$path, filename=>$filename);
@@ -125,7 +125,7 @@ sub validate_subtree {
 
 	foreach my $key_id (@key_ids) {
 		my $key=$hashref->{$key_id}->{key_obj}; 
-		my $return=$signature->verify($key->signed_content_xml, $key->signature, $key->signature_key_id);
+		my $return=$signature->verify($key->signed_content_bin, $key->signature, $key->signature_key_id);
 		if ( ! $return ) { die "Key with checksum ".$key->checksum." could not be verified\n"; }
 		push 	@{$obj->{keys}}, $key;
 		$obj->{keyhash}->{$key->key_id}=$key;

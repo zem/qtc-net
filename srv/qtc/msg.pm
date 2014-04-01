@@ -1,9 +1,9 @@
 package qtc::msg; 
 #use POSIX qw(strftime);
 use Digest::SHA qw(sha256_hex);
-use XML::XPath; 
 use qtc::signature; 
 use File::Basename; 
+use qtc::binary; 
 use qtc::misc;
 @ISA=(qtc::misc); 
 
@@ -140,127 +140,28 @@ our %msg_types=(
 );
 
 
-#########################################################################
-# enumerations are to order the identification numbers of fields 
-# from 0 to n 
-#########################################################################
-our %msg_data_types=(
-	"type"=>{
-		enum=>1,
-		data_type=>"enumeration",
-		values=>[
-			"telegram",
-			"qsp",
-			"operator",
-			"pubkey",
-			"revoke",
-			"trust",
-		],
-	},
-	"version"=>{
-		enum=>2,
-		data_type=>"integer",
-	},
-	"call"=>{
-		enum=>3,
-		data_type=>"string",
-	}, 
-	"signature"=>{
-		enum=>4,
-		data_type=>"binary",
-	}, 
-	"signature_key_id"=>{
-		enum=>5,
-		data_type=>"binary",
-	},
-	"checksum"=>{
-		enum=>6,
-		data_type=>"binary",
-	},
-	"from"=>{
-		enum=>7,
-		data_type=>"string",
-	}, 
-	"to"=>{
-		enum=>8,
-		data_type=>"string",
-	},
-	"telegram_date"=>{
-		enum=>9,
-		data_type=>"integer",
-	},
-	"telegram"=>{
-		enum=>10,
-		data_type=>"string",
-	},
-	"qsl_date"=>{
-		enum=>11,
-		data_type=>"integer",
-	},
-	"telegram_checksum"=>{
-		enum=>12,
-		data_type=>"binary",
-	},
-	"record_date"=>{
-		enum=>13,
-		data_type=>"integer",
-	}, 
-	"set_of_aliases"=>{
-		enum=>14,
-		data_type=>"string",
-		multiple_times=>1,
-	}, 
-	"set_of_lists"=>{
-		enum=>15,
-		data_type=>"string",
-		multiple_times=>1,
-	}, 
-	"key_type"=>{
-		enum=>16,
-		data_type=>"enumeration",
-		values=>["rsa", "dsa"],
-	}, 
-	"key_id"=>{
-		enum=>17,
-		data_type=>"binary",
-	}, 
-	"key"=>{
-		enum=>18,
-		data_type=>"binary",
-	}, 
-	"trustlevel"=>{
-		enum=>19,
-		data_type=>"signedinteger",
-	},
-	"set_of_key_ids"=>{
-		enum=>20,
-		data_type=>"binary",
-		multiple_times=>1,
-	},
-);
-
-
 ###################################################
 # Data Storage Types
 ###################################################
 # binary
 # integer
 # string
-
 sub new { 
 	my $class=shift; 
 	my %parm=(@_); 
 	my $obj=bless \%parm, $class; 
+	$obj->{bin}=qtc::binary->new(msg=>$obj);
 	if ($obj->{filename} and $obj->{path}) { 
 		# try loading data from file
 		$obj->load_file($obj->{path}, $obj->{filename}); 
-	} elsif ($obj->{xml}) { 
+	} elsif ($obj->{hex}) { 
 		# try loading data from string
-		$obj->load_xml($obj->{xml}); 
+		$obj->bin->parse($obj->{hex}); 
 	}
 	return $obj; 
 }
 
+sub bin { my $obj=shift; return $obj->{bin}; }
 
 ########################################################
 # The method calls can either set or receive values
@@ -319,10 +220,10 @@ sub checksum {
 		if ( $checksum ) { 
 			$obj->{checksum}=$checksum; 
 		} else {
-			$obj->{checksum}=sha256_hex($obj->signed_content_xml);
+			$obj->{checksum}=sha256_hex($obj->signed_content_bin);
 		}
 	} 
-	if ($obj->{checksum}!=sha256_hex($obj->signed_content_xml)) {
+	if ($obj->{checksum}!=sha256_hex($obj->signed_content_bin)) {
 		die "object checksum mismatch\n"; 
 	} 
 	return $obj->{checksum}
@@ -447,55 +348,39 @@ sub is_field_valid {
 }
 
 ################################################################
-# The data that is going to be signed is represented as XML 
-# parseable but without namespacing, pi, header and spaces 
-# between the elements  even if there may some other 
-# message formats available, signatures should always be done 
-# in this format.  
+# this is the hexadecimal part of the package that should be signed 
+# don't forget to unpack before doing the signature
 ################################################################
-sub signed_content_xml {
-	# TO be implementes
+sub signed_content_hex {
 	my $obj=shift; 
 	$obj->is_object_valid;
-	
-	my $ret="<".$obj->{type}.">";
-	foreach my $field (sort keys %{$msg_types{$obj->{type}}}) {
-		if ( ref($msg_types{$obj->{type}}->{$field}) eq "ARRAY" ) { 
-			foreach my $dat (@{$obj->{$field}}) {
-				$ret.="<$field>".$dat."</$field>"; 
-			}
-		} else {
-			$ret.="<$field>".$obj->{$field}."</$field>"; 
-		}
-	}
-	$ret.="</".$obj->{type}.">";
+	return $obj->bin->gen_hex_payload("type", "call", sort keys %{$msg_types{$obj->{type}}});
 }
 
-sub as_xml {
-	# TO be implementes
+sub signed_content_bin {
+	my $obj=shift; 
+	return pack("H*", $obj->signed_content_hex);
+}
+
+sub as_hex {
 	my $obj=shift; 
 	$obj->is_object_valid;
-	
-	my $ret="<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-	$ret.="<qtc>\n"; 
-	$ret.="<version>".$obj->version."</version>\n";	
-	#$ret.="<rcvd_date>".$obj->rcvd_date."</rcvd_date>\n";	
-	$ret.="<call>".$obj->call."</call>\n";	
-	$ret.="<type>".$obj->type."</type>\n";	
-	$ret.="<signature>".$obj->signature."</signature>\n";	
-	$ret.="<signature_key_id>".$obj->signature_key_id."</signature_key_id>\n";	
-	$ret.="<checksum>".$obj->checksum."</checksum>\n";	
-	$ret.=$obj->signed_content_xml."\n"; 
-	$ret.="</qtc>\n"; 
-
-	return $ret; 
+	return $obj->bin->gen_hex_msg(
+		"version", 
+		"signature", 
+		"signature_key_id", 
+		"type", 
+		"call", 
+		sort keys %{$msg_types{$obj->{type}}}
+	);
 }
+
 
 sub filename {
 	my $obj=shift;
 	$obj->is_object_valid;
 	
-	my $filename=$obj->type."_".$obj->escaped_call."_".$obj->checksum.".xml";
+	my $filename=$obj->type."_".$obj->escaped_call."_".$obj->checksum.".qtc";
 
 	if ( ! $obj->{filename} ) { 
 		$obj->{filename}=$filename; 
@@ -515,7 +400,7 @@ sub to_filesystem {
 	$obj->{path}=$path; 
 	
 	open(WRITE, "> ".$path."/.".$filename.".tmp") or die "cant open $path/$filename\n"; 
-	print WRITE $obj->as_xml or die "Can't write data to disk\n"; 
+	print WRITE pack("H*", $obj->as_hex) or die "Can't write data to disk\n"; 
 	close(WRITE); 
 	link($path."/.".$filename.".tmp", $path."/".$filename) or die "Can't link to path\n"; 
 	unlink($path."/.".$filename.".tmp") or die "Can't unlink tmpfile, this should never happen\n"; 
@@ -552,139 +437,15 @@ sub load_file {
 	if ( ! -e $path ) { die "Path $path does not exist\n"; } 
 	$obj->{path}=$path; 
 	if ( ! $filename ) { die "I need a filename\n"; } 
-	my $xml; 	
+	my $bin; 	
 
 	open(READ, "< $path/$filename") or die "cant open $filename\n"; 
-	while(<READ>) { $xml.=$_; }
+	while(<READ>) { $bin.=$_; }
 	close(READ); 
 
-	$obj->load_xml($xml); 
-}
-
-# load data from string or filesystem 
-sub load_xml {
-	my $obj=shift; 
-	my $xml=shift; 
-	#print $xml; 
-	if ( ! $xml ) { die "I need some xml data \n"; } 
-	my $xp=XML::XPath->new(xml=>$xml) or die "can't create XPath object from message\n"; 
-	# let us store the common values
-	$obj->call($xp->getNodeText("qtc/call")->value());
-	$obj->type($xp->getNodeText("qtc/type")->value());
-	# we will copy every field then 
-	foreach my $field (sort keys %{$msg_types{$obj->type}}) {
-		if ( ref($msg_types{$obj->{type}}->{$field}) eq "ARRAY" ) {
-			my @nodes=$xp->findnodes("qtc/".$obj->type."/".$field);
-			foreach my $node (@nodes) {
-				push @{$obj->{$field}}, $node->string_value; 
-			}
-		} else {
-			$obj->{$field}=$xp->getNodeText("qtc/".$obj->type."/".$field)->value();
-		}
-	}
-	# as well as checksum and signature 
-	$obj->checksum($xp->getNodeText("qtc/checksum")->value());
-	$obj->signature($xp->getNodeText("qtc/signature")->value(), $xp->getNodeText("qtc/signature_key_id")->value());
-	# if we are not dead yet, well done 
+	$obj->bin->parse(unpack("H*", $bin); 
 }
 
 
-
-######################################################################################################
-# functions to create binary format 
-######################################################################################################
-#returns the index number of an array (maybe there is a better function i did not found) 
-sub enum_array {
-	my $obj=shift;
-	my $idx=shift;
-	my @keys=shift;
-	my $cnt=1; 
-	foreach my $key (@keys) {
-		if ( $key eq $idx ) { return $cnt; }
-		$cnt++;
-	}
-	die "I could not find Index for $idx in array\n"; 
-}
-
-# gets one hexadecimal byte + returns the right part of that string
-sub pull_byte {
-	my $obj=shift; 
-	my $hex=shift; 
-	return (substr($hex, 0, 2), substr($hex, 2)); 
-}
-
-sub pull_data {
-	my $obj=shift;
-	my $len=shift;  
-	my $hex=shift;
-	return (substr($hex, 0, $len*2), substr($hex, $len*2)); 
-}
-
-# get the number of a field or its length out of the hex data stream.... 
-sub get_key {
-	my $obj=shift;
-	my ($key, $hex)=$obj->pull_byte(shift);
-	# i hope that this is platform independent 
-	my $val=unpack("C*", pack("H*", $key));
-	if ( $val >= 0x80 ) {
-		return $val-0x80, $hex;
-	} elsif ( $val >= 0x40 ) {
-		($x, $hex)=$obj->pull_byte($hex);
-		$key.=$x;
-		$val=unpack("S>*", pack("H*", $key))-0x4000;
-		return $val, $hex;
-	} elsif ( $val >= 0x20 ) {
-		($x, $hex)=$obj->pull_byte($hex);
-		$key.=$x;
-		($x, $hex)=$obj->pull_byte($hex);
-		$key.=$x;
-		$val=unpack("I>*", pack("H*", $key))-0x200000;
-		return $val, $hex;
-	} elsif ( $val >= 0x10 ) {
-		($x, $hex)=$obj->pull_byte($hex);
-		$key.=$x;
-		($x, $hex)=$obj->pull_byte($hex);
-		$key.=$x;
-		($x, $hex)=$obj->pull_byte($hex);
-		$key.=$x;
-		$val=unpack("I>*", pack("H*", $key))-0x10000000;
-		return $val, $hex;
-	}
-	die "we have a problem here, because a number is larger than we can detect. a better implementation is needed\n";
-}
-
-# creates a hexadecimal key (either id or length)  
-sub create_key {
-	my $obj=shift;
-	my $int=shift;
-	
-	if ( $int < 0x80 ) { 
-		# easy
-		return unpack("H*", pack("C*", ($int+0x80)));		
-	} elsif ( $int < 0x4000 ) {
-			return substr(
-				unpack(
-					"H*", 
-					pack("L>*" ($int+0x4000))
-				),
-				4
-			);
-	} elsif ( $int < 0x200000 ) {
-			return substr(
-				unpack(
-					"H*", 
-					pack("L>*" ($int+0x200000))
-				),
-				2
-			)
-		);
-	} elsif ( $int < 0x10000000 ) {
-		return unpack(
-			"H*", 
-			pack("L>*" ($int+0x10000000))
-		);
-	}
-	die "we have a problem here, because a number is larger than we can encode. a better implementation is needed\n";
-}
 
 1; 

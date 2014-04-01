@@ -18,12 +18,12 @@ my $to = $term->readline("to call: ");
 my $msg = $term->readline("message: ");
 
 my $msg=qtc::msg->new(
-	type=>"msg",
+	type=>"telegram",
 	call=>"oe1src",
-	msg_date=>time,
+	telegram_date=>time,
 	from=>$from, 
 	to=>$to,
-	msg=>$msg,
+	telegram=>$msg,
 );
 $signature->sign($msg); 
 
