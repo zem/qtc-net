@@ -1,0 +1,7 @@
+#librpc-xml-perl
+#libxml-xpath-perl
+#libclass-dbi-sqlite-perl
+libcrypt-openssl-rsa-perl
+libcrypt-openssl-dsa-perl
+libdigest-sha-perl
+MIME::Base64
