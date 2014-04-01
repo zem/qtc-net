@@ -582,4 +582,103 @@ sub load_xml {
 	# if we are not dead yet, well done 
 }
 
+
+
+######################################################################################################
+# functions to create binary format 
+######################################################################################################
+#returns the index number of an array (maybe there is a better function i did not found) 
+sub enum_array {
+	my $obj=shift;
+	my $idx=shift;
+	my @keys=shift;
+	my $cnt=1; 
+	foreach my $key (@keys) {
+		if ( $key eq $idx ) { return $cnt; }
+		$cnt++;
+	}
+	die "I could not find Index for $idx in array\n"; 
+}
+
+# gets one hexadecimal byte + returns the right part of that string
+sub pull_byte {
+	my $obj=shift; 
+	my $hex=shift; 
+	return (substr($hex, 0, 2), substr($hex, 2)); 
+}
+
+sub pull_data {
+	my $obj=shift;
+	my $len=shift;  
+	my $hex=shift;
+	return (substr($hex, 0, $len*2), substr($hex, $len*2)); 
+}
+
+# get the number of a field or its length out of the hex data stream.... 
+sub get_key {
+	my $obj=shift;
+	my ($key, $hex)=$obj->pull_byte(shift);
+	# i hope that this is platform independent 
+	my $val=unpack("C*", pack("H*", $key));
+	if ( $val >= 0x80 ) {
+		return $val-0x80, $hex;
+	} elsif ( $val >= 0x40 ) {
+		($x, $hex)=$obj->pull_byte($hex);
+		$key.=$x;
+		$val=unpack("S>*", pack("H*", $key))-0x4000;
+		return $val, $hex;
+	} elsif ( $val >= 0x20 ) {
+		($x, $hex)=$obj->pull_byte($hex);
+		$key.=$x;
+		($x, $hex)=$obj->pull_byte($hex);
+		$key.=$x;
+		$val=unpack("I>*", pack("H*", $key))-0x200000;
+		return $val, $hex;
+	} elsif ( $val >= 0x10 ) {
+		($x, $hex)=$obj->pull_byte($hex);
+		$key.=$x;
+		($x, $hex)=$obj->pull_byte($hex);
+		$key.=$x;
+		($x, $hex)=$obj->pull_byte($hex);
+		$key.=$x;
+		$val=unpack("I>*", pack("H*", $key))-0x10000000;
+		return $val, $hex;
+	}
+	die "we have a problem here, because a number is larger than we can detect. a better implementation is needed\n";
+}
+
+# creates a hexadecimal key (either id or length)  
+sub create_key {
+	my $obj=shift;
+	my $int=shift;
+	
+	if ( $int < 0x80 ) { 
+		# easy
+		return unpack("H*", pack("C*", ($int+0x80)));		
+	} elsif ( $int < 0x4000 ) {
+			return substr(
+				unpack(
+					"H*", 
+					pack("L>*" ($int+0x4000))
+				),
+				4
+			);
+	} elsif ( $int < 0x200000 ) {
+			return substr(
+				unpack(
+					"H*", 
+					pack("L>*" ($int+0x200000))
+				),
+				2
+			)
+		);
+	} elsif ( $int < 0x10000000 ) {
+		return unpack(
+			"H*", 
+			pack("L>*" ($int+0x10000000))
+		);
+	}
+	die "we have a problem here, because a number is larger than we can encode. a better implementation is needed\n";
+}
+
 1; 
