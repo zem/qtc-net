@@ -332,4 +332,24 @@ sub parse {
 	}
 }
 
+sub gen_hex_payload { 
+	my $obj=shift;
+	my @fields=@_; 
+	my $ret; 
+	
+	foreach my $field (@fields) {
+		foreach my $data ($obj->msg->get($field)) {
+			$ret.=$obj->mk_field($field, $data);
+		} 
+	}
+	return $ret; 
+}	
+
+sub gen_hex_msg { 
+	my $obj=shift;
+	my @fields=@_; 
+	my $ret=$obj->gen_hex_payload(@fields); 
+	return unpack("H*", $magic).$obj->create_key((length($ret)/2)).$ret;
+}	
+
 1; 

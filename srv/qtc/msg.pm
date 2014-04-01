@@ -392,6 +392,12 @@ our $AUTOLOAD;
 sub AUTOLOAD {
 	my $obj=shift; 
 	my $method=$AUTOLOAD =~ s/.*:://r; 
+	return $obj->get($method); 
+}
+
+sub get {
+	my $obj=shift; 
+	my $method=shift; 
 	$obj->has_valid_type; 
 	# check if the field is valid
 	if ( ! $msg_types{$obj->{type}}->{$method} ) { 
