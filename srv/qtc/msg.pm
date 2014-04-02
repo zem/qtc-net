@@ -541,3 +541,11 @@ sub load_file {
 
 
 1; 
+
+=pod
+
+=head1 AUTHOR
+
+Hans Freitag <oe1src@oevsv.at>
+
+=cut
