@@ -248,22 +248,19 @@ parse, and build the qtc-net binary messages, as hex stream.
 #------------------------------------------------------------------------------------
 sub bin { my $obj=shift; return $obj->{bin}; }
 
-########################################################
-# The method calls can either set or receive values
-#######################################################
-sub rcvd_date {
-	my $obj=shift;
-	my $t=shift; 
-	if ( $t ) { 
-		$valid_date->($t);
-		$obj->{rcvd_date} = $t;
-	}
-	if ( ! $obj->{rcvd_date} ) {
-		$obj->{rcvd_date}=time;
-	}
-	return $obj->{rcvd_date}
-}
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 bin()
+
+Returns: the qtc::binary object, connected to this qtc::msg
+
+The qtc::binary object is holding all the function calls to 
+parse, and build the qtc-net binary messages, as hex stream. 
+
+=cut
+#------------------------------------------------------------------------------------
 ################################################
 # There is a big TODO here with the signature
 # so atm this will be empty 
@@ -548,4 +545,9 @@ sub load_file {
 
 Hans Freitag <oe1src@oevsv.at>
 
+=head1 LICENCE
+
+GPL v3
+
 =cut
+
