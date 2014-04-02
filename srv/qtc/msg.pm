@@ -38,6 +38,9 @@ set or read the values of a message.
 All binary data is usually stored in hexadecimal big endian within the object, 
 to make handling with perl easier.
 
+this object dies in case of any error, the caller should take care of that. 
+(with eval {}) ; 
+
 =cut
 #-----------------------------------------------------------------------------------
 
@@ -136,6 +139,18 @@ our $valid_checksum=sub {
 };
 
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 our %msg_types
+
+this is an object variable that defines how the messages are structured. A look into 
+the Source code will help you thith that. A message has fixed fields like call, signature, 
+signature_key_id, checksum, type, version as well as some type specific fields depending 
+on the value of the type field. Those type specific fields are defined in %msg_types
+
+=cut
+#------------------------------------------------------------------------------------
 ################################################################################################
 # There are several message types in QTC net, all of them are electronically signed by the 
 # sender. 
@@ -183,12 +198,27 @@ our %msg_types=(
 );
 
 
-###################################################
-# Data Storage Types
-###################################################
-# binary
-# integer
-# string
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 new(parameter=>"value" ...)
+
+Parameters: path=>$path, filename=>$filename, hex=>$hexstring, type=>$msgtype, 
+call=>$msgcall....
+
+Returns: a qtc::msg object
+
+The creator function of this object either loads a message with a specific filename 
+from the working path ($path) or it creates a message object with the hexadecimal data 
+provided in $hexstring. You may also set initial values of the object by addressing them 
+directly as parameter/value pairs, (the content should make sense otherwise a later function 
+call will fail)
+
+Every parameter can also be set later on by calling its function with a parameter. but 
+then it has to be done in the right order (type before specific field). 
+
+=cut
+#------------------------------------------------------------------------------------
 sub new { 
 	my $class=shift; 
 	my %parm=(@_); 
@@ -204,6 +234,18 @@ sub new {
 	return $obj; 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 bin()
+
+Returns: the qtc::binary object, connected to this qtc::msg
+
+The qtc::binary object is holding all the function calls to 
+parse, and build the qtc-net binary messages, as hex stream. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub bin { my $obj=shift; return $obj->{bin}; }
 
 ########################################################
