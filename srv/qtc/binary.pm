@@ -343,7 +343,7 @@ sub gen_hex_payload {
 	my $ret; 
 	
 	foreach my $field (@fields) {
-		foreach my $data ($obj->msg->get($field)) {
+		foreach my $data ($obj->msg->value($field)) {
 			$ret.=$obj->mk_field($field, $data);
 		} 
 	}

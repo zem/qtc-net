@@ -252,18 +252,17 @@ sub bin { my $obj=shift; return $obj->{bin}; }
 #------------------------------------------------------------------------------------
 =pod
 
-=head2 bin()
+=head2 signature()
 
-Returns: the qtc::binary object, connected to this qtc::msg
+Optional Parameters: $signature, $signature_key_id
+both optional and as Big endian Hex
 
-The qtc::binary object is holding all the function calls to 
-parse, and build the qtc-net binary messages, as hex stream. 
-
+If no parameter is given it will return the hex string 
+of the signature, otherwise it will store one into the 
+object.
+ 
 =cut
 #------------------------------------------------------------------------------------
-################################################
-# There is a big TODO here with the signature
-# so atm this will be empty 
 sub signature {
 	my $obj=shift;
 	my $signature=shift; 
@@ -282,18 +281,39 @@ sub signature {
 	}
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 signature_key_id()
+
+Optional Parameters: none
+the signature key is is set with the signature call....
+
+It will return the hex string 
+of the signature, otherwise it will store one into the 
+object.
+ 
+=cut
+#------------------------------------------------------------------------------------
 sub signature_key_id {
 	my $obj=shift;
 	return $obj->{signature_key_id}; 
 }
 
-# TODO: place a signature verification option here
-# This method is called whenever a signature needs 
-# to be checked. 
+#------------------------------------------------------------------------------------
+=pod
 
-################################################
-# There is a big TODO here with the signature
-# so atm this will be empty 
+=head2 checksum()
+
+retures the checksum of the signed_content of the message.
+if there is no checksum stored, it will create one. 
+be carefull, it will not create any checksum twice, instead 
+it will check the existing one and die if there is no match. 
+
+you may also set a checksum with the first parameter. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub checksum {
 	my $obj=shift;
 	my $checksum=shift; 
@@ -311,8 +331,18 @@ sub checksum {
 	return $obj->{checksum}
 }
 
-# this is a human readable two digit number to identify 
-# this message between 0 and 99. 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 hr_refnum()
+
+this method returns a human readable reference number between 0 and 99
+humans may use this to distinguish between several messages, without 
+knowing its content. It is calculated out of the checksum, and can not 
+be set. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub hr_refnum {
 	my $obj=shift; 
 	my $num=hex(substr($obj->checksum, 0, 4));
@@ -322,10 +352,16 @@ sub hr_refnum {
 	return $num; 
 }
 
-##################################################
-# This is the users call which is available in 
-# any QTC Net Message
-################################################## 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 call()
+
+gets and sets the call of the sender of the message. (do not mix up with the 
+from of a telegram) 
+
+=cut
+#------------------------------------------------------------------------------------
 sub call {
 	my $obj=shift; 
 	my $call=shift; 
@@ -336,12 +372,35 @@ sub call {
 	return $obj->{call};
 }
 
-# an escaped call for filesystem purposes
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 escaped_call()
+
+filesystems do not support / in filenames (because this distinguishes directorys) 
+but callsigns do so we have do exchange every / in a callsign by a - before we can 
+put it into any filename or path. 
+
+this is directed to the call2fname() method inherited from qtc::misc object. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub escaped_call {
 	my $obj=shift; 
 	return $obj->call2fname($obj->call); 
 }
 
+
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 version()
+
+returns the version of the object or checks if the version of the message 
+is compatible 
+
+=cut
+#------------------------------------------------------------------------------------
 sub version {
 	my $obj=shift;
 	my $v=shift; 
@@ -353,6 +412,15 @@ sub version {
 	return $obj->{version};
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 type()
+
+get or set the message type 
+
+=cut
+#------------------------------------------------------------------------------------
 sub type {
 	my $obj=shift;
 	my $type=shift; 
@@ -364,21 +432,53 @@ sub type {
 	return $obj->{type}; 
 }
 
-# this is an exception to the other validation functions at the top. It checks if the object 
-# already has a valid type otherwise no value can be set. 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 has_valid_type()
+
+this function checks if the message objects type is valid/known. 
+otherwise the programm will die (eval may take care of this) 
+
+=cut
+#------------------------------------------------------------------------------------
 sub has_valid_type {
 	my $obj=shift;
 	if ( ! $msg_types{$obj->{type}} ) { die "Unknown Message Type $type 	please set one first \n"; }
 }
 
+
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 AUTOLOAD
+=head3 parameter($value)
+=head3 $r=parameter()
+
+in general a parameter may be called or set via autoloader 
+dynamically. so if the message type has a to field, a method to() 
+appears so you may use it. 
+
+=cut
+#------------------------------------------------------------------------------------
 our $AUTOLOAD; 
 sub AUTOLOAD {
 	my $obj=shift; 
 	my $method=$AUTOLOAD =~ s/.*:://r; 
-	return $obj->get($method); 
+	return $obj->get($method, @_); 
 }
 
-sub get {
+=pod
+
+=head3 value($field, ($data))
+
+you may also use the value($field) method to get access to the objects data. 
+the advantage is when you do not exactly know which parameter you will call 
+while you are programming. 
+
+=cut
+#------------------------------------------------------------------------------------
+sub value {
 	my $obj=shift; 
 	my $method=shift; 
 	$obj->has_valid_type; 
@@ -410,7 +510,16 @@ sub get {
 	}
 }
 
-# check every value of the object again. especially if the values are set
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 is_object_valid()
+
+This parameter checks the whole objects data including the checksums if it seems
+to be plausible. otherwise it will cause death. So if there is an invalid caracter 
+in a callsign or in a hex string, this is the function that raises an error. 
+
+=cut
 sub is_object_valid {
 	my $obj=shift; 
 	$obj->has_valid_type; 
@@ -421,6 +530,15 @@ sub is_object_valid {
 	}
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 is_field_valid($field)
+
+like the is_object_valid() is_field_valid() checks a specific field for 
+syntactical validity. it is called by is_object_valid() for each field. 
+
+=cut
 sub is_field_valid {
 	my $obj=shift; 
 	my $field=shift; 
@@ -440,17 +558,46 @@ sub is_field_valid {
 # this is the hexadecimal part of the package that should be signed 
 # don't forget to unpack before doing the signature
 ################################################################
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 signed_content_hex()
+
+This function returns the part of the qtc::msg that is going to be signed or 
+verified as big endian hex. 
+
+the signed content contains "type", "call" and the alphabetically sorted fields 
+of the message, packed together like they would be in the data file. 
+  
+=cut
 sub signed_content_hex {
 	my $obj=shift; 
 	$obj->is_object_valid;
 	return $obj->bin->gen_hex_payload("type", "call", sort keys %{$msg_types{$obj->{type}}});
 }
 
+=pod
+
+=head3 signed_content_bin()
+
+like signed_content_hex() but the return of this function is pure binary, this is really 
+what is to be signed, just in case someone has the idea to read a qtc::msg with C. 
+
+=cut
 sub signed_content_bin {
 	my $obj=shift; 
 	return pack("H*", $obj->signed_content_hex);
 }
 
+=pod
+
+=head3 as_hex()
+
+this returns a hexadecimal Big endian encoded string that contains the complete message 
+including a signature. The String can be pack() 'ed and written to disk, or maybe used 
+otherwise. 
+
+=cut
 sub as_hex {
 	my $obj=shift; 
 	$obj->is_object_valid;
@@ -465,6 +612,15 @@ sub as_hex {
 }
 
 
+=pod
+
+=head3 filename()
+
+this returns a standarized filename of the qtc::msg the filename is unique across 
+the whole network in the form: type_call_checksum.qtc This means easy lookup for 
+most of the messages. 
+
+=cut
 sub filename {
 	my $obj=shift;
 	$obj->is_object_valid;
@@ -481,6 +637,18 @@ sub filename {
 	return $filename; 
 }
 
+=pod
+
+=head3 to_filesystem($path)
+
+writes an object down to the configured path in the Filesystem, using the filename() methods 
+filename.  The object remembers the configured path so other files may later been hardlinked 
+from this one. 
+
+The File is first written as .tmp file and renamed after the write operation is compleded to 
+avoid filewatchers using them while they are incomplete. 
+
+=cut
 sub to_filesystem {
 	my $obj=shift; 
 	my $path=shift; 
@@ -496,6 +664,15 @@ sub to_filesystem {
 }
 
 
+
+=pod
+
+=head3 link_to_path($path)
+
+links the qtc::msg file written by  to_filesystem() to another path, or a set of 
+paths. 
+
+=cut
 sub link_to_path {
 	my $obj=shift;
 	if ( ! $obj->{path} ) { die "please store object first\n"; }
@@ -507,6 +684,14 @@ sub link_to_path {
 	}
 }
 
+=pod
+
+=head3 unlink_at_path($path)
+
+unlinks the qtc::msg file at the given path, or set of 
+paths. 
+
+=cut
 sub unlink_at_path {
 	my $obj=shift;
 	foreach my $path (@_) {
@@ -517,7 +702,13 @@ sub unlink_at_path {
 	}
 }
 
-# load data from string or filesystem 
+=pod
+
+=head3 load_file($path, $filename)
+
+loads a file to the object
+
+=cut
 sub load_file {
 	my $obj=shift; 
 	my $path=shift; 
