@@ -204,7 +204,7 @@ sub create_key {
 			return substr(
 				unpack(
 					"H*", 
-					pack("L>*" ($int+0x4000))
+					pack("L>*", ($int+0x4000))
 				),
 				4
 			);
@@ -212,15 +212,14 @@ sub create_key {
 			return substr(
 				unpack(
 					"H*", 
-					pack("L>*" ($int+0x200000))
+					pack("L>*", ($int+0x200000))
 				),
 				2
-			)
-		);
+			);
 	} elsif ( $int < 0x10000000 ) {
 		return unpack(
 			"H*", 
-			pack("L>*" ($int+0x10000000))
+			pack("L>*", ($int+0x10000000))
 		);
 	}
 	die "we have a problem here, because a number is larger than we can encode. a better implementation is needed\n";
@@ -243,7 +242,7 @@ sub mk_field {
 		$encdata=$obj->encode_integer($data); 
 	} elsif ( $data_types{$name}->{data_type} eq "enumeration" ) {
 		$encdata=$obj->encode_integer(
-			$obj->get_enumeration_index($data, @{$data_types{$name}->{values}}); 
+			$obj->get_enumeration_index($data, @{$data_types{$name}->{values}}) 
 		); 
 	}
 	my $len=$obj->create_key(length($encdata)/2);
@@ -261,7 +260,7 @@ sub encode_integer {
 		# integers, we may have to place code there, if we need 
 		# numbers bigger than this, right now, even unix dates 
 		# can be encoded with this. 
-		$encdata=unpack("H*", pack("Q>*", $data)
+		$encdata=unpack("H*", pack("Q>*", $data));
 	}
 	# strip leading zeros 
 	while ( $encdata =~ /^00/ ) { $encdata=substr($encdata, 2); }

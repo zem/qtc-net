@@ -300,6 +300,13 @@ sub get {
 	my $obj=shift; 
 	my $method=shift; 
 	$obj->has_valid_type; 
+	# shortcuts for the static fields 
+	if ( $method eq "type" ) { return $obj->type; }
+	if ( $method eq "version" ) { return $obj->version; }
+	if ( $method eq "call" ) { return $obj->call; }
+	if ( $method eq "checksum" ) { return $obj->checksum; }
+	if ( $method eq "signature" ) { return $obj->signature; }
+	if ( $method eq "signature_key_id" ) { return $obj->signature_key_id; }
 	# check if the field is valid
 	if ( ! $msg_types{$obj->{type}}->{$method} ) { 
 		die "Unknown method $method please set one of the known for ".$obj->{type}." \n"; 
@@ -443,7 +450,7 @@ sub load_file {
 	while(<READ>) { $bin.=$_; }
 	close(READ); 
 
-	$obj->bin->parse(unpack("H*", $bin); 
+	$obj->bin->parse(unpack("H*", $bin)); 
 }
 
 
