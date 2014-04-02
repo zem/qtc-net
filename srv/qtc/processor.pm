@@ -93,7 +93,7 @@ sub process_in {
 	$obj->ensure_path($obj->{root}."/bad"); 
 	$obj->ensure_path($obj->{root}."/in"); 
 
-	foreach my $file ($obj->scan_dir($obj->{root}."/in", '.*\.xml')){
+	foreach my $file ($obj->scan_dir($obj->{root}."/in", '.*\.qtc')){
 		if (( ! -e $obj->{root}."/out/".$file ) and ( ! -e $obj->{root}."/bad/".$file )) { 
 			print STDERR "processing file $file\n"; 
 			eval { 
@@ -113,12 +113,12 @@ sub process_in {
 	} 
 }
 
-sub process_xml { 
+sub process_hex { 
 	my $obj=shift; 
-	my $xml=shift; 
+	my $hex=shift; 
 	
 	$msg=qtc::msg->new(
-		xml=>$xml,
+		hex=>$hex,
 		path=>$obj->{root}."/in"
 	); 
 	$obj->write_msg_to_in($msg); 
@@ -142,7 +142,7 @@ sub process {
 	my $obj=shift; 
 	my $msg=shift; # is a message object, which must have a file in /in
 	
-	if ( $msg->type eq "msg" ) { 
+	if ( $msg->type eq "telegram" ) { 
 		$obj->import_msg($msg); 
 		return; 
 	}
@@ -179,10 +179,10 @@ sub import_msg {
 
 	$obj->verify_signature($msg);
 	
-	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/allmsg");
-	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->from)."/sent");
+	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/all");
+	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->from)."/telegrams/sent");
 	if ( $obj->msg_has_no_qsp($msg) ) {
-		$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/newmsg");
+		$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/new");
 	}
 	$msg->link_to_path($obj->{root}."/out");
 }
@@ -193,9 +193,9 @@ sub remove_msg {
 	my $obj=shift; 
 	my $msg=shift; 
 	
-	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/allmsg");
-	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->from)."/sent");
-	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/newmsg");
+	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/all");
+	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->from)."/telegrams/sent");
+	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/new");
 	$msg->unlink_at_path($obj->{root}."/out");
 }
 
@@ -205,7 +205,7 @@ sub msg_has_no_qsp {
 	
 	my @files=$obj->scan_dir(
 		$obj->{root}."/call/".$obj->call2fname($msg->to)."/qsprcvd",
-		'qsp_([a-z]|[0-9]|-)+_([0-9]|[a-f])+\.xml'
+		'qsp_([a-z]|[0-9]|-)+_([0-9]|[a-f])+\.qtc'
 	);
 	foreach my $file (@files) {
 		my $qsp=qtc::msg->new(
@@ -227,11 +227,11 @@ sub import_qsp {
 	# TODO: not working, implementing lookup via sha256 hashes first
 	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/qsprcvd");
 	my @newmsgs=$obj->scan_dir(
-		$obj->{root}."/call/".$obj->call2fname($msg->to)."/newmsg",
-		"msg_([a-z]|[0-9]|-)+_".$msg->msg_checksum.".xml"
+		$obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/new",
+		"telegram_([a-z]|[0-9]|-)+_".$msg->msg_checksum.".qtc"
 	);
 	foreach my $newmsg (@newmsgs) {
-		unlink($obj->{root}."/call/".$obj->call2fname($msg->to)."/newmsg/".$newmsg) or die "removing of transmitted message $newmsg failed"; 
+		unlink($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/new/".$newmsg) or die "removing of transmitted message $newmsg failed"; 
 	}
 	$msg->link_to_path($obj->{root}."/out");
 }
@@ -274,7 +274,7 @@ sub import_revoke {
 
 	my @qtcmsgs=$obj->scan_dir(
 		$obj->{root}."/out",
-		".+_".$obj->call2fname($msg->call)."_.+.xml"
+		".+_".$obj->call2fname($msg->call)."_.+.qtc"
 	);
 	foreach my $filename (@qtcmsgs) {
 		my $qtcmsg=qtc::msg->new(
