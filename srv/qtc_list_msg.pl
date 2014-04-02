@@ -21,7 +21,7 @@ print "\n\n";
 
 foreach my $msg (@msgs) { 
 	print "Number: ".$msg->hr_refnum."\n"; 
-	print "Date:\t".strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($msg->msg_date))."\n"; 
+	print "Date:\t".strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($msg->telegram_date))."\n"; 
 	print "from:\t".$msg->from."\n"; 
 	print "to:\t".$msg->to."\n"; 
 	print "text:\t".$msg->telegram."\n"; 

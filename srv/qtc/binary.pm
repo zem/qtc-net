@@ -292,6 +292,8 @@ sub parse {
 	my $obj=shift;
 	my $hex=shift; 
 
+	#print STDERR "$hex\n";
+
 	# first step is to check the magic bytes 
 	my $mag1; my $mag2; my $mag3; 
 	($mag1, $hex)=$obj->pull_byte($hex);
@@ -313,16 +315,20 @@ sub parse {
 		my $keyname=$obj->get_keyname($keynum);
 		($l, $hex) = $obj->get_key($hex);
 		($data, $hex) = $obj->pull_data($l, $hex);
+		#print $data."\n";
 		
-		if ( $data_types{$keyname} eq "string" ) {
+		if ( $data_types{$keyname}->{data_type} eq "string" ) {
 			$data=pack("H*", $data); 
-		} elsif ( $data_types{$keyname} eq "binary" ) {
+		} elsif ( $data_types{$keyname}->{data_type} eq "binary" ) {
 			$data=$data; 
-		} elsif ( $data_types{$keyname} eq "integer" ) {
-			$data=unpack("Q>*", pack("H*", $data)); 
-		} elsif ( $data_types{$keyname} eq "enumeration" ) {
+		} elsif ( $data_types{$keyname}->{data_type} eq "integer" ) {
+			while ( length($data) < 8 ) { $data="00".$data; }
+			$data=unpack("L>*", pack("H*", $data));  # TODO: fix this in 2038 if needed
+			#print $data."\n";
+		} elsif ( $data_types{$keyname}->{data_type} eq "enumeration" ) {
 			$data=$data_types{$keyname}->{values}->[unpack("L>*",  pack("H*", $data))]; 
 		}
+		#print STDERR $keyname." ".$data."\n";
 		if ( $data_types{$keyname}->{multiple_times} ) { 
 			push @{$obj->msg->{$keyname}}, $data; 
 		} else {
