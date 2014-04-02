@@ -1,3 +1,46 @@
+#-----------------------------------------------------------------------------------
+=pod
+
+=head1 NAME
+
+qtc::msg - object class that handles the various qtc-net messages in perl
+
+=head1 SYNOPSIS
+
+use qtc::msg;
+
+my $msg=qtc::msg->new(path=>$ENV{HOME}."/.qtc/call/$call/telegrams/new", filename=>$file);
+
+print "Number: ".$msg->hr_refnum."\n"; 
+print "Date:\t".strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($msg->telegram_date))."\n"; 
+print "from:\t".$msg->from."\n"; 
+print "to:\t".$msg->to."\n"; 
+print "text:\t".$msg->telegram."\n"; 
+
+my $qsp=qtc::msg->new(
+	type=>"qsp",
+	call=>"oe1src",
+	qsl_date=>time,
+	to=>$to,
+	telegram_checksum=>$qtc->checksum, 
+);
+$signature->sign($qsp); 
+
+$qsp->to_filesystem($ENV{HOME}."/.qtc/in");
+
+=head1 DESCRIPTION
+
+The qtc message holds and verifys all the data of a qtc message (except of the 
+signature verification which is done externaly by qtc::signature). Depending on 
+the type of a message it has one call for each field name, that you can use to 
+set or read the values of a message.
+
+All binary data is usually stored in hexadecimal big endian within the object, 
+to make handling with perl easier.
+
+=cut
+#-----------------------------------------------------------------------------------
+
 package qtc::msg; 
 #use POSIX qw(strftime);
 use Digest::SHA qw(sha256_hex);
