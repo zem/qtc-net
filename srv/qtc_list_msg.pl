@@ -9,8 +9,8 @@ my $misc=qtc::misc->new();
 my $call="oe1gis"; 
 
 my @msgs;
-foreach my $file ($misc->scan_dir($ENV{HOME}."/.qtc/call/$call/newmsg", '.+\.qtc')){
-	push @msgs, qtc::msg->new(path=>$ENV{HOME}."/.qtc/call/$call/newmsg", filename=>$file); 
+foreach my $file ($misc->scan_dir($ENV{HOME}."/.qtc/call/$call/telegrams/new", '.+\.qtc')){
+	push @msgs, qtc::msg->new(path=>$ENV{HOME}."/.qtc/call/$call/telegrams/new", filename=>$file); 
 }
 
 print "Number of telegrams: ".($#msgs+1)."\n"; 

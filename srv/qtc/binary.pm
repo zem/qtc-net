@@ -129,22 +129,6 @@ sub msg {
 	return $obj->{msg}; 
 }
 
-######################################################################################################
-# functions to create binary format 
-######################################################################################################
-#returns the index number of an array (maybe there is a better function i did not found) 
-sub enum_array {
-	my $obj=shift;
-	my $idx=shift;
-	my @keys=shift;
-	my $cnt=1; 
-	foreach my $key (@keys) {
-		if ( $key eq $idx ) { return $cnt; }
-		$cnt++;
-	}
-	die "I could not find Index for $idx in array\n"; 
-}
-
 # gets one hexadecimal byte + returns the right part of that string
 sub pull_byte {
 	my $obj=shift; 
@@ -326,7 +310,8 @@ sub parse {
 			$data=unpack("L>*", pack("H*", $data));  # TODO: fix this in 2038 if needed
 			#print $data."\n";
 		} elsif ( $data_types{$keyname}->{data_type} eq "enumeration" ) {
-			$data=$data_types{$keyname}->{values}->[unpack("L>*",  pack("H*", $data))]; 
+			while ( length($data) < 8 ) { $data="00".$data; }
+			$data=$data_types{$keyname}->{values}->[unpack("L>*",  pack("H*", $data))-1]; 
 		}
 		#print STDERR $keyname." ".$data."\n";
 		if ( $data_types{$keyname}->{multiple_times} ) { 

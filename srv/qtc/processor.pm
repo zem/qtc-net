@@ -3,6 +3,7 @@ use qtc::msg;
 use File::Basename; 
 use qtc::signature; 
 use qtc::keyring; 
+use Data::Dumper; 
 use qtc::misc;
 @ISA=(qtc::misc);
 
@@ -28,7 +29,13 @@ sub keyring {
 	my @keys;  
 
 	# we may have a public key here that we should handle at generation
-	if ( $msg->type eq "pubkey" ) { push @keys, $msg; }
+	if ( $msg->type eq "pubkey" ) {
+		print STDERR "adding ".$msg->checksum." to keys\n"; 
+		push @keys, $msg; 
+	} else {
+		print STDERR Dumper($msg); 
+		print STDERR "not adding ".$msg->checksum." to keys\n"; 
+	}
 	
 	if ( ! $call ) { die "I need a call to get a keyring for\n"; }
 
@@ -39,6 +46,7 @@ sub keyring {
 			keys=>\@keys, 
 		);
 	}
+	print STDERR " i am returning the ring now\n"; 
 	return $obj->{keyring}->{$call};
 }
 

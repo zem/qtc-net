@@ -20,8 +20,8 @@ my $number = $term->readline("number: ");
 
 # ok lets find the message to approve.....
 my @msgs;
-foreach my $file ($misc->scan_dir($ENV{HOME}."/.qtc/call/$to/newmsg", '.+\.qtc')){
-	push @msgs, qtc::msg->new(path=>$ENV{HOME}."/.qtc/call/$to/newmsg", filename=>$file); 
+foreach my $file ($misc->scan_dir($ENV{HOME}."/.qtc/call/$to/telegrams/new", '.+\.qtc')){
+	push @msgs, qtc::msg->new(path=>$ENV{HOME}."/.qtc/call/$to/telegrams/new", filename=>$file); 
 }
 
 my $qtc; 
