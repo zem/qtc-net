@@ -1,5 +1,14 @@
+The QTC Message File Format. 
+############################
 
+GENERAL: 
 
+This is a Brief description of the format of the QTC Message files. after 
+a few tests with an xml based format, a binary based format was designed, 
+that uses only a third of the space xml does. In general Big endian is 
+used to store QTC Messages. 
+
+The QTC Message Format is described in the following table: 
 
 +--------------+--------+-------------------------------------------------+
 | Field        | Length | Description                                     |
@@ -28,7 +37,7 @@
 | ...          | length |                                                 |
 +--------------+--------+-------------------------------------------------+
 
-ID Numbers: 
+FIELD TYPES AND LENGTH: 
 
 The length of the identifiers is defined in the same way ebml does. by the 
 leading 0 and the first apperance of 1. 
@@ -48,3 +57,129 @@ As another example: 0x81
 
 Means that the value is one byte 
 long representing 0x01
+
+
+DATA TYPES:
+
+There are several ways how the data could be interpreted. 
+The Data of a field can either be 
+- a string, 
+- a binary value 
+- an integer 
+- an enumeration
+
+A string is the ascii stored as ascii string (it would be UTF-8 without 
+BOM if we would use special chars).
+
+Binary data is copied 1to1 to the File. 
+
+Integers are unsigned and have a variable size, that means no leading 0x00 bytes
+the implementation should take some care of that. 
+
+The enumerartions are stored as integers as well. They are for values where a special 
+key may be set, like key_type of rsa and dsa, or type of qsp, telegram, operator, 
+pubkey and trust. Right now all defined enumerations start with 1.
+
+
+FIELD DEFINITIONS: 
+
+As found in qtc::binary.pm the file format has the following spec: 
+
+#########################################################################
+# enumerations are to order the identification numbers of fields
+# from 0 to n
+#########################################################################
+our %data_types=(
+"type"=>{
+enum=>1,
+data_type=>"enumeration",
+values=>[
+"telegram",
+"qsp",
+"operator",
+"pubkey",
+"revoke",
+"trust",
+],
+},
+"version"=>{
+enum=>2,
+data_type=>"integer",
+},
+"call"=>{
+enum=>3,
+data_type=>"string",
+},
+"signature"=>{
+enum=>4,
+data_type=>"binary",
+},
+"signature_key_id"=>{
+enum=>5,
+data_type=>"binary",
+},
+"checksum"=>{
+enum=>6,
+data_type=>"binary",
+},
+"from"=>{
+enum=>7,
+data_type=>"string",
+},
+"to"=>{
+enum=>8,
+data_type=>"string",
+},
+"telegram_date"=>{
+enum=>9,
+data_type=>"integer",
+},
+"telegram"=>{
+enum=>10,
+data_type=>"string",
+},
+"qsl_date"=>{
+enum=>11,
+data_type=>"integer",
+},
+"telegram_checksum"=>{
+enum=>12,
+data_type=>"binary",
+},
+"record_date"=>{
+enum=>13,
+data_type=>"integer",
+},
+"set_of_aliases"=>{
+enum=>14,
+data_type=>"string",
+multiple_times=>1,
+},
+"set_of_lists"=>{
+enum=>15,
+data_type=>"string",
+multiple_times=>1,
+},
+"key_type"=>{
+enum=>16,
+data_type=>"enumeration",
+values=>["rsa", "dsa"],
+},
+"key_id"=>{
+enum=>17,
+data_type=>"binary",
+},
+"key"=>{
+enum=>18,
+data_type=>"binary",
+},
+"trustlevel"=>{
+enum=>19,
+data_type=>"signedinteger",
+},
+"set_of_key_ids"=>{
+enum=>20,
+data_type=>"binary",
+multiple_times=>1,
+},
+);
