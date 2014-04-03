@@ -208,6 +208,7 @@ sub msg_has_no_qsp {
 	my $obj=shift; 
 	my $msg=shift; 
 	
+	$obj->ensure_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/qsprcvd"); 
 	my @files=$obj->scan_dir(
 		$obj->{root}."/call/".$obj->call2fname($msg->to)."/qsprcvd",
 		'qsp_([a-z]|[0-9]|-)+_([0-9]|[a-f])+\.qtc'
@@ -217,8 +218,8 @@ sub msg_has_no_qsp {
 			path=>$obj->{root}."/call/".$obj->call2fname($msg->to)."/qsprcvd",
 			filename=>$file,
 		); 
-		#print "Compare ".$qsp->msg_checksum." and ".$msg->checksum."\n"; 
-		if ($qsp->msg_checksum eq $msg->checksum) { return 0; }
+		#print "Compare ".$qsp->telegram_checksum." and ".$msg->checksum."\n"; 
+		if ($qsp->telegram_checksum eq $msg->checksum) { return 0; }
 	}
 	return 1; 
 }
@@ -233,7 +234,7 @@ sub import_qsp {
 	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/qsprcvd");
 	my @newmsgs=$obj->scan_dir(
 		$obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/new",
-		"telegram_([a-z]|[0-9]|-)+_".$msg->msg_checksum.".qtc"
+		"telegram_([a-z]|[0-9]|-)+_".$msg->telegram_checksum.".qtc"
 	);
 	foreach my $newmsg (@newmsgs) {
 		unlink($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/new/".$newmsg) or die "removing of transmitted message $newmsg failed"; 

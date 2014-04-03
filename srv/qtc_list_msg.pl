@@ -3,11 +3,18 @@
 use qtc::misc; 
 use qtc::msg; 
 use POSIX qw(strftime); 
+use Term::ReadLine;
 
 my $misc=qtc::misc->new(); 
 
-my $call="oe1gis"; 
+my $call=$ARGV[0]; 
+if ( ! $call ) {
+	my $term = Term::ReadLine->new('Show New QTC-Net Messages');
+	$call = $term->readline("call: "); 
+}
+$call=$misc->call2fname($call);
 
+$misc->ensure_path($ENV{HOME}."/.qtc/call/$call/telegrams/new");
 my @msgs;
 foreach my $file ($misc->scan_dir($ENV{HOME}."/.qtc/call/$call/telegrams/new", '.+\.qtc')){
 	push @msgs, qtc::msg->new(path=>$ENV{HOME}."/.qtc/call/$call/telegrams/new", filename=>$file); 

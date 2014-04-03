@@ -4,8 +4,10 @@ use qtc::signature;
 use qtc::msg; 
 use Term::ReadLine;
 
+my $misc=qtc::misc->new(); 
+my @keyfiles=$misc->scan_dir($ENV{HOME}."/.qtc_private", '((rsa)|(dsa))_.+.key');
 my $signature=qtc::signature->new(
-	privkey_file=>$ENV{HOME}."/.qtc_private/rsa_oe1src_ed9eaed81acd5bc15ab47eaf2ee920956295fb900ad750befa14d9fc0af925cb.key",
+	privkey_file=>$ENV{HOME}."/.qtc_private/".$keyfiles[0],
 );
 
 

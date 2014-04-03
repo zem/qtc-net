@@ -6,12 +6,10 @@ use qtc::misc;
 use Term::ReadLine;
 my $misc=qtc::misc->new(); 
 
+my @keyfiles=$misc->scan_dir($ENV{HOME}."/.qtc_private", '((rsa)|(dsa))_.+.key');
 my $signature=qtc::signature->new(
-	privkey_file=>$ENV{HOME}."/.qtc_private/rsa_oe1src_68a1a244b9832ae502aed7176c184dace6814b831a741cc9a721322973b38911.key",
-#	privkey_type=>"rsa", 
-#	key_id=>"68a1a244b9832ae502aed7176c184dace6814b831a741cc9a721322973b3891", 
+	privkey_file=>$ENV{HOME}."/.qtc_private/".$keyfiles[0],
 );
-
 
 my $term = Term::ReadLine->new('Input New QTC-Net Message');
 
