@@ -20,15 +20,16 @@ Filesystem Structure:
 
 	out/       # all the processed good messages ready to got rsynced by others
 	call/
-		OE1SRC/ # one directory named like the call / exchanged with -
+		oe1src/ # one directory named like the call / exchanged with -
 		.../
 			# current operator_file 
 			# directory signature file 
 			pubkey/
 			revoke/
-			sent/
-			archive/    # all messages to that call
-			inbox/      # all the messages that are not delivered to that call
+			telegrams/
+				sent/ # telegrams sent by this call 
+				new/  # telegrams new for this call (no qsp yet) 
+				all/  # all telegrams this call ever received by this call
 			qsprcvd/    # all qsps this user got
 			trust/      # all the trust levels of this user 
 		ALIAS -> CALL/ # alias directorys should be symlinked to have easy access on aliased calls.  
@@ -48,69 +49,70 @@ Details are coded in the qtc::processor perl module.
 ---------------------------------------------------------------------
 Message Format: 
 
-A message is (for now) xml and looks similar to this: 
+is described in the qtc-message-format.txt document. 
 
-<?xml version="1.0" encoding="UTF-8"?>
-<qtc>
-<version>1</version>
-<call>oe1src</call>
-<type>msg</type>
-<signature></signature>
-<checksum>d9382ee0ab8bd0a36ced5c99be10cbca1bedcf84548a00ac5a710dde7e1db956</checksum>
-<msg><from>oe1xgb</from><msg>hallo zusammen, das ist eine testnachricht.</msg><msg_date>1394435657</msg_date><msg_serial>1</msg_serial><to>dd5tt</to></msg>
-</qtc>
-
+----------------------------------------------------------------------
 
 The filenames are build like this: 
 
-msg_oe1src_d9382ee0ab8bd0a36ced5c99be10cbca1bedcf84548a00ac5a710dde7e1db956.xml
+TYPE_CALL_CHECKSUM.qtc
+
+example:
+
+telegram_oe1src_d9382ee0ab8bd0a36ced5c99be10cbca1bedcf84548a00ac5a710dde7e1db956.qtc
+
+
+-----------------------------------------------------------------------
 
 Details about messages including sanity checks are coded in qtc::msg perl module. 
+
+every message no matter of the type has the following informations: 
+
+- version
+- type 
+- call ( of the person who publish the message ) 
+- signature
+- signature_key_id
+
 
 So far we have the following message types: 
 
 our %msg_types=(
-	# this is the message itself with required fields
-	msg=>{
-		"msg_date"=>$valid_date, 
-		"from"=>$valid_call, 
-		"to"=>$valid_call, 
-		"msg"=>$valid_msg,
-	}, 
-	# this is the qsp info where data is stored
-	qsp=>{
-		"qsl_date"=>$valid_date, 
-		"msg_checksum"=>$valid_checksum,
-		"to"=>$valid_call,  #the to field is important for lists 
-	}, 
-	# aliases and delivery lists 
-	operator=>{
-		"record_date"=>$valid_date, 
-		"set_of_aliases"=>$valid_callset, 
-		"set_of_lists"=>$valid_callset,
-	}, 
-	# keystorage
-	pubkey=>{
-		"key_type"=>$valid_rsa_or_dsa,  
-		"signature_type"=>$valid_signature_type,  
-		"key"=>$valid_key,
-	},
-	revoke=>{
-		"key_type"=>$valid_rsa_or_dsa,  
-		"key"=>$valid_key,
-	},
-	# trust and untrust users 
-	trust=>{
-		"trustlevel"=>$valid_trustlevel,
-	},
+# this is the message itself with required fields
+telegram=>{
+"telegram_date"=>$valid_date,
+"from"=>$valid_call,
+"to"=>$valid_call,
+"telegram"=>$valid_msg,
+},
+# this is the qsp info where data is stored
+qsp=>{
+"qsl_date"=>$valid_date,
+"telegram_checksum"=>$valid_checksum,
+"to"=>$valid_call, #the to field is important for lists
+},
+# aliases and delivery lists
+operator=>{
+"record_date"=>$valid_date,
+"set_of_aliases"=>[$valid_call],
+"set_of_lists"=>[$valid_call],
+},
+# keystorage
+pubkey=>{
+"key_type"=>$valid_rsa_or_dsa,
+"key_id"=>$valid_checksum,
+"key"=>$valid_hex,
+},
+revoke=>{
+"key_type"=>$valid_rsa_or_dsa,
+"key_id"=>$valid_checksum,
+"key"=>$valid_hex,
+},
+# trust and untrust users
+trust=>{
+"trustlevel"=>$valid_trustlevel,
+"set_of_key_ids"=>[$valid_checksum],
+},
 );
-
-
-Transmitting messages as xml may be cause performance issues because there is much more 
-data to transfer than actually needed, so a performance tuning may be to define an 
-equivalent binary format. 
-
-The filesystem structure of in and outbox may also be refined if one directory gets 
-to big.
 
 
