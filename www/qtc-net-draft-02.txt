@@ -1,0 +1,198 @@
+WHITEPAPER
+
+QTC Net: A Peer‐to‐Peer Radio-Telegram Network for Ham Radio 
+
+
+OE1SRC (Hans Freitag)
+zem@fnordpol.de 
+
+OE1GIS (Stefan Mayrhofer)
+mayly@fet.at
+
+March 04, 2014 
+
+
+Introduction:
+
+We propose a system that allows ham operators to easily send and receive 
+telegram and broadcast messages, using a decentralized peer‐to‐peer protocol. 
+The infrastructure has to be accessible without special equipment, so that 
+sending and receiving messages can be done via voice or CW on radio between 
+operators.
+
+If an operator wants to exchange Telegrams over the network he can call:
+
+CQ QTC  CQ QTC  CQ QTC  de  [CALLER]  [CALLER]  [CALLER]
+  or
+CQ QTC  de  [CALLER]
+
+and find an operator having access to a QTC peer for dispatching a telegram to 
+a recipient operator or broadcast. The QTC-connected operator (we call him 
+"user") can also look for new messages sent to the caller.
+
+
+Message Transfer:
+
+When an user sends a new message it will be propagated across the network using 
+a flooding algorithm: Basically it is a Push-Push delivery, so if a peer gets a 
+message (or broadcast, key publication, younameit) it pushes its data to all 
+the connected peers, but only if the data is new. If it is already in the local 
+pool it has already passed the local peer once.
+
+Any user can broadcast "message read" notifications to any message to mark it 
+as read and to e.g. record the user(s) which told it through the radio to the 
+recipient. Messages sent by an user different then the originator (who 
+instructed the telegram e.g. via voice) need the metadata field "Originator:" 
+filled with the originator's call sign. An Implementation has to put this call 
+sign into the "To:" field when replying (behave like the "Reply-To:" field in 
+Email).
+
+Actually all peers keep a pool of all messages on the QTC Net. Messages older 
+than 100 days will be ignored and can be deleted from the local pool.
+
+
+Authentication:
+ 
+Users digitally sign¹ messages they send into the QTC Net. Protocol data 
+(version, etc.) and the hash of the public key (fingerprint), encoded with 
+base58, function as the user's unique identifier. It is prepended with the 
+user's call sign, an example sender's address (or "identifier" as we call it 
+from now on) would be:
+
+OE1XGB/p/GuBaR99GW5DiuyMPD49Lh7D4kMRp4fTF
+
+The middle part between the slashes is reserved for call sign suffixes and 
+comments. The public key can be obtained by means of this address. In the front 
+end it is recommended that the base58 encoded part is only visible if the user 
+desires to see them (e.g. on mouse over). On the other hand the front end must 
+display the whole identifier if the sender's public key is (still) untrusted or 
+could not be retrieved (if invalid or outdated).
+
+
+Identifier and Key Management:
+
+All peers keep a pool of all public keys. Users can whitelist or blacklist 
+identifiers which results in a broadcast notification that collectively raises 
+or lowers the trust level of the identifier. If the recipient's key pool has 
+different identifiers, prefixed with the same call sign a sender used (possible 
+spoof), the front end may list all these identifiers along with their trust 
+levels. So the recipient is able to decide if the originator is authentic 
+and/or trustworthy and which identifier would be the correct one. Very 
+blacklisted identifiers (by spoofing, scamming or spamming individuals or 
+non-licenced ham operators) and their messages (they partially are still 
+relayed) should be kept out of the user's sight by the front end to distract 
+the causers from further abuses.
+
+There must be a manual identifier removal operation for each owner. The network 
+propagates the signed deletion request and all receiving peers remove the 
+identifier with its public key from the pool. Also peers should expire inactive 
+identifiers: When it detects that such one is getting too old, it also removes 
+it from the pool. An identifier expires when its activity timestamp (updated 
+when a message was sent by the identifier or someone raised the trust level) is 
+older than 100 days. If a peer would expire an "own" identifier it is holding a 
+private key for, it can be re-broadcasted automatically or manually.
+
+Implementations can make the user's life friendlier if the keypairs can be 
+exported and reimported on a new instance.
+
+
+Inventory Vectors:
+
+The order of objects (messages and identifiers) in the pools will differ 
+slightly across peers because of the peers' different positions in the network 
+graph. Therefore all objects need to be identified: All kind of messages by 
+hash of its contents, public keys by their identifiers (which actually also 
+contain the hash of the public keys). Replication of the pool has to be based 
+on the knowledge of all object IDs.
+
+
+Connection Setup:
+
+The transport protocol is not specified. To be more flexible on the integration 
+side, UUCP is possible as well as a TCP connection. A significant difference is 
+if there is a feedback channel: On a bi-directional channel both peers 
+advertise inventory vectors (IDs of all it's messages and public keys in its 
+pool) and the other one can then retrieve those objects missing in its pool. If 
+the communication is only one-way, the sending peer transmits all objects it 
+expects the receiving peer does not know.
+
+In case of reoccurring temporary connections to a listen-only peer, calling 
+peers can regularly agree among themselves which objects they already forwarded 
+to the listener-peer to reduce redundant traffic.
+
+
+Bootstrapping:
+
+The implementation needs to ship a list of well-known available QTC Net peers 
+or loads this list on cold start from a pre-defined permanent resource (e.g. 
+web server). If the local network has a service discovery feature like UPnP it 
+can be used to find local peers to bootstrap from. At each connection, peers 
+mutually extend their (persistently stored) list of all known peers. The user 
+has the ability to add and configure individual peers like for reoccurring 
+dial-up connections or one-way packet radio transmissions.
+
+Any new peer should get a full set of data records first. But this initial 
+replication can be triggered as well by hand.
+
+
+Broadcasts and Mailing Lists:
+
+Because all users receive all messages they are essentially broadcasts. Users 
+can enable random tags like #mycity #hobby or #contest14 in the front end which 
+will then also show all messages addressed to these tags (instead of call 
+signs) in your inbox. A message's "To:" field can contain both, call signs and 
+tags, so any user who owns the recipient call sign or set an addressed tag in 
+the front end will receive it.
+
+Mailing Lists: When creating an identifier the user can decide to dedicate it 
+as an mailing list (and name it that way in the middle ‚call sign suffix' part 
+of the identifier). Mailing list members subscribe to this identifier like they 
+would with tags (and without the #). The mailing list operator's implementation 
+has to be able to declare his identifier as mailing list which enables a 
+function that automatically forwards messages (encapsulated with its own 
+digital signature) received by this specific identifier. The recipient of the 
+forward message usually is blank but can be pre-configured with call signs and 
+hashtags. Note: Subscribers of mailing lists filter using the "From:" field 
+while subscribers of tags filter using the "To:" field.
+
+
+Peer - Front end seperation:
+
+A front end (or also called "client") can be separated out from the peer and 
+talk across e.g. an XMLRPC Interface. In a scenario this can be used to share a 
+single peer (and its object pools) across different users and/or devices. There 
+are aspects concerning authentication between these components: Does the client 
+need to authenticate to the peer? Usually this does not matter as long the 
+messages get signed on the client. For various reasons a peer can limit access 
+to a number of identifiers: A signed connection request should be sufficient 
+for authentication. A classical password based login may be more useful in some 
+other cases.
+
+
+Proof-of-Work:
+
+It should be thought about requiring a computing intensive hash operation, 
+called proof-of-work, which requires some time to be used before a new message 
+can be dispatched. This should limit flooding of the network with abusive 
+content. Bitmessage specifies² this in a way we could use it here too.
+
+
+Network Protocol:
+
+A decision between XMLRPC, XMPP-derivate, JSON or a plain protocol still has to 
+be made. Similar ideas for data structures can be derived from the Bitmessage 
+Protocol³.
+
+
+__________________
+
+¹ Because Amateur radio is desired to be public, no encryption can be made on 
+any of the messages. Signatures use the same algorithm the other way: They are 
+designed to be verified and read by the public so those will fit into the 
+"public" rule. This means the design of the protocol is in a way that peers can 
+be linked also by radio links, even if they are designed to be linked via 
+Internet in the first place.
+
+² https://bitmessage.org/wiki/Proof_of_work
+
+³ https://bitmessage.org/wiki/Protocol_specification
