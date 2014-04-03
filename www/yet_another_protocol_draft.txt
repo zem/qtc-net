@@ -1,0 +1,208 @@
+QTC Net Protocol specification
+ 
+Common standards
+Hashes
+Most of the time SHA-512 hashes are used.
+A double-round of SHA-512 is used for the Proof Of Work. Example of double-SHA-512 encoding of string "hello":
+hello
+9b71d224bd62f3785d96d46ad3ea3d73319bfbc2890caadae2dff72519673ca72323c3d99ba5c11d7c7acc6e14b8c5da0c4663475c2e5c3adef46f73bcdec043(first round of sha-512)
+0592a10584ffabf96539f3d780d776828c67da1ab5b169e9e8aed838aaecc9ed36d49ff1423c55f019e050c66c6324f53588be88894fef4dcffdb74b98e2b200(second round of sha-512)
+Common structures
+All integers are encoded in big endian.
+Protocol Message structure
+Field Size	Description	Data type	Comments
+4	magic	uint32_t	Magic value indicating message origin network, and used to seek to next message when stream state is unknown
+12	command	char[12]	ASCII string identifying the packet content, NULL padded (non-NULL padding results in packet rejected)
+4	length	uint32_t	Length of payload in number of bytes
+4	checksum	uint32_t	First 4 bytes of sha512(payload)
+?	payload	uchar[]	The actual data, a message or an object
+
+Known magic values:
+Magic value	Sent over wire as	String representation
+0xF0F7A9F1	F0 F7 A9 F1	ð÷©ñ  (read as qtcn)
+Variable length integer
+Integer can be encoded depending on the represented value to save space. Variable length integers always precede an array/vector of a type of data that may vary in length.
+Value	Storage length	Format
+< 0xfd	1	uint8_t
+<= 0xffff	3	0xfd followed by the integer as uint16_t
+<= 0xffffffff	5	0xfe followed by the integer as uint32_t
+-	9	0xff followed by the integer as uint64_t
+Variable length string
+Variable length string can be stored using a variable length integer followed by the string itself.
+Field Size	Description	Data type	Comments
+1+	length	var_int
+Length of the string
+?	string	char[]	The string itself (can be empty)
+Variable length list of integers
+n integers can be stored using n+1 variable length integers where the first var_int equals n.
+Field Size	Description	Data type	Comments
+1+	count	var_int
+Number of var_ints below
+1+		var_int	The first value stored
+1+		var_int	The second value stored...
+1+		var_int	etc...
+Network address
+When a network address is needed somewhere, this structure is used. Network addresses are not prefixed with a timestamp in the version message.
+Field Size	Description	Data type	Comments
+8	time	int64_t	standard UNIX timestamp in seconds
+8	services	uint64_t	same service(s) listed in version
+
+4	transport	char[4]	Transport protocol (tcp, uucp, …)
+1+	net_config	net_conf	Configuration details for this peer (see below)
+Network configuration
+Depends on the transport protocol
+tcp
+Field Size	Description	Data type	Comments
+16	IPv6/4	char[16]	address: IPv6 as is, IPv4 as a 16 byte IPv4-mapped IPv6 address
+(12 bytes 00 00 00 00 00 00 00 00 00 00 FF FF, followed by the 4 bytes of the IPv4 address).
+2	port	uint16_t	port number
+uucp
+Field Size	Description	Data type	Comments
+16	IPv6/4	char[16]	address: IPv6 as is, IPv4 as a 16 byte IPv4-mapped IPv6 address
+(12 bytes 00 00 00 00 00 00 00 00 00 00 FF FF, followed by the 4 bytes of the IPv4 address).
+2	port	uint16_t	port number
+1+	username	var_str	user name
+1+	password	var_str	authentication password
+1+	dest_path	var_str	file path to work in
+Inventory Vectors
+Inventory vectors are used for notifying other nodes about objects they have or data which is being requested. Two rounds of SHA-512 are used, resulting in a 64 byte hash. Only the first 32 bytes are used; the later 32 bytes are ignored.
+Inventory vectors consist of the following data format:
+Field Size	Description	Data type	Comments
+32	hash	char[32]	Hash of the object
+
+Protocol messages
+version
+When a node creates an outgoing connection, it will immediately advertise its version. The remote node will respond with its version. No futher communication is possible until both peers have exchanged their version (in bi-directional mode). In single-directional mode the sender only sends the version.
+Payload:
+Field Size	Description	Data type	Comments
+4	version	int32_t	Identifies protocol version being used by the node
+8	services	uint64_t	bitfield of features to be enabled for this connection
+8	timestamp	int64_t	standard UNIX timestamp in seconds
+?	addr_recv	net_addr	The network address of the node receiving this message (not including the time bitfield)
+?	addr_from	net_addr	The network address of the node emitting this message (not including the time and the ip itself is ignored by the receiver)
+8	nonce	uint64_t	Random nonce used to detect connections to self.
+1+	user_agent	var_str
+User Agent (0x00 if string is 0 bytes long)
+
+Bi-directional mode: A "verack" packet shall be sent if the version packet was accepted. Once you have sent and received a verack messages with the remote node, send an addr message advertising up to 1000 peers of which you are aware, and one or more inv messages advertising all of the valid objects of which you are aware.
+Single-directional mode: After the version has been advertised start transmitting all private keys, trusts and messages (at least those which are expected to be missing at the destination)
+The following services are currently assigned:
+Bit	Name	Description
+30	NODE_DIRECTION	If zero this node can only receive, if one it only sends. Has no effect if NODE_NETWORK is set.
+31	NODE_NETWORK	This is a normal network node on a bi-directional channel
+verack
+The verack message is sent in reply to version. This message consists of only a message header with the command string "verack".
+addr
+Provide information on known nodes of the network. Non-advertised nodes should be forgotten after typically 3 hours
+Payload:
+Field Size	Description	Data type	Comments
+1+	count	var_int
+Number of address entries (max: 1000)
+?	addr_list	net_addr
+Address of other nodes on the network.
+inv
+Allows a node to advertise its knowledge of one or more objects. Payload (maximum payload length: 50000 items):
+Field Size	Description	Data type	Comments
+ ?	count	var_int
+Number of inventory entries
+32x?	inventory	inv_vect[]
+Inventory vectors
+getdata
+getdata is used in response to an inv message to retrieve the content of a specific object after filtering known elements.
+Payload (maximum payload length: 50000 entries):
+Field Size	Description	Data type	Comments
+ ?	count	var_int
+Number of inventory entries
+32x?	inventory	inv_vect[]
+Inventory vectors
+queryget
+Make a remote query in all messages and retrieve all corresponding objects. Query for ANY of the given search terms. To get started faster when cold starting a peer, query relevant messages before using getdata to get the entire rest of the pool (you should also query any senders' public keys of queried messages before to see the call signs).
+Field Size	Description	Data type	Comments
+1+	from_criterias	var_str	comma-seperated list of call signs to seek in the "From:" field (used to retreive mailing lists messages)
+1+	to_criterias	var_str	comma-seperated list of call signs and #tags to seek in the "To:" fields (used to retreive messages to self and tags of interest for broadcasts)
+
+Object types
+Objects are a subset of network messages. They are shared throughout the net. A client should advertise objects that are not older than 100 days (except for trust advertisements). To be a valid object, the Proof Of Work has to be done.
+pubkey  
+Used to propagate a new identifier. Peers save them into their public key pool and are identified by their object hash
+Field Size	Description	Data type	Comments
+8	POW nonce	uint64_t	Random nonce used for the Proof Of Work
+
+8	time	uint64_t	The time that this message was generated and broadcast.  
+1+	address version	var_int	The address' version which is set to 3.
+4	behavior bitfield
+uint32_t	A bitfield of optional behaviors and features that can be expected from the node receiving the message.
+64	public signing key	uchar[]	The ECC public key used for signing (uncompressed format; normally prepended with \x04 )
+1+	call sign	var_str	Ham radio call sign without conditional pre- or suffixes
+1+	suffix	var_str	Custom call sign suffix and/or comment
+1+	nonce_trials_per_byte	var_int	Used to calculate the difficulty target of messages accepted by this node. The higher this value, the more difficult the Proof of Work must be before this individual will accept the message. This number is the average number of nonce trials a node will have to perform to meet the Proof of Work requirement. 160 is the network minimum so any lower values will be automatically raised to 160.
+1+	extra_bytes	var_int	Used to calculate the difficulty target of messages accepted by this node. The higher this value, the more difficult the Proof of Work must be before this individual will accept the message. This number is added to the data length to make sending small messages more difficult. 14000 is the network minimum so any lower values will be automatically raised to 14000.
+1+	sig_length	var_int	Length of the signature
+sig_length	signature	uchar[]	The ECDSA signature which covers everything from the time to the extra_bytes.
+Pubkey bitfield features
+Bit	Name	Description
+0	undefined	The most significant bit at the beginning of the structure. Undefined
+1	undefined	The next most significant bit. Undefined
+...	...	...
+30	undefined	is include_destination in Bitmessage
+31	undefined	is does_ack in Bitmessage
+msg
+Used for person-to-person messages and broadcasts. Peers save them into their message pool and are identified by their object hash
+Field Size	Description	Data type	Comments
+8	POW nonce	uint64_t	Random nonce used for the Proof Of Work
+
+8	time	uint64_t	The time that this message was generated and broadcast.
+1+	msg_version	var_int	Message format version
+32	sender_hash	char[32]	the sender, identified by it's key object hash
+1+	origin	var_str	call sign of the operator who (literally) told the message (can be empty)
+1+	receipient	var_str	comma separated list of call signs and #tags (can be empty if sender acts as mailing list)
+1+	encoding	var_int	Message Encoding type
+
+1+	message_length	var_int	Message Length
+message_length	message	uchar[]	The message.
+1+	sig_length	var_int	Length of the signature
+sig_length	signature	uchar[]	The ECDSA signature which covers everything from the msg_version to the message.
+Message Encodings
+Value	Name	Description
+0	IGNORE	Any data with this number may be ignored. The sending node might simply be sending metadata to you.
+1	TRIVIAL	UTF-8. No 'Subject' or 'Body' sections. Useful for simple strings of data, like URIs or magnet links.
+2	SIMPLE	UTF-8. Uses 'Subject' and 'Body' sections. No MIME is used.
+messageToTransmit = 'Subject:' + subject + '\n' + 'Body:' + message
+Further values for the message encodings can be decided upon by the community. Any MIME or MIME-like encoding format, should they be used, should make use of 8-bit bytes.
+deletekey
+Propagate public key deletion by it's owner.  Peers remove the according key from the public key pool.
+Field Size	Description	Data type	Comments
+8	POW nonce	uint64_t	Random nonce used for the Proof Of Work
+
+8	time	uint64_t	The time that this message was generated and broadcast.
+32	sender_hash	char[32]	the sender, identified by it's key object hash (this key object has to be deleted)
+1+	sig_length	var_int	Length of the signature
+sig_length	signature	uchar[]	The ECDSA signature which covers everything from the time to the sender_hash.
+markread
+Propagate a message being read (or forwarded outside the QTC Net) by a specific identifier. Peers save them into their message pool.
+Field Size	Description	Data type	Comments
+8	POW nonce	uint64_t	Random nonce used for the Proof Of Work
+
+8	time	uint64_t	The time that this message was generated and broadcast.
+32	sender_hash	char[32]	the sender of this notification, identified by it's key object hash
+32	message_hash	char[32]	Hash of the message object to mark read
+1+	sig_length	var_int	Length of the signature
+sig_length	signature	uchar[]	The ECDSA signature which covers everything from the time to the message_hash.
+advertrust
+Advertise a trust report to a specific identifier. Peers save them into their trust advertisement pool. These messages expire only when the according identifier expired. They can therefore last very long.
+The resulting trust level for an identifier is calculated from all trust reports concerning it.
+Field Size	Description	Data type	Comments
+8	POW nonce	uint64_t	Random nonce used for the Proof Of Work
+
+8	time	uint64_t	The time that this message was generated and broadcast.
+32	sender_hash	char[32]	the sender, identified by it's key object hash
+32	concerned_hash	char[32]	concerned key object hash
+1	trust_modifier	char	X = evil,  ? = suspicious,  + = credible,  * = confidence
+1+	sig_length	var_int	Length of the signature
+sig_length	signature	uchar[]	The ECDSA signature which covers everything from the time to the trust_modifier.
+
+ 
+Derived from the Bitmessage Protocol "https://bitmessage.org/w/index.php?title=Protocol_specification&oldid=20987"
+ 
+Content is available under Creative Commons Attribution 3.0.
+
