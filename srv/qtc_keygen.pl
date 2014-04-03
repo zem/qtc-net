@@ -42,7 +42,7 @@ print STDERR "Writing Keys to $path\n";
 $pubkey->ensure_path($path); 
 $pubkey->to_filesystem($path); 
 
-open(WRITE, "> $path/rsa_$call_".$key_id.".key");
+open(WRITE, "> $path/rsa_".$call."_".$key_id.".key");
 print WRITE $rsa->get_private_key_string; 
 close WRITE;
 
