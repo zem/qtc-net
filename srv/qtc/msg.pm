@@ -465,7 +465,7 @@ our $AUTOLOAD;
 sub AUTOLOAD {
 	my $obj=shift; 
 	my $method=$AUTOLOAD =~ s/.*:://r; 
-	return $obj->get($method, @_); 
+	return $obj->value($method, @_); 
 }
 
 =pod
@@ -483,12 +483,12 @@ sub value {
 	my $method=shift; 
 	$obj->has_valid_type; 
 	# shortcuts for the static fields 
-	if ( $method eq "type" ) { return $obj->type; }
-	if ( $method eq "version" ) { return $obj->version; }
-	if ( $method eq "call" ) { return $obj->call; }
-	if ( $method eq "checksum" ) { return $obj->checksum; }
-	if ( $method eq "signature" ) { return $obj->signature; }
-	if ( $method eq "signature_key_id" ) { return $obj->signature_key_id; }
+	if ( $method eq "type" ) { return $obj->type(@_); }
+	if ( $method eq "version" ) { return $obj->version(@_); }
+	if ( $method eq "call" ) { return $obj->call(@_); }
+	if ( $method eq "checksum" ) { return $obj->checksum(@_); }
+	if ( $method eq "signature" ) { return $obj->signature(@_); }
+	if ( $method eq "signature_key_id" ) { return $obj->signature_key_id(@_); }
 	# check if the field is valid
 	if ( ! $msg_types{$obj->{type}}->{$method} ) { 
 		die "Unknown method $method please set one of the known for ".$obj->{type}." \n"; 

@@ -52,6 +52,7 @@ sub load_keys {
 	}
 	$obj->{selfsigned_to_delete}=[]; 
 	foreach my $key_id (keys %{$obj->{tree}}) {
+		#print STDERR "build_tree $key_id\n"; 
 		$obj->build_tree($obj->{tree}->{$key_id});
 	}
 	# delete all selfsigned trees that are connected elsewhere

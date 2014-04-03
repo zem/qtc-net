@@ -5,9 +5,7 @@ use qtc::msg;
 use Term::ReadLine;
 
 my $signature=qtc::signature->new(
-	privkey_file=>$ENV{HOME}."/.qtc_private/rsa_oe1src_68a1a244b9832ae502aed7176c184dace6814b831a741cc9a721322973b38911.key",
-#	privkey_type=>"rsa", 
-#	key_id=>"68a1a244b9832ae502aed7176c184dace6814b831a741cc9a721322973b3891", 
+	privkey_file=>$ENV{HOME}."/.qtc_private/rsa_oe1src_ed9eaed81acd5bc15ab47eaf2ee920956295fb900ad750befa14d9fc0af925cb.key",
 );
 
 
