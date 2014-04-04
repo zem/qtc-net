@@ -192,6 +192,7 @@ our %msg_types=(
 	},
 	# trust and untrust users 
 	trust=>{
+		"trust_date"=>$valid_date,
 		"trustlevel"=>$valid_trustlevel,
 		"set_of_key_ids"=>[$valid_checksum],
 	},

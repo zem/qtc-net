@@ -107,6 +107,10 @@ our %data_types=(
 		data_type=>"binary",
 		multiple_times=>1,
 	},
+	"trust_date"=>{
+		enum=>21,
+		data_type=>"integer",
+	},
 );
 
 
