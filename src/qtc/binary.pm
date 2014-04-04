@@ -228,6 +228,13 @@ sub mk_field {
 		$encdata=unpack("H*", $data); 
 	} elsif ( $data_types{$name}->{data_type} eq "integer" ) {
 		$encdata=$obj->encode_integer($data); 
+	} elsif ( $data_types{$name}->{data_type} eq "signedinteger" ) {
+		if ( $data < 0 ) { 
+			$data=(abs($data)*2)+1;
+		} else { 
+			$data=($data*2);
+		}
+		$encdata=$obj->encode_integer($data); 
 	} elsif ( $data_types{$name}->{data_type} eq "enumeration" ) {
 		$encdata=$obj->encode_integer(
 			$obj->get_enumeration_index($data, @{$data_types{$name}->{values}}) 
@@ -313,6 +320,14 @@ sub parse {
 			while ( length($data) < 8 ) { $data="00".$data; }
 			$data=unpack("L>*", pack("H*", $data));  # TODO: fix this in 2038 if needed
 			#print $data."\n";
+		} elsif ( $data_types{$keyname}->{data_type} eq "signedinteger" ) {
+			while ( length($data) < 8 ) { $data="00".$data; }
+			$data=unpack("L>*", pack("H*", $data));  # TODO: fix this in 2038 if needed
+			if ( $data & 1) { 
+				$data=($data-1)/(-2);
+			} else { 
+				$data=$data/2; 
+			}
 		} elsif ( $data_types{$keyname}->{data_type} eq "enumeration" ) {
 			while ( length($data) < 8 ) { $data="00".$data; }
 			$data=$data_types{$keyname}->{values}->[unpack("L>*",  pack("H*", $data))-1]; 
