@@ -3,6 +3,7 @@
 use qtc::signature; 
 use qtc::msg; 
 use Term::ReadLine;
+use Data::Dumper; 
 
 my $misc=qtc::misc->new(); 
 my @keyfiles=$misc->scan_dir($ENV{HOME}."/.qtc_private", '((rsa)|(dsa))_.+.key');
@@ -10,8 +11,14 @@ my $signature=qtc::signature->new(
 	privkey_file=>$ENV{HOME}."/.qtc_private/".$keyfiles[0],
 );
 
+print &{$obj->scan_dir}."\n"; 
+print &{$obj->not_there}."\n"; 
+
 
 my $term = Term::ReadLine->new('Input New QTC-Net Message');
+print Dumper($term->Attribs); 
+print Dumper($term->Features); 
+exit; 
 
 my $from = $term->readline("from call: "); 
 my $to = $term->readline("to call: "); 
