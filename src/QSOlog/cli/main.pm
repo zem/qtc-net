@@ -1,6 +1,6 @@
-package hamlog::cli::main; 
-use hamlog::cli; 
-@ISA=("hamlog::cli"); 
+package QSOlog::cli::main; 
+use QSOlog::cli; 
+@ISA=("QSOlog::cli"); 
 
 
 sub new {
@@ -38,7 +38,6 @@ sub qso {
 	my $obj=shift; 
 	return $obj->{qso}; 
 }
-
 
 sub cmd_call {
 	my $obj=shift; 

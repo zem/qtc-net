@@ -1,4 +1,4 @@
-package hamlog::cli; 
+package QSOlog::cli; 
 use Term::ReadLine;
 
 sub new { 
