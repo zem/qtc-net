@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-use hamlog::cli::main; 
+use QSOlog::cli::main; 
 
 print <<EOS
 
@@ -12,7 +12,7 @@ Try help to get help or start a qso by setting a call with call [call]
 EOS
 ;
 
-my $cli=hamlog::cli::main->new(); 
+my $cli=QSOlog::cli::main->new(); 
 
 $cli->loop; 
 
