@@ -1,7 +1,18 @@
 #!/usr/bin/perl
-use hamlog::cli; 
+use hamlog::cli::main; 
 
-my $cli=hamlog::cli->new(); 
+print <<EOS
+
+Welcome to QSO Log Application when it is grown up it will be a ham 
+radio log program. For now it is a Testing command line Application 
+for QTC Net Messages.
+
+Try help to get help or start a qso by setting a call with call [call]
+
+EOS
+;
+
+my $cli=hamlog::cli::main->new(); 
 
 $cli->loop; 
 

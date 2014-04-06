@@ -26,9 +26,9 @@ sub config_args {
 sub config_cmds {
 	my $obj=shift;
 	$obj->{cmds}={}; 
-	$obj->{cmds}->{exit}=1;
-	$obj->{cmds}->{quit}=1;
-	$obj->{cmds}->{help}=1;
+	$obj->{cmds}->{exit}="program exit";
+	$obj->{cmds}->{quit}="program exit";
+	$obj->{cmds}->{help}="prints a help";
 }
 
 sub config_term {
@@ -83,9 +83,9 @@ sub loop {
 		my $cmd=shift(@args); 
 		if ( $obj->{cmds}->{$cmd} ) { 
 			eval '$obj->cmd_'.$cmd.'(@args)';
-			if ( @_ ) { 
+			if ( $@ ) { 
 				print "some error occured:\n"; 
-				print "@_\n\n"; 
+				print "$@\n\n"; 
 			}
 		} else { 
 			print "Command $cmd not found/or allowed\n"; 
@@ -167,8 +167,13 @@ sub cmd_exit {
 	$obj->cmd_quit; 
 }
 sub cmd_help {
-	my $obj=shift; 
-	print "allowed cmds: ".join(" ", keys %{$obj->{cmds}})."\n"; 
+	my $obj=shift;
+	print "\n"; 
+	print "Allowed commands and their meaning:\n";  
+	foreach my $cmd (sort keys %{$obj->{cmds}}) {
+		print "$cmd\t".$obj->{cmds}->{$cmd}."\n"; 
+	}
+	print "\n"; 
 }
 
 1; 
