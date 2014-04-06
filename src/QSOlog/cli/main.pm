@@ -2,7 +2,6 @@ package QSOlog::cli::main;
 use QSOlog::cli; 
 @ISA=("QSOlog::cli"); 
 
-
 sub new {
 	my $class=shift; 
 	my $obj=$class->SUPER::new(@_); 
@@ -15,6 +14,7 @@ sub config_cmds {
 	my $obj=shift; 
 	$obj->SUPER::config_cmds; 
 	$obj->{cmds}->{call}="set the call of your qso partner"; 
+	$obj->{cmds}->{qtc}="shows messages for this call"; 
 	$obj->{cmds}->{qsp}="confirm that qtc messages are transferred to a call"; 
 	$obj->{cmds}->{info}="show infos about the ongoing QSO"; 
 	$obj->{cmds}->{mycall}="set your own call"; 
@@ -62,7 +62,17 @@ sub cmd_call {
 
 }
 
+sub cmd_info {
+	my $obj=shift; 
 
+}
+
+sub cmd_qtc {
+	my $obj=shift;
+	my $which_qtc=shift; 
+	
+	
+}
 
 1; 
 

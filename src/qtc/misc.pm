@@ -43,6 +43,11 @@ sub scan_dir {
 	if ( ! $sDir ) { die "I need a directory to scan\n"; }
 	if ( ! $sPrefix ) { die "I need an expression to scan for\n"; }
 
+	if ( ! -e $sDir ) { 
+			# the directory does not exist this (and only this) means return
+			return(); 
+	}
+
 	opendir(DIR, $sDir) or die "directory $sDir to scan is not there\n";
 
 	eval "\@aFiles = grep { /$sPrefix/ } readdir DIR";
