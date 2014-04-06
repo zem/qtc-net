@@ -1,4 +1,6 @@
 package QSOlog::cli::main; 
+use qtc::query; 
+use POSIX qw(strftime); 
 use QSOlog::cli; 
 @ISA=("QSOlog::cli"); 
 
@@ -8,6 +10,14 @@ sub new {
 
 	if ( ! defined $obj->{qso} ){ $obj->{qso}={}; }
 	return $obj; 
+}
+
+# returns a query object for the QTC network 
+sub qtc_query { 
+	if ( ! $obj->{qtc_query} ) { 
+		$obj->{qtc_query}=qtc::query->new(); 
+	}
+	return $obj->{qtc_query}; 
 }
 
 sub config_cmds {
@@ -43,6 +53,8 @@ sub cmd_call {
 	my $obj=shift; 
 	my $call=shift; 
 
+	if ( ! $call ) { print "usage: call CALLSIGN\n"; return; }
+
 	$call=lc($call); 
 	# There should be a working regex to stip any character not allowed from the call 
 	# I did not find one... 
@@ -58,6 +70,10 @@ sub cmd_call {
 	} else {
 		$obj->qso->{call}=$call;
 		print "QSO with ".$obj->qso->{call}."\n";
+		my $qtc=$obj->qtc_query->num_telegrams($call, "new");
+		if ( $qtc ) {
+			$obj->cmd_qtc; 
+		}
 	}
 
 }
@@ -71,7 +87,21 @@ sub cmd_qtc {
 	my $obj=shift;
 	my $which_qtc=shift; 
 	
-	
+	@msgs=$obj->qtc_query->list_telegrams($obj->qso->{call}, $which_qtc); 
+
+	print "number of telegrams in QTC Net: ".($#msgs+1)."\n"; 
+	print "telegram numbers: "; 
+	foreach my $msg (@msgs) { print $msg->hr_refnum." "; }
+	print "\n\n";
+
+	foreach my $msg (@msgs) { 
+		print "number: ".$msg->hr_refnum."\n"; 
+		print "from: ".$msg->from."\t"; 
+		print "to: ".$msg->to."\t"; 
+		print "date: ".strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($msg->telegram_date))."\n"; 
+		print "text: ".$msg->telegram."\n"; 
+		print "\n"; 
+	}
 }
 
 1; 

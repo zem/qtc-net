@@ -5,8 +5,8 @@ sub new {
 	my $class=shift; 
 	my %parm=(@_); 
 	my $obj=bless \%parm, $class; 
-	if ( ! $obj->{appname} ) { $obj->{appname}="HamLog"; }
-	if ( ! $obj->{prompt} ) { $obj->{prompt}="HamLog> "; }
+	if ( ! $obj->{appname} ) { $obj->{appname}="QSOlog"; }
+	if ( ! $obj->{prompt} ) { $obj->{prompt}="QSOlog> "; }
 	if ( ! $obj->{cmds} ) { $obj->config_cmds; }
 	if ( ! $obj->{args} ) { $obj->config_args; }
 	if ( ! $obj->{term} ) { $obj->{term}=Term::ReadLine->new($obj->appname); }

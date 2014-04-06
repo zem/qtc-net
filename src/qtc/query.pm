@@ -19,14 +19,24 @@ sub new {
 sub list_telegrams { 
 	my $obj=shift; 
 	my $call=shift; 
-	my $type=shift; 
+	my $type=shift; if ( ! $type ) { $type="new"; }
 	
-	$misc->ensure_path($ENV{HOME}."/.qtc/call/$call/telegrams/$type");
 	my @msgs;
-	foreach my $file ($misc->scan_dir($ENV{HOME}."/.qtc/call/$call/telegrams/new", '.+\.qtc')){
-		push @msgs, qtc::msg->new(path=>$ENV{HOME}."/.qtc/call/$call/telegrams/new", filename=>$file); 
+	foreach my $file ($obj->scan_dir($obj->{path}."/call/$call/telegrams/$type", '.+\.qtc')){
+		push @msgs, qtc::msg->new(path=>$obj->{path}."/call/$call/telegrams/$type", filename=>$file); 
 	}
+
 	return @msgs; 
+}
+
+sub num_telegrams { 
+	my $obj=shift; 
+	my $call=shift; 
+	my $type=shift; if ( ! $type ) { $type="new"; }
+	
+	my @msgs=$obj->scan_dir($obj->{path}."/call/$call/telegrams/$type", '.+\.qtc');
+
+	return $#msgs+1; 
 }
 
 1; 
