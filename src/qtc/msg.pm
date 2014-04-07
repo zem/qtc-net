@@ -91,9 +91,9 @@ our $valid_call=sub {
 	#"TODO: add additional callback\n"; 
 };
 
-our $valid_msg=sub {
+our $valid_telegram=sub {
 	$_=shift;
-	if ( ! /^([a-z]|[0-9]|\/|\.|,|\ )+$/ ) {
+	if ( ! /^([a-z]|[0-9]|\/|\.|,|\ |\?)+$/ ) {
 		die "This message $_ has invalid characters\n"; 
 	}
 	if ( length > 300 ) { 
@@ -165,7 +165,7 @@ our %msg_types=(
 		"telegram_date"=>$valid_date, 
 		"from"=>$valid_call, 
 		"to"=>$valid_call, 
-		"telegram"=>$valid_msg,
+		"telegram"=>$valid_telegram,
 	}, 
 	# this is the qsp info where data is stored
 	qsp=>{

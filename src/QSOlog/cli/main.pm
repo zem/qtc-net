@@ -1,5 +1,6 @@
 package QSOlog::cli::main; 
 use qtc::query; 
+use qtc::publish; 
 use POSIX qw(strftime); 
 use QSOlog::cli; 
 @ISA=("QSOlog::cli"); 
@@ -7,9 +8,19 @@ use QSOlog::cli;
 sub new {
 	my $class=shift; 
 	my $obj=$class->SUPER::new(@_); 
-
+	
 	if ( ! defined $obj->{qso} ){ $obj->{qso}={}; }
+	if ( ! $obj->{mycall} ) { $obj->cmd_mycall;  } # TODO make this configurable
+
 	return $obj; 
+}
+
+# returns a query object for the QTC network 
+sub qtc_publish { 
+	if ( ! $obj->{qtc_publish} ) { 
+		$obj->{qtc_publish}=qtc::publish->new(); 
+	}
+	return $obj->{qtc_publish}; 
 }
 
 # returns a query object for the QTC network 
@@ -49,12 +60,27 @@ sub qso {
 	return $obj->{qso}; 
 }
 
-sub cmd_call {
+sub allowed_letters_for_telegram {
+	my $obj=shift; 
+	my $telegram=shift; 
+	
+	$telegram=lc($telegram); 
+	$telegram=~s/\t/\ /g; 
+	# There should be a working regex to stip any character not allowed from the call 
+	# I did not find one... 
+	my $t;
+	while ($telegram) { 
+		my $x=substr($telegram, 0, 1);  $telegram=substr($telegram, 1); 
+		if ($x=~/([a-z]|[0-9]|\/|\.|,|\ |\?)/) { $t.=$x; } 
+		if ( length($t) >= 300 ) { $telegram=''; }
+	} 
+	return $t; 
+}
+
+sub allowed_letters_for_call {
 	my $obj=shift; 
 	my $call=shift; 
-
-	if ( ! $call ) { print "usage: call CALLSIGN\n"; return; }
-
+	
 	$call=lc($call); 
 	# There should be a working regex to stip any character not allowed from the call 
 	# I did not find one... 
@@ -63,12 +89,22 @@ sub cmd_call {
 		my $x=substr($call, 0, 1);  $call=substr($call, 1); 
 		if ($x=~/([a-z]|[0-9]|\/)/) { $t.=$x; } 
 	} 
-	$call=$t; 
+	return $t; 
+}
+
+sub cmd_call {
+	my $obj=shift; 
+	my $call=shift; 
+
+	if ( ! $call ) { print "usage: call CALLSIGN\n"; return; }
+
+	$call=$obj->allowed_letters_for_call($call); 
 	
 	if ( ! $call ) { 
 		print "Having a qso with ".$obj->qso->{call}."\n"
 	} else {
 		$obj->qso->{call}=$call;
+		$obj->qso->{current_telegrams}={}; 
 		print "QSO with ".$obj->qso->{call}."\n";
 		my $qtc=$obj->qtc_query->num_telegrams($call, "new");
 		if ( $qtc ) {
@@ -78,9 +114,55 @@ sub cmd_call {
 
 }
 
+sub cmd_telegram {
+	my $obj=shift; 
+	my $to=shift;
+	my $telegram=shift; 
+
+	if ( ! $obj->{mycall} ) { 
+		print "You did not configure your call, so I do not know who published the telegram.\n
+Please start qso by using mycall CALLSIGN\n";
+		return; 
+	}
+	if ( ! $obj->qso->{call} ) { 
+		print "There is no call set for this QSO, so I do not know who send the telegram.\n
+Please start qso by using call CALLSIGN\n";
+		return; 
+	}
+	
+	if ( ! $to ) {
+		$to=$obj->ask_something("telegram to"); 
+		if ( ! $to) { print "Abort empty receiver\n"; return; }
+	}
+	$to=$obj->allowed_letters_for_call($to); 
+
+	if ( ! $telegram ) {
+		$telegram=$obj->ask_something("telegram text"); 
+		if ( ! $telegram ) { print "Abort empty message\n"; return; }
+	}
+	$telegram=$obj->allowed_letters_for_telegram($telegram); 
+	
+	print "should I send the following telegram:\n"; 
+	print "\tfrom: ".$obj->qso->{call}."\n"; 
+	print "\tto: ".$to."\n"; 
+	print "\ttelegram: ".$telegram."\n";
+
+	my $yes=$obj->ask_something("yes/no", "yes"); 
+	if ( $yes ne "yes" ) { 
+		print "Answer is $yes, aborting \n"; return; 
+	}
+	$obj->qtc_publish->telegram(
+		call=>$obj->{mycall},
+		from=>$obj->qso->{call},
+		to=>$to, 
+		telegram=>$telegram, 
+	);
+}
+
 sub cmd_info {
 	my $obj=shift; 
 
+	print "INFO about the qso to be implemented\n"; 
 }
 
 sub cmd_qtc {
@@ -91,7 +173,11 @@ sub cmd_qtc {
 
 	print "number of telegrams in QTC Net: ".($#msgs+1)."\n"; 
 	print "telegram numbers: "; 
-	foreach my $msg (@msgs) { print $msg->hr_refnum." "; }
+	foreach my $msg (@msgs) { 
+		print $msg->hr_refnum." ";
+		# store msgs by their refnum into the qso hash
+		$obj->qso->{current_telegrams}->{$msg->hr_refnum}->{$msg->checksum}=$msg; 
+	}
 	print "\n\n";
 
 	foreach my $msg (@msgs) { 
@@ -99,9 +185,24 @@ sub cmd_qtc {
 		print "from: ".$msg->from."\t"; 
 		print "to: ".$msg->to."\t"; 
 		print "date: ".strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($msg->telegram_date))."\n"; 
-		print "text: ".$msg->telegram."\n"; 
+		print "telegram: ".$msg->telegram."\n"; 
 		print "\n"; 
 	}
+}
+
+sub cmd_mycall {
+	my $obj=shift; 
+	my $mycall=shift; 
+	
+	if ( ! $mycall ) {
+		$mycall=$obj->ask_something("YOUR call", "oe1src"); 
+		if ( ! $mycall) { print "Your call is should not be empty use mycall CALLSIGN to set one\n"; }
+	}
+	$mycall=$obj->allowed_letters_for_call($mycall);
+
+	print "Hello $mycall\n"; 
+	$obj->{mycall}=$mycall; 
+	
 }
 
 1; 

@@ -93,6 +93,23 @@ sub loop {
 	}
 }
 
+sub ask_something {
+	my $obj=shift; 
+	my $prompt=shift; 
+	my $default=shift; 
+	
+	if ( $default ) { $prompt=$prompt." [$default]"; }
+
+	while (1) {
+		my $line=$obj->term->readline($prompt.": "); 
+		if ( ! $line ) {
+			if ( $default ) { return $default; } 
+			next; 
+		}
+		return $line; 
+	}
+}
+
 
 sub split_line {
 		my $obj=shift; 
