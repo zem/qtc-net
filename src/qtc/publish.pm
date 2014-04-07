@@ -71,16 +71,63 @@ sub qsp {
 	$qsp->to_filesystem($obj->{path}."/in");
 }
 
-sub privkey {
+sub pubkey {
 	my $obj=shift; 
 	my %args=(@_); 
 
+	my $qtc=qtc::msg->new(hex=>$args{hex});
+	$obj->sig->sign($qtc); 
+	$qtc->to_filesystem($obj->{path}."/in");
 }
 
 sub revoke {
 	my $obj=shift; 
 	my %args=(@_); 
 
+	my $pubkey=qtc::msg->new(hex=>$args{hex});
+	
+	$qtc=qtc::msg->new(
+		call=>$obj->{call},
+		type=>"revoke",
+		key_type=>$pubkey->key_type,
+		key_id=>$pubkey->key_id,
+		key=>$pubkey->key,
+	); 
+	
+	$obj->sig->sign($qtc); 
+	$qtc->to_filesystem($obj->{path}."/in");
+}
+
+sub operator {
+	my $obj=shift; 
+	my %args=(@_); 
+
+	$qtc=qtc::msg->new(
+		call=>$obj->{call},
+		type=>"operator",
+		record_date=>time,
+		set_of_aliases=>$args{set_of_aliases},
+		set_of_lists=>$args{set_of_lists},
+	); 
+	
+	$obj->sig->sign($qtc); 
+	$qtc->to_filesystem($obj->{path}."/in");
+}
+
+sub trust {
+	my $obj=shift; 
+	my %args=(@_); 
+
+	$qtc=qtc::msg->new(
+		call=>$obj->{call},
+		type=>"trust",
+		trust_date=>time,
+		set_of_key_ids=>$args{set_of_key_ids},
+		trustlevel=>$args{trustlevel},
+	); 
+	
+	$obj->sig->sign($qtc); 
+	$qtc->to_filesystem($obj->{path}."/in");
 }
 
 1; 
