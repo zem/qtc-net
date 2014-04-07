@@ -21,8 +21,8 @@ sub new {
 	}
 	if ( ! $obj->{call} ) {
 		my $call=basename($obj->{privkey_file}); 
-		$call=s/^rsa_([0-9]|[a-z]|\-)+_.+.key$/$1/gex;
-		$call=s/\-/\//g;
+		$call=~s/^((rsa)|(dsa))_(([0-9]|[a-z]|\-)+)_([0-9]|[a-f])+.key$/$4/ge;
+		$call=~s/\-/\//g;
 		$obj->{call}=$call;
 	}
 	if ( ! $obj->{signature} ) { 

@@ -239,11 +239,11 @@ Please start qso by using call CALLSIGN\n";
 		my @msg_checksums=keys $obj->qso->{current_telegrams}->{$refnum};
 		if ( $#msg_checksums > 0 ) {
 			my @t; 
-			print "The Telegram $refnum is not precise. This usually means there is the same refnum twice."
+			print "The Telegram $refnum is not precise. This usually means there is the same refnum twice.";
 			print "So I have to ask you.\n";
 			foreach my $msg_checksum (@msg_checksums) {
 				$obj->print_msg($obj->qso->{current_telegrams}->{$refnum}->{$msg_checksum}); 
-				print "This one?"
+				print "This one?";
 				my $yes=$obj->ask_something("yes/no", "yes"); 
 				if ( $yes ne "yes" ) { 
 					print "Answer is $yes, not qspint \n"; next;
@@ -253,7 +253,7 @@ Please start qso by using call CALLSIGN\n";
 			@msg_checksums=@t; 
 		} 
 		foreach my $msg_checksum (@msg_checksums) {
-			$obj->qtc_publish->telegram(
+			$obj->qtc_publish->qsp(
 				to=>$obj->qso->{call},
 				msg=>$obj->qso->{current_telegrams}->{$refnum}->{$msg_checksum}, 
 			);
