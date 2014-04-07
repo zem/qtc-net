@@ -10,7 +10,7 @@ sub new {
 	my $obj=$class->SUPER::new(@_); 
 	
 	if ( ! defined $obj->{qso} ){ $obj->{qso}={}; }
-	if ( ! $obj->{mycall} ) { $obj->cmd_mycall;  } # TODO make this configurable
+	#if ( ! $obj->{mycall} ) { $obj->cmd_mycall;  } # TODO make this configurable
 
 	return $obj; 
 }
@@ -111,7 +111,6 @@ sub cmd_call {
 			$obj->cmd_qtc; 
 		}
 	}
-
 }
 
 sub cmd_telegram {
@@ -119,11 +118,11 @@ sub cmd_telegram {
 	my $to=shift;
 	my $telegram=shift; 
 
-	if ( ! $obj->{mycall} ) { 
-		print "You did not configure your call, so I do not know who published the telegram.\n
-Please start qso by using mycall CALLSIGN\n";
-		return; 
-	}
+#	if ( ! $obj->{mycall} ) { 
+#		print "You did not configure your call, so I do not know who published the telegram.\n
+#Please start qso by using mycall CALLSIGN\n";
+#		return; 
+#	}
 	if ( ! $obj->qso->{call} ) { 
 		print "There is no call set for this QSO, so I do not know who send the telegram.\n
 Please start qso by using call CALLSIGN\n";
@@ -152,7 +151,6 @@ Please start qso by using call CALLSIGN\n";
 		print "Answer is $yes, aborting \n"; return; 
 	}
 	$obj->qtc_publish->telegram(
-		call=>$obj->{mycall},
 		from=>$obj->qso->{call},
 		to=>$to, 
 		telegram=>$telegram, 
@@ -181,13 +179,19 @@ sub cmd_qtc {
 	print "\n\n";
 
 	foreach my $msg (@msgs) { 
-		print "number: ".$msg->hr_refnum."\n"; 
-		print "from: ".$msg->from."\t"; 
-		print "to: ".$msg->to."\t"; 
-		print "date: ".strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($msg->telegram_date))."\n"; 
-		print "telegram: ".$msg->telegram."\n"; 
-		print "\n"; 
+		$obj->print_msg($msg); 
 	}
+}
+
+sub print_msg {
+	my $obj=shift; 
+	my $msg=shift; 
+	print "number: ".$msg->hr_refnum."\n"; 
+	print "from: ".$msg->from."\t"; 
+	print "to: ".$msg->to."\t"; 
+	print "date: ".strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($msg->telegram_date))."\n"; 
+	print "telegram: ".$msg->telegram."\n"; 
+	print "\n"; 
 }
 
 sub cmd_mycall {
@@ -204,6 +208,59 @@ sub cmd_mycall {
 	$obj->{mycall}=$mycall; 
 	
 }
+
+sub cmd_qsp {
+	my $obj=shift; 
+	my @refnums=@_; 
+
+	if ( ! $obj->qso->{call} ) { 
+		print "There is no call set for this QSO, so I do not know who send the telegram.\n
+Please start qso by using call CALLSIGN\n";
+		return; 
+	}
+	
+	if ($#refnums < 0 ) {
+		print "please type in the numbers of the telegrams you transferred to ".$obj->qso->{call}." separated by space\n"; 
+		@refnums=$obj->split_line($obj->ask_something("transmitted telegram numbers"));
+	}
+	
+	print ("Should I Sent qsp for the following Telegrams?\n");
+	print join(" ", @refnums); 
+	my $yes=$obj->ask_something("yes/no", "yes"); 
+	if ( $yes ne "yes" ) { 
+		print "Answer is $yes, aborting \n"; return; 
+	}
+
+	foreach my $refnum (@refnums) {
+		if ( ! defined $obj->qso->{current_telegrams}->{$refnum} ) {
+			print "The Telegram $refnum is unknown. This usually means you did not see it with qsp or call cmd\n"; 
+			next; 
+		}
+		my @msg_checksums=keys $obj->qso->{current_telegrams}->{$refnum};
+		if ( $#msg_checksums > 0 ) {
+			my @t; 
+			print "The Telegram $refnum is not precise. This usually means there is the same refnum twice."
+			print "So I have to ask you.\n";
+			foreach my $msg_checksum (@msg_checksums) {
+				$obj->print_msg($obj->qso->{current_telegrams}->{$refnum}->{$msg_checksum}); 
+				print "This one?"
+				my $yes=$obj->ask_something("yes/no", "yes"); 
+				if ( $yes ne "yes" ) { 
+					print "Answer is $yes, not qspint \n"; next;
+				}
+				push @t, $msg_checksum; 
+			} 
+			@msg_checksums=@t; 
+		} 
+		foreach my $msg_checksum (@msg_checksums) {
+			$obj->qtc_publish->telegram(
+				to=>$obj->qso->{call},
+				msg=>$obj->qso->{current_telegrams}->{$refnum}->{$msg_checksum}, 
+			);
+		}	
+	}
+}
+
 
 1; 
 
