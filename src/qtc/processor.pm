@@ -118,6 +118,25 @@ sub process_in {
 	} 
 }
 
+# this is to be used for any message that is in /in
+sub process_in_loop { 
+	my $obj=shift;
+	$obj->ensure_path($obj->{root}."/bad"); 
+	$obj->ensure_path($obj->{root}."/in"); 
+
+	my $num=-1; 
+
+	while (1) { 
+		my @files=$obj->scan_dir($obj->{root}."/in", '.*\.qtc');
+		if ( $#files != $num ) {
+			$num=$#files; 
+			# something changed, we have to process
+			$obj->process_in(); 
+		}
+		sleep 20; 
+	}
+}
+
 sub process_hex { 
 	my $obj=shift; 
 	my $hex=shift; 
