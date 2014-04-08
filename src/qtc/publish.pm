@@ -2,6 +2,7 @@ package qtc::publish;
 use File::Basename; 
 use qtc::msg; 
 use qtc::signature;
+use qtc::query;
 use qtc::misc; 
 @ISA=("qtc::misc"); 
 
@@ -25,12 +26,22 @@ sub new {
 		$call=~s/\-/\//g;
 		$obj->{call}=$call;
 	}
+	if ( ! $obj->{query} ) { 
+		$obj->{query}=qtc::query->new(
+			path=>$obj->{path},
+		);
+	}
 	if ( ! $obj->{signature} ) { 
 		$obj->{signature}=qtc::signature->new(
 			privkey_file=>$obj->{privkey_file},
 		);
 	}
 	return $obj; 
+}
+
+sub query { 
+	my $obj=shift; 
+	return $obj->{query}; 
 }
 
 sub sig { 
@@ -117,12 +128,13 @@ sub operator {
 sub trust {
 	my $obj=shift; 
 	my %args=(@_); 
-
+	
 	$qtc=qtc::msg->new(
 		call=>$obj->{call},
 		type=>"trust",
 		trust_date=>time,
-		set_of_key_ids=>$args{set_of_key_ids},
+		to=>$args{to},
+		set_of_key_ids=>[keys $obj->query->pubkey_hash($args{to})],
 		trustlevel=>$args{trustlevel},
 	); 
 	

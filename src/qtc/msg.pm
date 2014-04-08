@@ -194,6 +194,7 @@ our %msg_types=(
 	trust=>{
 		"trust_date"=>$valid_date,
 		"trustlevel"=>$valid_trustlevel,
+		"to"=>$valid_call, # it is easier to store the call than to read every key for its ID
 		"set_of_key_ids"=>[$valid_checksum],
 	},
 );
