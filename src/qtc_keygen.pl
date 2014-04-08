@@ -6,7 +6,13 @@ use Crypt::OpenSSL::RSA;
 use Digest::SHA qw(sha256_hex);
 use MIME::Base64;
 
-my $call="oe1src"; 
+my $call=lc($ARGV[0]);
+
+if (( ! $call ) or ( $call !~ /^([a-z]|[0-9]|\/)+$/ )) {
+	print "You have to set a call at first command line argument for the key generator.\n";
+	print "I am exiting now, either because call $call is empty or it does not match the allowed characters for a call.\n"; 
+	exit 1; 
+} 
 
 my $rsa = Crypt::OpenSSL::RSA->generate_key(2048);
 $rsa->use_sha256_hash; 
