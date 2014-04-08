@@ -24,7 +24,6 @@ $keystring=~s/^(-----BEGIN RSA PUBLIC KEY-----)|(-----END RSA PUBLIC KEY-----)$/
 my $keydata=decode_base64($keystring) or die "Cant decode keystring\n"; 
 my $key_id=sha256_hex($keydata);
 
-
 my $pubkey=qtc::msg->new(
 	type=>"pubkey",
 	call=>$call,
@@ -48,8 +47,10 @@ print STDERR "Writing Keys to $path\n";
 $pubkey->ensure_path($path); 
 $pubkey->to_filesystem($path); 
 
-open(WRITE, "> $path/rsa_".$call."_".$key_id.".key");
-print WRITE $rsa->get_private_key_string; 
-close WRITE;
+open(WRITE, "> $path/rsa_".$call."_".$key_id.".key") or die "Can't write key to filesystem\n";
+print WRITE $rsa->get_private_key_string or die "Can't write key to filesystem (write)\n"; 
+close WRITE or die "Can't write key to filesystem (close)\n";
 
+# activate this key in the system....
+$pubkey->link_to_path($ENV{HOME}."/.qtc/in"); 
 
