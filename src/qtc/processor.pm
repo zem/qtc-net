@@ -176,7 +176,7 @@ sub process {
 	my $msg=shift; # is a message object, which must have a file in /in
 	
 	if ( $msg->type eq "telegram" ) { 
-		$obj->import_msg($msg); 
+		$obj->import_telegram($msg); 
 		return; 
 	}
 	if ( $msg->type eq "qsp" ) { 
@@ -206,7 +206,7 @@ sub process {
 
 ################
 # importing rules
-sub import_msg {
+sub import_telegram {
 	my $obj=shift; 
 	my $msg=shift; 
 
@@ -233,7 +233,7 @@ sub import_msg {
 
 ################
 # importing rules
-sub remove_msg {
+sub remove_telegram {
 	my $obj=shift; 
 	my $msg=shift; 
 	
@@ -339,30 +339,32 @@ sub remove_pubkey {
 sub remove_msg { 
 	my $obj=shift; 
 	my $msg=shift; 
-	if ( $msg->type eq "msg" ) { 
-		$obj->remove_msg($qtcmsg); 
+	if ( $msg->type eq "telegram" ) { 
+		$obj->remove_telegram($msg); 
+		print "returning remove telegram\n";
 		return; 
 	}
 	if ( $msg->type eq "qsp" ) { 
-		$obj->remove_qsp($qtcmsg); 
+		$obj->remove_qsp($msg); 
 		return; 
 	}
 	if ( $msg->type eq "operator" ) { 
-		$obj->remove_operator($qtcmsg); 
+		$obj->remove_operator($msg); 
 		return; 
 	}
 	if ( $msg->type eq "pubkey" ) { 
-		$obj->remove_pubkey($qtcmsg); 
+		$obj->remove_pubkey($msg); 
 		return; 
 	}
 	if ( $msg->type eq "revoke" ) { 
-		$obj->remove_revoke($qtcmsg); 
+		$obj->remove_revoke($msg); 
 		return; 
 	}
 	if ( $msg->type eq "trust" ) { 
-		$obj->remove_trust($qtcmsg); 
+		$obj->remove_trust($msg); 
 		return; 
 	}
+	print $msg->type."is an unknown message type \n"; 
 }
 
 sub import_revoke {
@@ -408,16 +410,14 @@ sub remove_msgs_below {
 			# remove_msgs_below 
 			$obj->remove_msgs_below($absentry, %args);
 			if ( $args{mrproper} ) {
-				unlink($absentry) or die "can't unlink direcrory ".$absentry."\n"; 
+				rmdir($absentry) or die "can't unlink direcrory ".$absentry."\n"; 
 			}
-		}
-		if ( -l $absentry ) {
+		} elsif ( -l $absentry ) {
 			if ( $args{mrproper} ) {
 				unlink($absentry) or die "can't unlink link ".$absentry."\n"; 
 			}
-		}
-		if ( -f $absentry ) {
-			my $msg=qtc::msg->new(path=>$path, filename=>$filename); 
+		} elsif ( -f $absentry ) {
+			my $msg=qtc::msg->new(path=>$path, filename=>$entry); 
 			$obj->remove_msg($msg); 
 		}
 	}
@@ -436,30 +436,29 @@ sub import_operator {
 		$obj->remove_operator($oldop); 
 	}
 	
-	foreach my $alias ($msg->set_of_aliases)) {
+	foreach my $alias ($msg->set_of_aliases) {
 		my $f_alias=$obj->call2fname($alias); 
 		if ( -l $obj->{root}."/call/$f_alias" ) {
 			# make sure we are the owners
 			unlink($obj->{root}."/call/$f_alias") or die "we cant unlink a linked dir to ensure ownership\n"; 
-			symlink($msg->escaped_call, $obj->{root}."/call/$f_alias") or die "failed to link to $f_alias\n"; 
-		}
-		if ( -d $obj->{root}."/call/$f_alias" ) {
+			symlink($msg->escaped_call, $obj->{root}."/call/$f_alias") or die "1 failed to link to $f_alias\n"; 
+		} elsif ( -d $obj->{root}."/call/$f_alias" ) {
 			my $otherop=$obj->query->operator($alias);
 			if ( ! $otherop ) {
 				# the directory is empty lets takeover
 				$obj->remove_msgs_below($obj->{root}."/call/$f_alias", mrproper=>1);
-				unlink($obj->{root}."/call/$f_alias") or die "failed to unlink $f_alias\n"; 
-				symlink($msg->escaped_call, $obj->{root}."/call/$f_alias") or die "failed to link to $f_alias\n"; 
+				rmdir($obj->{root}."/call/$f_alias") or die "failed to unlink $f_alias\n"; 
+				symlink($msg->escaped_call, $obj->{root}."/call/$f_alias") or die "2 failed to link to $f_alias\n"; 
 			} 
 		} else {
-			symlink($msg->escaped_call, $obj->{root}."/call/$f_alias") or die "failed to link to $f_alias\n"; 
+			symlink($msg->escaped_call, $obj->{root}."/call/$f_alias") or die "3 failed to link to $f_alias\n"; 
 		}
 	}
 	
-	foreach my $list ($msg->set_of_lists)) {
+	foreach my $list ($msg->set_of_lists) {
 		my $abs_link=$obj->{root}."/lists/".$obj->call2fname($list)."/".$msg->escaped_call;
 		if ( ! -e $abs_link ) {
-			symlink("../../call/".$msg->escaped_call, $abs_link) or die "failed to link to list \n"; 
+			symlink("../../call/".$msg->escaped_call, $abs_link) or die "4 failed to link to list \n"; 
 		}
 	}
 	
@@ -472,7 +471,7 @@ sub remove_operator {
 	my $msg=shift; 
 	
 	# remove list entrys
-	foreach my $alias ($msg->set_of_aliases)) {
+	foreach my $alias ($msg->set_of_aliases) {
 		my $f_alias=$obj->call2fname($alias); 
 		if ( -l $obj->{root}."/call/$f_alias" ) {
 			# yes it is stupid to think that this link points to 
@@ -482,7 +481,7 @@ sub remove_operator {
 	}
 	
 	# remove alias entrys 
-	foreach my $list ($msg->set_of_lists)) {
+	foreach my $list ($msg->set_of_lists) {
 		my $abs_link=$obj->{root}."/lists/".$obj->call2fname($list)."/".$msg->escaped_call;
 		if ( -l $abs_link ) {
 			# the next foreach removes all messages that where sent via a list to this user

@@ -697,7 +697,6 @@ paths.
 sub unlink_at_path {
 	my $obj=shift;
 	foreach my $path (@_) {
-		$obj->ensure_path($path); 
 		if ( -e $path."/".$obj->filename ) {
 			unlink($path."/".$obj->filename) or die "I cant unlink this file to $path\n"; 
 		}
