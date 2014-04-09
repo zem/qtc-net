@@ -338,20 +338,22 @@ sub checksum {
 
 =head2 hr_refnum()
 
-this method returns a human readable reference number between 0 and 99
+this method returns a human readable reference number between 00 and zz
 humans may use this to distinguish between several messages, without 
 knowing its content. It is calculated out of the checksum, and can not 
-be set. 
+be set. this is a 36*36=1296 possibilitys big checksum, well enough. 
 
 =cut
 #------------------------------------------------------------------------------------
 sub hr_refnum {
 	my $obj=shift; 
-	my $num=hex(substr($obj->checksum, 0, 4));
-	$num=int(($num/hex("ffff"))*99);
-	# fill numberstring with zeros
-	while ( length($num) < 2 ) { $num="0".$num; }
-	return $num; 
+	my $num1=hex(substr($obj->checksum, 0, 4));
+	my $num2=hex(substr($obj->checksum, 4, 4));
+	$num1=int(($num1/hex("ffff"))*35.99);
+	$num2=int(($num2/hex("ffff"))*35.99);
+	if ( $num1 > 9 ) { $num1=chr($num1-10+0x61); }
+	if ( $num2 > 9 ) { $num2=chr($num2-10+0x61); }
+	return $num1.$num2; 
 }
 
 #------------------------------------------------------------------------------------
