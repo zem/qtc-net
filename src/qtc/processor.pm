@@ -218,6 +218,17 @@ sub import_msg {
 		$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/new");
 	}
 	$msg->link_to_path($obj->{root}."/out");
+	
+	my $listpath=$obj->{root}."/lists/".$obj->call2fname($msg->to);
+	foreach my $receiver ($obj->scan_dir($listpath, ".+")) {
+		if ( -l $listpath."/".$list ) { 
+			# TODO Fix this 
+			$msg->link_to_path($listpath."/".$list."/telegrams/all");
+			if ( $obj->msg_has_no_qsp($msg, $list) ) {
+				$msg->link_to_path($listpath."/".$list."/telegrams/new");
+			}
+		}
+	}
 }
 
 ################
@@ -226,6 +237,14 @@ sub remove_msg {
 	my $obj=shift; 
 	my $msg=shift; 
 	
+	my $listpath=$obj->{root}."/lists/".$obj->call2fname($msg->to);
+	foreach my $receiver ($obj->scan_dir($listpath, ".+")) {
+		if ( -l $listpath."/".$list ) { 
+			# TODO Fix this 
+			$msg->unlink_at_path($listpath."/".$list."/telegrams/all");
+			$msg->unlink_at_path($listpath."/".$list."/telegrams/new");
+		}
+	}
 	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/all");
 	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->from)."/telegrams/sent");
 	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/new");
@@ -235,15 +254,20 @@ sub remove_msg {
 sub msg_has_no_qsp {
 	my $obj=shift; 
 	my $msg=shift; 
+	my $f_to=shift; 
+
+	if ( ! $f_to ) { 
+		$f_to=$obj->call2fname($msg->to);
+	}
 	
-	$obj->ensure_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/qsprcvd"); 
+	$obj->ensure_path($obj->{root}."/call/".$f_to."/qsprcvd"); 
 	my @files=$obj->scan_dir(
-		$obj->{root}."/call/".$obj->call2fname($msg->to)."/qsprcvd",
+		$obj->{root}."/call/".$f_to."/qsprcvd",
 		'qsp_([a-z]|[0-9]|-)+_([0-9]|[a-f])+\.qtc'
 	);
 	foreach my $file (@files) {
 		my $qsp=qtc::msg->new(
-			path=>$obj->{root}."/call/".$obj->call2fname($msg->to)."/qsprcvd",
+			path=>$obj->{root}."/call/".$f_to."/qsprcvd",
 			filename=>$file,
 		); 
 		#print "Compare ".$qsp->telegram_checksum." and ".$msg->checksum."\n"; 
@@ -289,6 +313,17 @@ sub import_pubkey {
 
 	# keyring cache must be cleared now 
 	$obj->keyring_clear($msg->call); 
+
+	# last but not least if we came that far we need to get any bad message for this 
+	# call for reprocessing
+	my @badmsgs=$obj->scan_dir(
+		$obj->{root}."/bad",
+		".+_".$msg->escaped_call."_([0-9]|[a-f])+.qtc"
+	);
+	foreach my $badmsg (@badmsgs) {
+		unlink($obj->{root}."/bad/".$badmsg) or die "can't unlink bad message $badmsg for reprocessing\n"; 
+	}
+	
 }
 sub remove_pubkey {
 	my $obj=shift; 
@@ -400,12 +435,14 @@ sub import_operator {
 		}
 		$obj->remove_operator($oldop); 
 	}
-
-	# TODO: place aliassing code here
-	$msg->link_to_path($obj->{root}."/call/".$msg->escaped_call);
-
+	
 	foreach my $alias ($msg->set_of_aliases)) {
-		$f_alias=$obj->call2fname($alias); 
+		my $f_alias=$obj->call2fname($alias); 
+		if ( -l $obj->{root}."/call/$f_alias" ) {
+			# make sure we are the owners
+			unlink($obj->{root}."/call/$f_alias") or die "we cant unlink a linked dir to ensure ownership\n"; 
+			symlink($msg->escaped_call, $obj->{root}."/call/$f_alias") or die "failed to link to $f_alias\n"; 
+		}
 		if ( -d $obj->{root}."/call/$f_alias" ) {
 			my $otherop=$obj->query->operator($alias);
 			if ( ! $otherop ) {
@@ -420,14 +457,45 @@ sub import_operator {
 	}
 	
 	foreach my $list ($msg->set_of_lists)) {
-		symlink("../../call/".$msg->escaped_call, $obj->{root}."/lists/".$obj->call2fname($list)."/".$msg->escaped_call) or die "failed to link to list \n"; 
+		my $abs_link=$obj->{root}."/lists/".$obj->call2fname($list)."/".$msg->escaped_call;
+		if ( ! -e $abs_link ) {
+			symlink("../../call/".$msg->escaped_call, $abs_link) or die "failed to link to list \n"; 
+		}
 	}
 	
+	$msg->link_to_path($obj->{root}."/call/".$msg->escaped_call);
 	$msg->link_to_path($obj->{root}."/out");
 }
+
 sub remove_operator {
 	my $obj=shift; 
 	my $msg=shift; 
+	
+	# remove list entrys
+	foreach my $alias ($msg->set_of_aliases)) {
+		my $f_alias=$obj->call2fname($alias); 
+		if ( -l $obj->{root}."/call/$f_alias" ) {
+			# yes it is stupid to think that this link points to 
+			# our directory TODO: Check that in the future
+			unlink($obj->{root}."/call/$f_alias") or die "cant unlink our sylinked $f_alias\n";
+		}
+	}
+	
+	# remove alias entrys 
+	foreach my $list ($msg->set_of_lists)) {
+		my $abs_link=$obj->{root}."/lists/".$obj->call2fname($list)."/".$msg->escaped_call;
+		if ( -l $abs_link ) {
+			# the next foreach removes all messages that where sent via a list to this user
+			# this is because the message will not remove itself when the link is gone
+			foreach my $file ($obj->scan_dir($abs_link."/telegrams/all", "telegram.+.qtc")) {
+				my $telegram=qtc::msg->new(path=>$abs_link."/telegrams/all", filename=>$file); 
+				if ( $telegram->to eq $list) { 
+					$obj->remove_msg($msg); 
+				}
+			}
+			unlink($abs_link) or die "cant unlink $abs_link\n"; 
+		}
+	}
 	
 	# TODO Operator removal
 	$msg->unlink_at_path($obj->{root}."/call/".$msg->escaped_call);
@@ -449,14 +517,6 @@ sub remove_trust {
 	
 	$msg->unlink_at_path($obj->{root}."/call/".$msg->escaped_call."/trust");
 	$msg->unlink_at_path($obj->{root}."/out");
-}
-
-sub is_message_new {
-	my $obj=shift;
-	my $msg=shift; 
-	
-	if ( $msg->type ne "msg" ) { die "Message must be type message\n"; }
-
 }
 
 1; 
