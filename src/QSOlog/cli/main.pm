@@ -186,7 +186,8 @@ sub cmd_qtc {
 sub print_msg {
 	my $obj=shift; 
 	my $msg=shift; 
-	print "number: ".$msg->hr_refnum."\n"; 
+	print "number: ".$msg->hr_refnum."\t"; 
+	print "publisher: ".$msg->call."\n"; 
 	print "from: ".$msg->from."\t"; 
 	print "to: ".$msg->to."\t"; 
 	print "date: ".strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($msg->telegram_date))."\n"; 
