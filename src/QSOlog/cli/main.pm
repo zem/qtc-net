@@ -37,21 +37,21 @@ sub config_cmds {
 	$obj->{cmds}->{call}="set the call of your qso partner"; 
 	$obj->{cmds}->{qtc}="shows messages for this call"; 
 	$obj->{cmds}->{qsp}="confirm that qtc messages are transferred to a call"; 
-	$obj->{cmds}->{info}="show infos about the ongoing QSO"; 
-	$obj->{cmds}->{mycall}="set your own call"; 
-	$obj->{cmds}->{setup}="start setup mode"; 
+	$obj->{cmds}->{alias}="add or del a call alias"; 
+	$obj->{cmds}->{list}="add or del list subscription for a call"; 
 	$obj->{cmds}->{telegram}="send a telegram"; 
-	$obj->{cmds}->{save}="save QSO record"; 
-	$obj->{cmds}->{cancel}="cancel QSO record"; 
-	$obj->{cmds}->{qrg}="insert qrg for the qso"; 
-	$obj->{cmds}->{date}="configure date of the qso"; 
-	$obj->{cmds}->{time}="configure time of the qso"; 
 	$obj->{cmds}->{trust}="sends QTC trustmessage for this call"; 
-	$obj->{cmds}->{qth}="sets qth for this call"; 
-	$obj->{cmds}->{qra}="sets maidenhead locator of this call"; 
-	$obj->{cmds}->{name}="sets name of the qso partner"; 
-	$obj->{cmds}->{mode}="set the mode you are operating in"; 
-	$obj->{cmds}->{notes}="additional notes for this QSO"; 
+	#$obj->{cmds}->{info}="show infos about the ongoing QSO"; 
+	#$obj->{cmds}->{save}="save QSO record"; 
+	#$obj->{cmds}->{cancel}="cancel QSO record"; 
+	#$obj->{cmds}->{qrg}="insert qrg for the qso"; 
+	#$obj->{cmds}->{date}="configure date of the qso"; 
+	#$obj->{cmds}->{time}="configure time of the qso"; 
+	#$obj->{cmds}->{qth}="sets qth for this call"; 
+	#$obj->{cmds}->{qra}="sets maidenhead locator of this call"; 
+	#$obj->{cmds}->{name}="sets name of the qso partner"; 
+	#$obj->{cmds}->{mode}="set the mode you are operating in"; 
+	#$obj->{cmds}->{notes}="additional notes for this QSO"; 
 }
 
 # returns the data hash 
@@ -261,6 +261,97 @@ Please start qso by using call CALLSIGN\n";
 	}
 }
 
+sub get_operator_info {
+	my $obj=shift; 
+	if ( ! $obj->{op_msg} ) { 
+		$obj->{op_msg}=$obj->query->operator($obj->publish->{call});
+	}
+	if ( ! $obj->{op_msg} ) { 
+		$obj->{op_aliases}=[]; 
+		$obj->{op_lists}=[];
+	} else { 
+		$obj->{op_aliases}=[$obj->{op_msg}->set_of_aliases]; 
+		$obj->{op_lists}=[$obj->{op_msg}->set_of_lists];
+	}
+}
+
+sub template_alias_list {
+	my $obj=shift; 
+	my $alias=shift; 
+	my $aliases=shift; 
+	my $action=shift; # add del
+	$obj->get_operator_info(); 
+	if ( ! $action ) {
+		print "You can use $alias to set or delete $aliases from your callsign\n"; 
+		print "	$alias add CALL\n"; 
+		print "	$alias del CALL\n"; 
+		print "Call $aliases: ".join(" ", @{$obj->{"op_$aliases"}})."\n"; 
+		return; 
+	}
+	if ( $action eq "add" ) {
+		foreach my $call (@_) {
+			push @{$obj->{"op_$aliases"}}, $obj->allowed_letters_for_call($call);
+		}
+	}
+	if ( $action eq "del" ) {
+		foreach my $call (@_) {
+			$call=$obj->allowed_letters_for_call($call);
+			my @ret; 
+			foreach my $stored (@{$obj->{"op_$aliases"}}) { 
+				if ($call ne $stored ) { push @ret, $stored; }
+			} 
+			$obj->{"op_$aliases"}=[@ret]; 
+		}
+	}
+	print "call aliases: ".join(" ", @{$obj->{"op_aliases"}})."\n"; 
+	print "call lists: ".join(" ", @{$obj->{"op_lists"}})."\n"; 
+	print "Should I send this?\n";
+	my $no=$obj->ask_something("yes/no", "no"); 
+	if ( $no eq "yes" ) { 
+		$obj->publish->operator(
+			set_of_lists=>$obj->{op_lists},
+			set_of_aliases=>$obj->{op_aliases},
+		);
+	} else {
+		print "Answer is $no, not publishing \n"; return;
+	}
+}
+
+sub cmd_alias {
+	my $obj=shift; 
+	$obj->template_alias_list("alias", "aliases", @_); 
+}
+
+sub cmd_list {
+	my $obj=shift; 
+	$obj->template_alias_list("list", "lists", @_); 
+}
+
+sub cmd_trust {
+	my $obj=shift; 
+
+	if ( ! $obj->qso->{call} ) { 
+		print "There is no call set for this QSO, so I do not know who send the telegram.\n
+Please start qso by using call CALLSIGN\n";
+		return; 
+	}
+	print "Do you trust ".$obj->qso->{call}."?";
+	my $answer=$obj->ask_something("yes / no / don't care", "yes");
+	my $trust=0; my $trusttext="don't care about"; 
+	if ( $answer eq "yes" ) { $trust=1; $trusttext="trust";} 
+	if ( $answer eq "y" ) { $trust=1;  $trusttext="trust";} 
+	if ( $answer eq "no" ) { $trust=-1;  $trusttext="mistrust";} 
+	if ( $answer eq "n" ) { $trust=-1;  $trusttext="mistrust";} 
+	print "Should I send that you $trusttext ".$obj->qso->{call}."?\n"; 
+	my $yes=$obj->ask_something("yes/no", "yes"); 
+	if ( $yes ne "yes" ) { 
+		print "Answer is $yes, not qspint \n"; next;
+	}
+	$obj->publish->trust(
+		to=>$obj->qso->{call}, 
+		trustlevel=>$trust,
+	);
+}
 
 1; 
 
