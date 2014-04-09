@@ -220,7 +220,7 @@ sub import_telegram {
 	$msg->link_to_path($obj->{root}."/out");
 	
 	my $listpath=$obj->{root}."/lists/".$obj->call2fname($msg->to);
-	foreach my $receiver ($obj->scan_dir($listpath, ".+")) {
+	foreach my $list ($obj->scan_dir($listpath, ".+")) {
 		if ( -l $listpath."/".$list ) { 
 			# TODO Fix this 
 			$msg->link_to_path($listpath."/".$list."/telegrams/all");
@@ -238,9 +238,8 @@ sub remove_telegram {
 	my $msg=shift; 
 	
 	my $listpath=$obj->{root}."/lists/".$obj->call2fname($msg->to);
-	foreach my $receiver ($obj->scan_dir($listpath, ".+")) {
+	foreach my $list ($obj->scan_dir($listpath, ".+")) {
 		if ( -l $listpath."/".$list ) { 
-			# TODO Fix this 
 			$msg->unlink_at_path($listpath."/".$list."/telegrams/all");
 			$msg->unlink_at_path($listpath."/".$list."/telegrams/new");
 		}
@@ -458,6 +457,7 @@ sub import_operator {
 	foreach my $list ($msg->set_of_lists) {
 		my $abs_link=$obj->{root}."/lists/".$obj->call2fname($list)."/".$msg->escaped_call;
 		if ( ! -e $abs_link ) {
+			$obj->ensure_path($obj->{root}."/lists/".$obj->call2fname($list)); 
 			symlink("../../call/".$msg->escaped_call, $abs_link) or die "4 failed to link to list \n"; 
 		}
 	}
