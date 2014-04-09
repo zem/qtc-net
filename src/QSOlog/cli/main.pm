@@ -263,12 +263,14 @@ Please start qso by using call CALLSIGN\n";
 
 sub get_operator_info {
 	my $obj=shift; 
+	if ( $obj->{op_msg} ) { return; }
 	if ( ! $obj->{op_msg} ) { 
-		$obj->{op_msg}=$obj->query->operator($obj->publish->{call});
+		$obj->{op_msg}=$obj->qtc_query->operator($obj->qtc_publish->{call});
 	}
 	if ( ! $obj->{op_msg} ) { 
 		$obj->{op_aliases}=[]; 
-		$obj->{op_lists}=[];
+		$obj->{op_lists}=[]; 
+		$obj->{op_msg}=1; 
 	} else { 
 		$obj->{op_aliases}=[$obj->{op_msg}->set_of_aliases]; 
 		$obj->{op_lists}=[$obj->{op_msg}->set_of_lists];
@@ -308,7 +310,7 @@ sub template_alias_list {
 	print "Should I send this?\n";
 	my $no=$obj->ask_something("yes/no", "no"); 
 	if ( $no eq "yes" ) { 
-		$obj->publish->operator(
+		$obj->qtc_publish->operator(
 			set_of_lists=>$obj->{op_lists},
 			set_of_aliases=>$obj->{op_aliases},
 		);
@@ -347,7 +349,7 @@ Please start qso by using call CALLSIGN\n";
 	if ( $yes ne "yes" ) { 
 		print "Answer is $yes, not qspint \n"; next;
 	}
-	$obj->publish->trust(
+	$obj->qtc_publish->trust(
 		to=>$obj->qso->{call}, 
 		trustlevel=>$trust,
 	);

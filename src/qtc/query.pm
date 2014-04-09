@@ -19,7 +19,7 @@ sub new {
 
 sub list_telegrams { 
 	my $obj=shift; 
-	my $call=shift; 
+	my $call=$obj->call2fname(shift); 
 	my $type=shift; if ( ! $type ) { $type="new"; }
 	
 	my @msgs;
@@ -32,7 +32,7 @@ sub list_telegrams {
 
 sub num_telegrams { 
 	my $obj=shift; 
-	my $call=shift; 
+	my $call=$obj->call2fname(shift); 
 	my $type=shift; if ( ! $type ) { $type="new"; }
 	
 	my @msgs=$obj->scan_dir($obj->{path}."/call/$call/telegrams/$type", '.+\.qtc');
@@ -62,7 +62,7 @@ sub pubkey_array {
 
 sub operator {
 	my $obj=shift; 
-	my $call=shift; 
+	my $call=$obj->call2fname(shift); 
 	
 	foreach my $file ($obj->scan_dir($obj->{path}."/call/$call", 'operator_.+\.qtc')){
 		my $msg=qtc::msg->new(path=>$obj->{path}."/call/$call", filename=>$file); 

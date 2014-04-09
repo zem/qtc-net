@@ -9,6 +9,15 @@ sub new {
 }
 
 # an escaped call for filesystem purposes
+sub fname2call {
+	my $obj=shift; 
+	my $call=shift; 
+	if ( ! $call ) { die "we should get a callsign as parameter to this function\n"; } 
+	$call=~s/-/\//g; 
+	return $call; 
+}
+
+# an escaped call for filesystem purposes
 sub call2fname {
 	my $obj=shift; 
 	my $call=shift; 

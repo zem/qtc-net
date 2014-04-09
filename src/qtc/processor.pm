@@ -1,5 +1,6 @@
 package qtc::processor; 
 use qtc::msg; 
+use qtc::query; 
 use File::Basename; 
 use qtc::signature; 
 use qtc::keyring; 
@@ -21,6 +22,14 @@ sub new {
 	
    return $obj; 
 }
+
+sub query {
+	my $obj=shift; 
+	if ( ! $obj->{query} ) { 
+		$obj->{query}=qtc::query->new(path=>$obj->{root}); 
+	}
+	return $obj->{query};
+}	
 
 sub keyring {
 	my $obj=shift;
@@ -292,6 +301,35 @@ sub remove_pubkey {
 	$obj->keyring_clear($msg->call); 
 }
 
+sub remove_msg { 
+	my $obj=shift; 
+	my $msg=shift; 
+	if ( $msg->type eq "msg" ) { 
+		$obj->remove_msg($qtcmsg); 
+		return; 
+	}
+	if ( $msg->type eq "qsp" ) { 
+		$obj->remove_qsp($qtcmsg); 
+		return; 
+	}
+	if ( $msg->type eq "operator" ) { 
+		$obj->remove_operator($qtcmsg); 
+		return; 
+	}
+	if ( $msg->type eq "pubkey" ) { 
+		$obj->remove_pubkey($qtcmsg); 
+		return; 
+	}
+	if ( $msg->type eq "revoke" ) { 
+		$obj->remove_revoke($qtcmsg); 
+		return; 
+	}
+	if ( $msg->type eq "trust" ) { 
+		$obj->remove_trust($qtcmsg); 
+		return; 
+	}
+}
+
 sub import_revoke {
 	my $obj=shift; 
 	my $msg=shift; 
@@ -306,30 +344,7 @@ sub import_revoke {
 			path=>$obj->{root}."/out",
 			filename=>$filename, 
 		);
-		if ( $msg->type eq "msg" ) { 
-			$obj->remove_msg($qtcmsg); 
-			return; 
-		}
-		if ( $msg->type eq "qsp" ) { 
-			$obj->remove_qsp($qtcmsg); 
-			return; 
-		}
-		if ( $msg->type eq "operator" ) { 
-			$obj->remove_operator($qtcmsg); 
-			return; 
-		}
-		if ( $msg->type eq "pubkey" ) { 
-			$obj->remove_pubkey($qtcmsg); 
-			return; 
-		}
-		if ( $msg->type eq "revoke" ) { 
-			$obj->remove_revoke($qtcmsg); 
-			return; 
-		}
-		if ( $msg->type eq "trust" ) { 
-			$obj->remove_trust($qtcmsg); 
-			return; 
-		}
+		$obj->remove_msg($qtcmsg); 
 	}
 	$msg->link_to_path($obj->{root}."/call/".$msg->escaped_call."/revoke");
 	$msg->link_to_path($obj->{root}."/out");
@@ -344,20 +359,68 @@ sub remove_revoke {
 	$msg->unlink_at_path($obj->{root}."/out");
 }
 
+sub remove_msgs_below {
+	my $obj=shift; 
+	my $path=shift; 
+	my %args=(@_);
+	my @entrys=$obj->scan_dir(
+		$path,
+		".+"
+	);
+	foreach my $entry (@entrys) {
+		my $absentry=$path."/".$entry;
+		if ( -d $absentry ) {
+			# remove_msgs_below 
+			$obj->remove_msgs_below($absentry, %args);
+			if ( $args{mrproper} ) {
+				unlink($absentry) or die "can't unlink direcrory ".$absentry."\n"; 
+			}
+		}
+		if ( -l $absentry ) {
+			if ( $args{mrproper} ) {
+				unlink($absentry) or die "can't unlink link ".$absentry."\n"; 
+			}
+		}
+		if ( -f $absentry ) {
+			my $msg=qtc::msg->new(path=>$path, filename=>$filename); 
+			$obj->remove_msg($msg); 
+		}
+	}
+}
+
 sub import_operator {
 	my $obj=shift; 
 	my $msg=shift; 
 	$obj->verify_signature($msg);	
 
+	my $oldop=$obj->query->operator($msg->call); 
+	if ( $oldop ) { 
+		if ( $oldop->record_date >= $msg->record_date ) { 
+			die "there is an old operator message newer than this one skip this\n"; 
+		}
+		$obj->remove_operator($oldop); 
+	}
+
 	# TODO: place aliassing code here
 	$msg->link_to_path($obj->{root}."/call/".$msg->escaped_call);
 
-	foreach my $alias (split(/ /, $msg->set_of_aliases)) {
-		#TODO link aliases 
+	foreach my $alias ($msg->set_of_aliases)) {
+		$f_alias=$obj->call2fname($alias); 
+		if ( -d $obj->{root}."/call/$f_alias" ) {
+			my $otherop=$obj->query->operator($alias);
+			if ( ! $otherop ) {
+				# the directory is empty lets takeover
+				$obj->remove_msgs_below($obj->{root}."/call/$f_alias", mrproper=>1);
+				unlink($obj->{root}."/call/$f_alias") or die "failed to unlink $f_alias\n"; 
+				symlink($msg->escaped_call, $obj->{root}."/call/$f_alias") or die "failed to link to $f_alias\n"; 
+			} 
+		} else {
+			symlink($msg->escaped_call, $obj->{root}."/call/$f_alias") or die "failed to link to $f_alias\n"; 
+		}
 	}
 	
-	foreach my $list (split(/ /, $msg->set_of_lists)) {
-		$msg->link_to_path($obj->{root}."/lists/".$obj->call2fname($list));
+	foreach my $list ($msg->set_of_lists)) {
+		symlink("../../call/".$msg->escaped_call, $obj->{root}."/lists/".$obj->call2fname($list)."/".$msg->escaped_call) or die "failed to link to list \n"; 
 	}
 	
 	$msg->link_to_path($obj->{root}."/out");
@@ -366,6 +429,7 @@ sub remove_operator {
 	my $obj=shift; 
 	my $msg=shift; 
 	
+	# TODO Operator removal
 	$msg->unlink_at_path($obj->{root}."/call/".$msg->escaped_call);
 	$msg->unlink_at_path($obj->{root}."/out");
 }
