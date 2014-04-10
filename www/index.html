@@ -9,6 +9,8 @@
 <h2>A Short Telegram System for Amateur Radio</h2>
 </center>
 <hr>
+<img src="QTC-Net.svg"><br>
+<hr>
 This ugly graphic trys to illustrate the network, it is somewhat ugly and too complicated, 
 and will be exchanged soon, but we have really trouble to explain QTC Net in two 
 scentences. <br>
@@ -21,8 +23,6 @@ a diplome) in the middle who has access to the Network.
 The easiest way to access the network ist via Internet, but anyway the messages and 
 Interserver communications are designed to be transmitted via Radio Links as well, 
 if there is enough bandwidth. 
-<br>
-<img src="QTC-Net.svg"><br>
 <hr>
 <h3>Frequently Asked Questions:</h3>
 <a href="faq.html">The FAQ is here.</a>
@@ -31,6 +31,19 @@ if there is enough bandwidth.
 The Development will take place on <a href="https://github.com/zem/qtc-net.git">GIT-HUB</a>
 
 <hr>
+<h3>Development Status:</h3>
+We don't made a release yet. This means the code is still changing a lot. 
+<ul>
+	<li>qsolog is an 'I would like to be an adif logger when I am grown up' program that we use to test message creation</li>
+	<li>qtc::publish is a library and all you need to include to publish qtc messages</li>
+	<li>qtc::query is a library and all you need to include if you want to query for a set of qtc messages</li>
+	<li>qtc::processor is responsible for sorting all the messages into the filesytem structure</li>
+</ul>
+So far if you want to see the code: qtc::msg module is already pod documented. It would be good to have that on 
+the rest of the code as well. So if you want to contribute just make a pull request on GIT-HUB. Or write a 
+Feedback or Bugreport. 
+<hr>
+
 <h3>Protocol:</h3>
 A Brief description of the Protocol <a href="protocol.txt">Protocol</a> this is derived from 
 the heavily brainstormed <a href="qtc-net-draft.txt">draft</a> as well as <a href="qtc-net-draft-02.txt">draft-02</a> 
