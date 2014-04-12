@@ -5,6 +5,7 @@ use qtc::msg;
 use CGI::Simple; 
 use CGI::Simple::Standard; 
 use Archive::Tar; 
+use File::Basename; 
 
 my $root="/home/zem/.qtc"; 
 
@@ -68,9 +69,11 @@ if ( -f $root.$path ) {
 		-type=>'application/octet-stream',
 		-status=>200,
 	);
-	open(READ, "< ".$root.$path) or die "cant open $root$path\n"; 
-	while(<READ>) { print; }
-	close READ; 
+	eval {
+		# opening a message and parse it first means more CPU but is safer at all
+		my $msg=qtc::msg->new(path=>dirname($root.$path), filename=>basename($root.$path)); 
+		print pack("H*", $msg->as_hex);
+	}; print STDERR $@;   
 	exit; 
 }
 
