@@ -4,4 +4,7 @@
 libcrypt-openssl-rsa-perl
 libcrypt-openssl-dsa-perl
 libdigest-sha-perl
-MIME::Base64
+libwww-curl-perl
+libcgi-simple-perl
+libcgi-application-perl
+
