@@ -95,9 +95,9 @@ if ( -d $root.$path ) {
 	if ( ! $q->param("digest") ) {
 		print $q->header(
 			-type=>'text/plain',
+			-attachment => $newts,
 			-status=>200,
 		);
-		print $newts."\n";
 		print join("\n", @ret);
 	} else { 
 		# getting a digest as multipart

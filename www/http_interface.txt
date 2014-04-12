@@ -1,0 +1,55 @@
+To distribute Data between the several message pools, http could be used. 
+This Document describes briefly what qtc-if.cgi does. 
+
+In our example qtc-if.cgi is installed within apache 2. 
+
+http://www.qtc-net.org/cgi-bin/qtc-if.cgi
+
+
+RECEIVING A MESSAGE: 
+
+You can receive a message by using the path_info of the CGI script with GET: 
+
+http://www.qtc-net.org/cgi-bin/qtc-if.cgi/out/pubkey_oe1src_SOMECHECKSUM.qtc
+
+
+RECEIVING A DIRECTORY LISTING:
+
+to see what messages are available in a directory you can GET or POST to a directory: 
+
+http://www.qtc-net.org/cgi-bin/qtc-if.cgi/out
+
+gets a text/plain output with each line containing one file. The filename of that 
+File is the unix timestamp that is currently on the server. 
+
+When parsing, you SHOULD split at every variation of CRLF LFCR LF CR sequences, to 
+have the implementation clean. 
+
+If you want to look for Files that are dated newer that a timestamp (we received one 
+encoded in the filename during the last GET), you may add a ts=TIMESTAMP parameter 
+to the URL or via your POST Data:
+
+http://www.qtc-net.org/cgi-bin/qtc-if.cgi/out?ts=1397052832
+
+The client should save those Timestamp that is returned to get only data that is 
+new on the remote site.
+
+Normally you can check the Files list for messages you already have locally and 
+then get the difference. Sometimes you may already know that you want everything. 
+You can use the digest=1 parameter to get the content of all messages list would 
+list as a tar file, again with the filename=TIMESTAMP. 
+
+of course you may combine ts=TIMESTAMP and digest=1 parameters.
+
+http://www.qtc-net.org/cgi-bin/qtc-if.cgi/out?ts=1397052832&digest=1
+http://www.qtc-net.org/cgi-bin/qtc-if.cgi/out?digest=1
+
+
+PUBLISHING OF A MESSAGE: 
+
+By PUT (or POST until there is some bug fixed) you can upload a File to any path 
+below the URL it will then loaded and placed in /in for server processing if it is 
+a valid .qtc message.
+
+
+
