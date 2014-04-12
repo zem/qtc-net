@@ -7,8 +7,8 @@ use CGI::Simple::Standard;
 use Archive::Tar; 
 use File::Basename; 
 
-my $root="/home/zem/.qtc"; 
-
+my $root=$ENV{QTC_ROOT}; 
+if ( ! $root ) { $root=$ENV{HOME}."/.qtc" }
 
 my $putdata; 
 if ( $ENV{REQUEST_METHOD} eq 'PUT' ) {
@@ -31,7 +31,7 @@ if ( $putdata ) {
 	eval { 
 		$putdata=unpack("H*", $putdata); 
 		$msg=qtc::msg->new(hex=>$putdata);
-		$msg->to_filesystem("/tmp"); 
+		$msg->to_filesystem($root."/in"); 
 	}; 
 	if ( $@ ) { 
 		print $q->header(
