@@ -33,6 +33,8 @@ sub new {
 
 	if ( ! $obj->{lwp} ) { $obj->{lwp}=LWP::UserAgent->new; }
 
+	# the counter of downloaded messages is held within the object 
+	# in case if sync dies 
 	$obj->{message_count}=0; 
 
 	if ( ! $obj->url ) {
