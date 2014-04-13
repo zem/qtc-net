@@ -33,6 +33,8 @@ sub new {
 
 	if ( ! $obj->{lwp} ) { $obj->{lwp}=LWP::UserAgent->new; }
 
+	$obj->{message_count}=0; 
+
 	if ( ! $obj->url ) {
 		die "I need an url to connect to\n";
 	} 
@@ -64,6 +66,7 @@ sub sync {
 	
 	my $urlpath=$obj->url.$path; 
 	my $tsfile;
+	$obj->{message_count}=0; 
 
 	my @args;
 
@@ -92,9 +95,9 @@ sub sync {
 	if ( $newts !~ /^\d+$/ ) {  die "uups $newts should be numeric\n"; } 
 	
 	if ( $obj->{use_digest} ) { 
-		$obj->process_tar($res->decoded_content); 
+		$obj->{message_count}=$obj->process_tar($res->decoded_content); 
 	} else {
-		$obj->process_dir($res->decoded_content, $urlpath, $ts); 
+		$obj->{message_count}=$obj->process_dir($res->decoded_content, $urlpath, $ts); 
 	}
 	
 	if ( ( $newts ) and ( $obj->{use_ts} ))  { 
@@ -102,6 +105,11 @@ sub sync {
 		print WRITE $newts or die "Cant write into $tsfile\n"; 
 		close WRITE or die "Cant close $tsfile \n"; 
 	}
+	return $obj->{message_count};
+}
+
+sub message_count {
+	my $obj=shift; return $obj->{message_count}; 
 }
 
 sub process_dir { 
@@ -124,12 +132,13 @@ sub process_dir {
 				open(WRITE, "> ".$obj->{path}."/in/".$file) or $die_later.="Cant open file $file\n"; 
 				print  WRITE $res->decoded_content  or $die_later.="Cant write content of $file\n"; 
 				close WRITE;
+				$obj->{message_count}=$obj->{message_count} + 1; 
 			} 
 		}
 	}
 	if ( ! $obj->{use_digest_lst} ) {
 		if ( $die_later ) { die $die_later; }
-		return; 
+		return $obj->{message_count}; 
 	}
 
 	my $res=$obj->lwp->post($urlpath, 
@@ -140,7 +149,7 @@ sub process_dir {
 		],
 	);
 	if ( ! $res->is_success ) { die "http get dir to $urlpath failed\n"; }
-	$obj->process_tar($res->decoded_content); 
+	return $obj->process_tar($res->decoded_content); 
 }
 
 
@@ -152,11 +161,13 @@ sub process_tar {
 	
 	my $tar=Archive::Tar->new($tarfh); 
 	foreach my $file ($tar->get_files) { 
-			open(WRITE, "> ".$obj->{path}."/in/".$file->name) or $die_later.="Cant open file ".$file->name."\n"; 
-			print  WRITE $file->get_content  or $die_later.="Cant write content of ".$file->name."\n"; 
-			close WRITE; 
+		open(WRITE, "> ".$obj->{path}."/in/".$file->name) or $die_later.="Cant open file ".$file->name."\n"; 
+		print  WRITE $file->get_content  or $die_later.="Cant write content of ".$file->name."\n"; 
+		close WRITE; 
+		$obj->{message_count}=$obj->{message_count} + 1; 
 	}	
 	if ( $die_later ) { die $die_later; }
+	return $obj->{message_count}; 
 }
 
 
