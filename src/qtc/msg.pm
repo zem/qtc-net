@@ -660,11 +660,13 @@ sub to_filesystem {
 	my $filename=$obj->filename;
 	$obj->{path}=$path; 
 	
-	open(WRITE, "> ".$path."/.".$filename.".tmp") or die "cant open $path/$filename\n"; 
+	my $tmpfile=$$."_".time."_".$filename.".tmp"; 
+	if ( -e $path."/.".$tmpfile ) { die "$path/$tmpfile already exists \n"; }
+	open(WRITE, "> ".$path."/.".$tmpfile) or die "cant open $path/$filename\n"; 
 	print WRITE pack("H*", $obj->as_hex) or die "Can't write data to disk\n"; 
 	close(WRITE); 
-	link($path."/.".$filename.".tmp", $path."/".$filename) or die "Can't link to path\n"; 
-	unlink($path."/.".$filename.".tmp") or die "Can't unlink tmpfile, this should never happen\n"; 
+	link($path."/.".$tmpfile, $path."/".$filename) or die "Can't link to path\n"; 
+	unlink($path."/.".$tmpfile) or die "Can't unlink tmpfile, this should never happen\n"; 
 }
 
 

@@ -132,12 +132,7 @@ sub process_dir {
 				my $res=$obj->lwp->get($urlpath."/".$file); 
 				if ( ! $res->is_success ) { $die_later.="get $file failed\n"; next; }
 				my $pathfile=$obj->{path}."/in/".$file;
-				open(WRITE, "> ".$pathfile.".tmp") or $die_later.="Cant open file $file\n"; 
-				print  WRITE $res->decoded_content  or $die_later.="Cant write content of $file\n"; 
-				close WRITE;
-				link($pathfile.".tmp", $pathfile) or $die_later.="Link to $pathfile failed\n"; 
-				unlink($pathfile.".tmp") or $die_later.="unlink at $pathfile failed\n"; 
-				$obj->{message_count}=$obj->{message_count} + 1; 
+				$die_later.=$obj->write_content($pathfile, $res->decoded_content); 
 			} 
 		}
 	}
@@ -167,18 +162,28 @@ sub process_tar {
 	my $tar=Archive::Tar->new($tarfh); 
 	foreach my $file ($tar->get_files) { 
 		my $pathfile=$obj->{path}."/in/".$file->name;
-		if ( -e $pathfile ) { next; } # we don't need to write if file is already there
-		open(WRITE, "> ".$pathfile.".tmp") or $die_later.="Cant open file ".$file->name."\n"; 
-		print  WRITE $file->get_content  or $die_later.="Cant write content of ".$file->name."\n"; 
-		close WRITE; 
-		link($pathfile.".tmp", $pathfile) or $die_later.="Link to $pathfile failed\n"; 
-		unlink($pathfile.".tmp") or $die_later.="unlink at $pathfile failed\n"; 
-		$obj->{message_count}=$obj->{message_count} + 1; 
+		$die_later.=$obj->write_content($pathfile, $file->get_content); 
 	}	
 	if ( $die_later ) { die $die_later; }
 	return $obj->{message_count}; 
 }
 
+sub write_content {
+	my $obj=shift; 
+	my $pathfile=shift; 
+	my $content=shift; 
+	my $tmpfile=$$."_".time."_".$pathfile.".tmp"; 
+	if ( -e $pathfile ) { return; } # no action if $pathfile is there 
+	if ( -e $tmpfile ) { return "write_content: Uuuuups $tmpfile exits\n"; }
+	open(WRITE, "> ".$tmpfile) or return "write_content: Cant open file ".$pathfile."\n"; 
+	print  WRITE $content  or return "write_content: Cant write content of ".$pathfile."\n"; 
+	close WRITE or return "write_content: cant close file $pathfile\n"; 
+	link($tmpfile, $pathfile) or return "write_content: Link to $pathfile failed\n"; 
+	unlink($tmpfile) or return "write_content: unlink at $pathfile failed\n"; 
+	$obj->{message_count}=$obj->{message_count} + 1; 
+
+	return; 
+}
 
 
 1;
