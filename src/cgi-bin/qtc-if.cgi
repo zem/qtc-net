@@ -3,6 +3,7 @@
 use qtc::misc; 
 use qtc::msg; 
 use CGI::Simple; 
+$CGI::Simple::DISABLE_UPLOADS = 0;
 use CGI::Simple::Standard; 
 use Archive::Tar; 
 use File::Basename; 
@@ -107,8 +108,18 @@ if ( -d $root.$path ) {
 			-attachment => $newts,
 			-status=>200,
 		);
+		my $dig=$q->param("digest");
+		my %x;
+		if ( $dig eq "digest.lst" ){
+			my $fh=$q->upload($dig);
+			while (<$fh>) { 
+				chomp;
+				$x{$_}=1;
+			}
+		}
 		my $tar=Archive::Tar->new; 
 		foreach my $file (@ret) {
+			if (( $dig eq "digest.lst" ) and ( ! $x{$file} )) { next; }
 			eval {
 				my $msg=qtc::msg->new(path=>$root.$path, filename=>$file); 
 				$tar->add_data($msg->filename, pack("H*", $msg->as_hex));

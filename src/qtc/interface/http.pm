@@ -25,6 +25,9 @@ sub new {
 	if ( $obj->{use_ts} ) {
 		qtc::misc->new->ensure_path($obj->{ts_dir}); 
 	}
+	if ( ! $obj->{use_digest_lst} ) { $obj->{use_digest_lst}=1; $obj->{use_digest}=0; }  
+		# get all messages as digest, we only have this one server
+	
 	if ( ! $obj->{use_digest} ) { $obj->{use_digest}=0; }  
 		# get all messages as digest, we only have this one server
 
@@ -45,7 +48,14 @@ sub publish {
 	my $obj=shift; 
 	my $msg=shift; 
 
+	if ( ! $msg ) { die "I need a qtc::msg object here\n"; }
 
+	my $res=$obj->lwp->put($url, 
+		"Content-Type"=>"application/octet-stream",
+		Content=>pack("H*", $msg->as_hex),
+	); 
+
+	if ( ! $res->is_success ) { die "File Upload not succeeded\n"; }
 }
 
 sub sync {
@@ -84,7 +94,7 @@ sub sync {
 	if ( $obj->{use_digest} ) { 
 		$obj->process_tar($res->decoded_content); 
 	} else {
-		$obj->process_dir($res->decoded_content, $urlpath); 
+		$obj->process_dir($res->decoded_content, $urlpath, $ts); 
 	}
 	
 	if ( ( $newts ) and ( $obj->{use_ts} ))  { 
@@ -98,20 +108,39 @@ sub process_dir {
 	my $obj=shift; 
 	my $dirdata=shift; 
 	my $urlpath=shift; 
+	my $ts=shift; 
+	if ( ! $dirdata ) { return; }
 	my @dir=split("\n", $dirdata); 
 	my $die_later=""; 
 
+	my @dig; 
 	foreach my $file (@dir) { 
-		my $t=time; 
-		if ( ! -e $obj->{path}."/tst/".$file ) { 
-			my $res=$obj->lwp->get($urlpath."/".$file); 
-			if ( ! $res->is_success ) { $die_later.="get $file failed\n"; next; }
-			open(WRITE, "> ".$obj->{path}."/tst/".$file) or $die_later.="Cant open file $file\n"; 
-			print  WRITE $res->decoded_content  or $die_later.="Cant write content of $file\n"; 
-			close WRITE; 
+		if ( ! -e $obj->{path}."/in/".$file ) { 
+			if ( $obj->{use_digest_lst} ) {
+				push @dig, $file; 
+			} else {
+				my $res=$obj->lwp->get($urlpath."/".$file); 
+				if ( ! $res->is_success ) { $die_later.="get $file failed\n"; next; }
+				open(WRITE, "> ".$obj->{path}."/in/".$file) or $die_later.="Cant open file $file\n"; 
+				print  WRITE $res->decoded_content  or $die_later.="Cant write content of $file\n"; 
+				close WRITE;
+			} 
 		}
 	}
-	if ( $die_later ) { die $die_later; }
+	if ( ! $obj->{use_digest_lst} ) {
+		if ( $die_later ) { die $die_later; }
+		return; 
+	}
+
+	my $res=$obj->lwp->post($urlpath, 
+		Content_Type => 'form-data',
+		Content => [ 
+			ts=>$ts,
+			digest => [undef, "digest.lst", 'Content-Type'=>"text/plain", Content=>join("\n", @dig) ] 
+		],
+	);
+	if ( ! $res->is_success ) { die "http get dir to $urlpath failed\n"; }
+	$obj->process_tar($res->decoded_content); 
 }
 
 
@@ -123,7 +152,7 @@ sub process_tar {
 	
 	my $tar=Archive::Tar->new($tarfh); 
 	foreach my $file ($tar->get_files) { 
-			open(WRITE, "> ".$obj->{path}."/tst/".$file->name) or $die_later.="Cant open file ".$file->name."\n"; 
+			open(WRITE, "> ".$obj->{path}."/in/".$file->name) or $die_later.="Cant open file ".$file->name."\n"; 
 			print  WRITE $file->get_content  or $die_later.="Cant write content of ".$file->name."\n"; 
 			close WRITE; 
 	}	

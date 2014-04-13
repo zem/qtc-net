@@ -2,7 +2,7 @@
 
 use qtc::interface::http; 
 
-my $if=qtc::interface::http->new(url=>"http://localhost/qtc-if.cgi", use_digest=>1); 
+my $if=qtc::interface::http->new(url=>"http://localhost/qtc-if.cgi"); 
 $if->sync("/out"); 
 
 
