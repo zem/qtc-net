@@ -131,9 +131,12 @@ sub process_dir {
 			} else {
 				my $res=$obj->lwp->get($urlpath."/".$file); 
 				if ( ! $res->is_success ) { $die_later.="get $file failed\n"; next; }
-				open(WRITE, "> ".$obj->{path}."/in/".$file) or $die_later.="Cant open file $file\n"; 
+				my $pathfile=$obj->{path}."/in/".$file;
+				open(WRITE, "> ".$pathfile.".tmp") or $die_later.="Cant open file $file\n"; 
 				print  WRITE $res->decoded_content  or $die_later.="Cant write content of $file\n"; 
 				close WRITE;
+				link($pathfile.".tmp", $pathfile) or $die_later.="Link to $pathfile failed\n"; 
+				unlink($pathfile.".tmp") or $die_later.="unlink at $pathfile failed\n"; 
 				$obj->{message_count}=$obj->{message_count} + 1; 
 			} 
 		}
@@ -163,9 +166,13 @@ sub process_tar {
 	
 	my $tar=Archive::Tar->new($tarfh); 
 	foreach my $file ($tar->get_files) { 
-		open(WRITE, "> ".$obj->{path}."/in/".$file->name) or $die_later.="Cant open file ".$file->name."\n"; 
+		my $pathfile=$obj->{path}."/in/".$file->name;
+		if ( -e $pathfile ) { next; } # we don't need to write if file is already there
+		open(WRITE, "> ".$pathfile.".tmp") or $die_later.="Cant open file ".$file->name."\n"; 
 		print  WRITE $file->get_content  or $die_later.="Cant write content of ".$file->name."\n"; 
 		close WRITE; 
+		link($pathfile.".tmp", $pathfile) or $die_later.="Link to $pathfile failed\n"; 
+		unlink($pathfile.".tmp") or $die_later.="unlink at $pathfile failed\n"; 
 		$obj->{message_count}=$obj->{message_count} + 1; 
 	}	
 	if ( $die_later ) { die $die_later; }
