@@ -1,6 +1,7 @@
 package QSOlog::cli::main; 
 use qtc::query; 
 use qtc::publish; 
+use qtc::misc; 
 use POSIX qw(strftime); 
 use QSOlog::cli; 
 @ISA=("QSOlog::cli"); 
@@ -11,9 +12,12 @@ sub new {
 	
 	if ( ! defined $obj->{qso} ){ $obj->{qso}={}; }
 	#if ( ! $obj->{mycall} ) { $obj->cmd_mycall;  } # TODO make this configurable
+	if ( ! $obj->{misc} ) { $obj->{misc}=qtc::misc->new; }
 
 	return $obj; 
 }
+
+sub misc { my $obj=shift; return $obj->{misc}; }
 
 # returns a query object for the QTC network 
 sub qtc_publish { 
@@ -60,37 +64,6 @@ sub qso {
 	return $obj->{qso}; 
 }
 
-sub allowed_letters_for_telegram {
-	my $obj=shift; 
-	my $telegram=shift; 
-	
-	$telegram=lc($telegram); 
-	$telegram=~s/\t/\ /g; 
-	# There should be a working regex to stip any character not allowed from the call 
-	# I did not find one... 
-	my $t;
-	while ($telegram) { 
-		my $x=substr($telegram, 0, 1);  $telegram=substr($telegram, 1); 
-		if ($x=~/([a-z]|[0-9]|\/|\.|,|\ |\?)/) { $t.=$x; } 
-		if ( length($t) >= 300 ) { $telegram=''; }
-	} 
-	return $t; 
-}
-
-sub allowed_letters_for_call {
-	my $obj=shift; 
-	my $call=shift; 
-	
-	$call=lc($call); 
-	# There should be a working regex to stip any character not allowed from the call 
-	# I did not find one... 
-	my $t; 
-	while ($call) { 
-		my $x=substr($call, 0, 1);  $call=substr($call, 1); 
-		if ($x=~/([a-z]|[0-9]|\/)/) { $t.=$x; } 
-	} 
-	return $t; 
-}
 
 sub cmd_call {
 	my $obj=shift; 
@@ -98,7 +71,7 @@ sub cmd_call {
 
 	if ( ! $call ) { print "usage: call CALLSIGN\n"; return; }
 
-	$call=$obj->allowed_letters_for_call($call); 
+	$call=$obj->misc->allowed_letters_for_call($call); 
 	
 	if ( ! $call ) { 
 		print "Having a qso with ".$obj->qso->{call}."\n"
@@ -133,13 +106,13 @@ Please start qso by using call CALLSIGN\n";
 		$to=$obj->ask_something("telegram to"); 
 		if ( ! $to) { print "Abort empty receiver\n"; return; }
 	}
-	$to=$obj->allowed_letters_for_call($to); 
+	$to=$obj->misc->allowed_letters_for_call($to); 
 
 	if ( ! $telegram ) {
 		$telegram=$obj->ask_something("telegram text"); 
 		if ( ! $telegram ) { print "Abort empty message\n"; return; }
 	}
-	$telegram=$obj->allowed_letters_for_telegram($telegram); 
+	$telegram=$obj->misc->allowed_letters_for_telegram($telegram); 
 	
 	print "should I send the following telegram:\n"; 
 	print "\tfrom: ".$obj->qso->{call}."\n"; 
@@ -203,7 +176,7 @@ sub cmd_mycall {
 		$mycall=$obj->ask_something("YOUR call", "oe1src"); 
 		if ( ! $mycall) { print "Your call is should not be empty use mycall CALLSIGN to set one\n"; }
 	}
-	$mycall=$obj->allowed_letters_for_call($mycall);
+	$mycall=$obj->misc->allowed_letters_for_call($mycall);
 
 	print "Hello $mycall\n"; 
 	$obj->{mycall}=$mycall; 
@@ -293,12 +266,12 @@ sub template_alias_list {
 	}
 	if ( $action eq "add" ) {
 		foreach my $call (@_) {
-			push @{$obj->{"op_$aliases"}}, $obj->allowed_letters_for_call($call);
+			push @{$obj->{"op_$aliases"}}, $obj->misc->allowed_letters_for_call($call);
 		}
 	}
 	if ( $action eq "del" ) {
 		foreach my $call (@_) {
-			$call=$obj->allowed_letters_for_call($call);
+			$call=$obj->misc->allowed_letters_for_call($call);
 			my @ret; 
 			foreach my $stored (@{$obj->{"op_$aliases"}}) { 
 				if ($call ne $stored ) { push @ret, $stored; }

@@ -68,4 +68,41 @@ sub scan_dir {
 	return (@aFiles);
 }
 
+
+###############################################
+# the allowed letters routinges will strip 
+# down user data as needed. 
+###############################################
+sub allowed_letters_for_telegram {
+	my $obj=shift; 
+	my $telegram=shift; 
+	
+	$telegram=lc($telegram); 
+	$telegram=~s/\t/\ /g; 
+	# There should be a working regex to stip any character not allowed from the call 
+	# I did not find one... 
+	my $t;
+	while ($telegram) { 
+		my $x=substr($telegram, 0, 1);  $telegram=substr($telegram, 1); 
+		if ($x=~/([a-z]|[0-9]|\/|\.|,|\ |\?)/) { $t.=$x; } 
+		if ( length($t) >= 300 ) { $telegram=''; }
+	} 
+	return $t; 
+}
+
+sub allowed_letters_for_call {
+	my $obj=shift; 
+	my $call=shift; 
+	
+	$call=lc($call); 
+	# There should be a working regex to stip any character not allowed from the call 
+	# I did not find one... 
+	my $t; 
+	while ($call) { 
+		my $x=substr($call, 0, 1);  $call=substr($call, 1); 
+		if ($x=~/([a-z]|[0-9]|\/)/) { $t.=$x; } 
+	} 
+	return $t; 
+}
+
 1; 
