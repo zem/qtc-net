@@ -4,6 +4,7 @@ use base 'CGI::Application';
 use qtc::query; 
 use qtc::publish; 
 use Data::Dumper; 
+use Digest::SHA qw(sha256_hex); 
 use POSIX qw(strftime); 
 
 # options are to be processed here 
@@ -21,6 +22,7 @@ sub setup {
 		'show_messages' => 'mode_show_messages',
 	);
 	if ( ! $obj->{qtc}->{path} ) { $obj->{qtc}->{path}=$ENV{HOME}."/.qtc"; }
+	if ( ! $obj->{qtc}->{priv_path_prefix} ) { $obj->{qtc}->{priv_path_prefix}=$ENV{HOME}."/.qtc_webapp_credentials"; }
 	if ( ! $obj->{qtc}->{query} ) { $obj->{qtc}->{query}=qtc::query->new(path=>$obj->{qtc}->{path}); }
 	$obj->{qtc}->{exports}->{mode}=1;
 	$obj->{qtc}->{exports}->{call}=1;
@@ -113,6 +115,12 @@ sub h_h1 {
 	return $obj->h_e("h1", $p, @_); 
 }
 
+sub filter_login_required {
+	my $obj=shift; 
+	if ( ! -d $obj->get_priv_dir ) { return; }
+	return @_; 
+}
+
 # you need to be in a table to use this....
 sub h_submit_for_tbl {
 	my $obj=shift; 
@@ -136,7 +144,7 @@ sub h_labled_input {
 	delete $p->{label};
 
 	return $obj->h_e("tr", {}, 
-		$obj->h_e("td", {align=>"left"}, $label), 
+		$obj->h_e("td", {align=>"left"}, "<b>".$label."</b>"), 
 		$obj->h_e("td", {align=>"right"},
 			$obj->h_e("input", $p, $default),
 		), 
@@ -170,20 +178,23 @@ sub area_ask_call {
 	return $r; 
 }
 
-sub area_user_pass {
+sub get_priv_dir {
 	my $obj=shift; 
-	my $r;
-	my $publisher_call=$obj->q->param("publisher_call");
-	$publisher_call=$obj->qtc_query->allowed_letters_for_call($publisher_call); 
-	if ( ! $call ) { 
-		$obj->q->delete("publisher_call");
-	} else {
-		$obj->q->param("publisher_call", $publisher_call);
+	my $user=$obj->q->param("publisher_call");
+	my $pass=$obj->q->param("publisher_password");
+	if ( ! $obj->{qtc}->{priv_dir} ) {
+		my $user_pass_sha=sha256_hex($user)."_".sha256_hex($pass);
+		$obj->{qtc}->{priv_dir}=$obj->{qtc}->{priv_path_prefix}."/".$user_pass_sha;
 	}
+	return $obj->{qtc}->{priv_dir}; 
+}
+
+sub render_user_pass_login {
+	my $obj=shift;
+	my $r;  
 
 	delete $obj->{qtc}->{exports}->{publisher_call};
 	delete $obj->{qtc}->{exports}->{publisher_password};
-
 	$r.=$obj->h_tabled_form({}, 
 		$obj->h_labled_input({
 			label=>"YOUR Callsign:", 
@@ -191,7 +202,7 @@ sub area_user_pass {
 			size=>10, 
 			maxlength=>20, 
 			name=>"publisher_call",
-			value=>$publisher_call, 
+			value=>$obj->q->param("publisher_call"), 
 		}),
 		$obj->h_labled_input({
 			label=>"YOUR Password:", 
@@ -199,14 +210,56 @@ sub area_user_pass {
 			size=>10, 
 			maxlength=>50, 
 			name=>"publisher_password",
-			value=>$publisher_password, 
+			value=>$obj->q->param("publisher_password"), 
 		}),
 		$obj->h_submit_for_tbl({value=>"publischer login"}), 
 	);
-	
+	$obj->{qtc}->{exports}->{publisher_call}=1;
+	$obj->{qtc}->{exports}->{publisher_password}=1;
+	return $r;
+}
+
+sub render_user_pass_logout {
+	my $obj=shift; 
+	my $r;  
+	delete $obj->{qtc}->{exports}->{publisher_call};
+	delete $obj->{qtc}->{exports}->{publisher_password};
+	$r.=$obj->h_tabled_form({}, 
+		"<td><b>YOUR Callsign:</b></td><td>".$obj->q->param("publisher_call")."</td>",
+		"<td><b>YOUR Callsign:</b></td><td>".$obj->q->param("publisher_password")."</td>",
+		$obj->h_submit_for_tbl({value=>"publischer logout"}), 
+	);
 	$obj->{qtc}->{exports}->{publisher_call}=1;
 	$obj->{qtc}->{exports}->{publisher_password}=1;
 
+	return $r;
+}
+
+sub area_user_pass {
+	my $obj=shift; 
+	my $r;
+	my $publisher_call=$obj->q->param("publisher_call");
+	$publisher_call=$obj->qtc_query->allowed_letters_for_call($publisher_call); 
+	if ( ! $publisher_call ) { 
+		$obj->q->delete("publisher_call");
+	} else {
+		$obj->q->param("publisher_call", $publisher_call);
+	}
+	if ( ($publisher_call) and ($obj->q->param("publisher_password")) ) {
+		if ( -d $obj->get_priv_dir ) { 
+			# we belive the login is succeeded if that directory exists
+			$r.=$obj->render_user_pass_logout; 
+			return $r; 
+		} else {
+			$r.="<h4>Login Failed, Try again</h4>";
+			$r.=$obj->render_user_pass_login; 
+			return $r; 
+		}
+	}
+	if ( ($publisher_call) or ($obj->q->param("publisher_password")) ){
+		$r.="<h4>only one, either your call or your pw received</h4>"; 
+	}
+	$r.=$obj->render_user_pass_login; 
 	return $r; 
 }
 
@@ -228,8 +281,10 @@ sub mode_show_messages {
 	my @rows; 
 	foreach my $msg (@msgs) {  
 		push @rows, $obj->h_tr({},
-					$obj->h_td({}, $obj->format_msg_in_html($msg)),
-					$obj->h_td({}, $obj->h_e("input", {type=>"checkbox", name=>"qsp", value=>$msg->checksum})),
+			$obj->h_td({}, $obj->format_msg_in_html($msg)),
+			$obj->filter_login_required(
+				$obj->h_td({}, $obj->h_e("input", {type=>"checkbox", name=>"qsp", value=>$msg->checksum})),
+			), 
 		); 
 	} 	
 
@@ -238,7 +293,9 @@ sub mode_show_messages {
 			@rows,
 			$obj->h_tr({},
 				$obj->h_td({}), 
-				$obj->h_td({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>"QSP"})), 
+				$obj->filter_login_required(
+					$obj->h_td({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>"QSP"})),
+				), 
 			),
 		), 
 	)); 
