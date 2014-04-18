@@ -25,6 +25,8 @@ sub setup {
 	$obj->{qtc}->{exports}->{mode}=1;
 	$obj->{qtc}->{exports}->{call}=1;
 	$obj->{qtc}->{exports}->{type}=1;
+	$obj->{qtc}->{exports}->{publisher_call}=1;
+	$obj->{qtc}->{exports}->{publisher_password}=1;
 
 }
 sub qtc_query { my $obj=shift; return $obj->{qtc}->{query}; }
@@ -34,6 +36,7 @@ sub h_input_hidden {
 	my $obj=shift; 
 	my $r; 
 	foreach my $p (keys %{$obj->{qtc}->{exports}}) {
+		if ( ! $obj->q->param($p) ) { next; }
 		$r.=$obj->h_e("input", {
 				type=>"hidden", 
 				name=>$p,
@@ -144,7 +147,13 @@ sub area_ask_call {
 	my $obj=shift; 
 	my $r;
 	my $call=$obj->q->param("call");
-	$obj->q->param("mode", "show_messages");
+	$call=$obj->qtc_query->allowed_letters_for_call($call); 
+	if ( ! $call ) { 
+		#$obj->q->delete("call");
+	} else {
+		$obj->q->param("call", $call);
+	}
+	delete $obj->{qtc}->{exports}->{call}; 
 	$r.=$obj->h_tabled_form({}, 
 		$obj->h_labled_input({
 			label=>"Callsign:", 
@@ -156,6 +165,47 @@ sub area_ask_call {
 		}),
 		$obj->h_submit_for_tbl({value=>"QTC?"}), 
 	);
+	$obj->{qtc}->{exports}->{call}=1; 
+
+	return $r; 
+}
+
+sub area_user_pass {
+	my $obj=shift; 
+	my $r;
+	my $publisher_call=$obj->q->param("publisher_call");
+	$publisher_call=$obj->qtc_query->allowed_letters_for_call($publisher_call); 
+	if ( ! $call ) { 
+		$obj->q->delete("publisher_call");
+	} else {
+		$obj->q->param("publisher_call", $publisher_call);
+	}
+
+	delete $obj->{qtc}->{exports}->{publisher_call};
+	delete $obj->{qtc}->{exports}->{publisher_password};
+
+	$r.=$obj->h_tabled_form({}, 
+		$obj->h_labled_input({
+			label=>"YOUR Callsign:", 
+			type=>"text", 
+			size=>10, 
+			maxlength=>20, 
+			name=>"publisher_call",
+			value=>$publisher_call, 
+		}),
+		$obj->h_labled_input({
+			label=>"YOUR Password:", 
+			type=>"password", 
+			size=>10, 
+			maxlength=>50, 
+			name=>"publisher_password",
+			value=>$publisher_password, 
+		}),
+		$obj->h_submit_for_tbl({value=>"publischer login"}), 
+	);
+	
+	$obj->{qtc}->{exports}->{publisher_call}=1;
+	$obj->{qtc}->{exports}->{publisher_password}=1;
 
 	return $r; 
 }
@@ -167,7 +217,9 @@ sub mode_show_messages {
 	my $type=$q->param("type");
 	if ( $type !~ /^((all)|(new)|(sent))$/ ) { return "<h1>FAIL telegram type invalid</h1>"; }
 	my $r; 
-	$r.=$obj->area_ask_call."<hr/>\n";
+	$r.="<table width=\"100%\"><td align=\"left\">".$obj->area_ask_call."</td>\n";
+	$r.="<td align=\"right\">".$obj->area_user_pass."</td>\n";
+	$r.="</table><hr/>";
 
 	if ( ! $q->param("call") ) { return $r."<h3>Please enter a Call</h3>"; }
 
@@ -181,7 +233,7 @@ sub mode_show_messages {
 		); 
 	} 	
 
-	$r.=$obj->h_form({}, 
+	$r.=$obj->h_e("center",{}, $obj->h_form({}, 
 		$obj->h_table({}, 
 			@rows,
 			$obj->h_tr({},
@@ -189,7 +241,7 @@ sub mode_show_messages {
 				$obj->h_td({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>"QSP"})), 
 			),
 		), 
-	); 
+	)); 
 	$r.="<b>Show me: ";
 	$r.="<table><tr>";
 	$q->param("type", "new"); 
