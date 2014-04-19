@@ -9,6 +9,6 @@ if ( ! $priv_path_prefix ) { $priv_path_prefix=$ENV{HOME}."/.qtc_web" }
 
 my $app=qtc::WebApp->new(qtc=>{
 	path=>$root,
-	priv_path_prefix=>"/tmp/qtc_web",
+	priv_path_prefix=>$priv_path_prefix,
 }); 
 $app->run; 
