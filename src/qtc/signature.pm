@@ -1,11 +1,13 @@
 #Signature abstraction module for qtc net. 
 package qtc::signature; 
 use Data::Dumper;
-use File::Basename; 
+use File::Basename;
+use qtc::msg; 
 
 use Crypt::OpenSSL::RSA;
 use Crypt::OpenSSL::DSA;
 use MIME::Base64;
+use Digest::SHA qw(sha256_hex); 
 
 #######################################################
 # obviously generic right now
@@ -20,6 +22,16 @@ sub new {
 	# expect a privkey string for object signing 
 	# expect a privkey_type = rsa|dsa
 	# and a key_id for signing of data 
+	# or a privkey_file 
+	# 
+	# in case of a newly generated key this can be done by 
+	#     privpath (that one should exist) 
+	#     call
+	#     rsa_keygen ( =1 or later dsa keygen ) 
+	#
+	if ( $obj->{rsa_keygen} ) {
+		$obj->rsa_keygen; 
+	}
 
 	if ( $obj->{privkey_file} ) {
 		open(IN, "< $obj->{privkey_file}") or die "can't read privkey\n"; 
@@ -35,6 +47,50 @@ sub new {
 
 	return $obj; 
 }
+
+sub rsa_keygen {
+	my $o=shift; 
+
+	my $rsa = Crypt::OpenSSL::RSA->generate_key(2048);
+	$rsa->use_sha256_hash; 
+	my $keystring=$rsa->get_public_key_string;
+	chomp($keystring); 
+	$keystring=~s/^(-----BEGIN RSA PUBLIC KEY-----)|(-----END RSA PUBLIC KEY-----)$//g;
+
+	my $keydata=decode_base64($keystring) or die "Cant decode keystring\n"; 
+	my $key_id=sha256_hex($keydata);
+
+	my $pubkey=qtc::msg->new(
+		type=>"pubkey",
+		call=>$o->{call},
+		key_type=>"rsa",
+		key_id=>$key_id,
+		key=>unpack("H*", $keydata),
+	); 
+
+	$pubkey->signature(unpack("H*", $rsa->sign($pubkey->signed_content_bin)), $key_id); 
+
+	my $path=$o->{privpath};
+
+	my @dir=$pubkey->scan_dir($path, 'rsa_'.$call.'.*'); 
+	if ( $#dir >= 0 ) { die "ther is already a key, it may be a bad idea to write a new one\n"; }
+	
+	if ( $o->{debug} ) { print STDERR "Writing Keys to $path\n"; }
+	
+	$pubkey->ensure_path($path); 
+	$pubkey->to_filesystem($path); 
+	
+	$o->{privkey_file}="$path/rsa_".$call."_".$key_id.".key";
+
+	open(WRITE, "> ".$o->{privkey_file}) or die "Can't write key to filesystem\n";
+	print WRITE $rsa->get_private_key_string or die "Can't write key to filesystem (write)\n"; 
+	close WRITE or die "Can't write key to filesystem (close)\n";
+	
+	# activate this key in the system....
+	$pubkey->link_to_path($obj->{path}."/in"); 		
+}
+
+
 
 sub sign {
 	my $obj=shift; 

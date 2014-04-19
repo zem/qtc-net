@@ -26,18 +26,32 @@ sub new {
 		$call=~s/\-/\//g;
 		$obj->{call}=$call;
 	}
+	if ( ! $obj->{call} ) { die "we still don't have a call so we cant continue\n"; }
 	if ( ! $obj->{query} ) { 
 		$obj->{query}=qtc::query->new(
 			path=>$obj->{path},
 		);
 	}
+	# ensure that the privpath exists if we do key generation 
+	if ( ( $obj->{rsa_keygen} ) or ($obj->{rsa_keygen}) ) {
+		$obj->ensure_path($obj->{privpath}); 
+	}
 	if ( ! $obj->{signature} ) { 
 		$obj->{signature}=qtc::signature->new(
 			privkey_file=>$obj->{privkey_file},
+			password=>$obj->{password},
+			
+			path=>$obj->{path}, 
+			privpath=>$obj->{privpath}, 
+			call=>$obj->{call},
+			
+			dsa_keygen=>$obj->{dsa_keygen},
+			rsa_keygen=>$obj->{rsa_keygen},
 		);
 	}
 	return $obj; 
 }
+
 
 sub query { 
 	my $obj=shift; 
