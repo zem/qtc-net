@@ -8,6 +8,7 @@ use Crypt::OpenSSL::RSA;
 use Crypt::OpenSSL::DSA;
 use MIME::Base64;
 use Digest::SHA qw(sha256_hex); 
+use Crypt::Rijndael;
 
 #######################################################
 # obviously generic right now
@@ -33,11 +34,18 @@ sub new {
 		$obj->rsa_keygen; 
 	}
 
+	if ( $obj->{password} ) {
+		my $salt="it is stupid to store the aes keyhash into a directory name in the first place"; 
+		$obj->{aes}=Crypt::Rijndael->new(sha256_hex($salt.$obj->{password})); 
+	}
 	if ( $obj->{privkey_file} ) {
 		open(IN, "< $obj->{privkey_file}") or die "can't read privkey\n"; 
 		$obj->{privkey}=""; 
 		while (<IN>) { $obj->{privkey}.=$_; }
 		close IN; 
+		if ( $obj->{aes} ) { 
+			$obj->{privkey}=$obj->{aes}->decrypt($obj->{privkey}); 
+		}
 		my $basename=basename($obj->{privkey_file}); 
 		$basename=~s/\.key$//g; 
 		my ($ttyp, $tcall, $tkey_id) = split(/_/, $basename); 
@@ -83,7 +91,11 @@ sub rsa_keygen {
 	$o->{privkey_file}="$path/rsa_".$o->{call}."_".$key_id.".key";
 
 	open(WRITE, "> ".$o->{privkey_file}) or die "Can't write key to filesystem\n";
-	print WRITE $rsa->get_private_key_string or die "Can't write key to filesystem (write)\n"; 
+	if ( $obj->{aes} ) {
+		print WRITE $obj->{aes}->encrypt($rsa->get_private_key_string) or die "Can't write key to filesystem (write)\n"; 
+	} else {
+		print WRITE $rsa->get_private_key_string or die "Can't write key to filesystem (write)\n"; 
+	}
 	close WRITE or die "Can't write key to filesystem (close)\n";
 	
 	# activate this key in the system....
