@@ -98,6 +98,7 @@ sub qtc_publish {
 	if ( ! $o->{qtc}->{publish} ) { 
 		if ( ! $o->logged_in ) { return; }
 		$o->{qtc}->{publish}=qtc::publish->new(
+			path=>$o->{qtc}->{path}, 
 			privpath=>$o->get_priv_dir, 
 			call=>$o->q->param("publisher_call"),
 			password=>$o->q->param("publisher_password"),
@@ -491,10 +492,21 @@ sub mode_show_messages {
 
 	if ( ! $q->param("call") ) { return $r."<h3>Please enter a Call</h3>"; }
 
+	#prepare qsp checksum hash
+	my %qsp; 
+	foreach $chk ($q->param("qsp")) { $qsp{$chk}=1; }
+
 	$r.="<h3>$type qtc telegrams for ".$q->param("call").":</h3>";
 	my @msgs=$obj->qtc_query->list_telegrams($q->param("call"), $type);
 	my @rows; 
 	foreach my $msg (@msgs) {  
+		if ( ( $qsp{$msg->checksum} ) and ($obj->logged_in) and ($q->param("call")) ) {
+			$obj->qtc_publish->qsp(
+				msg=>$msg,
+				to=>$q->param("call"),
+			);
+			next; 
+		} 
 		push @rows, $obj->h_tr({},
 			$obj->h_td({}, $obj->format_msg_in_html($msg)),
 			$obj->filter_login_required(
