@@ -32,10 +32,6 @@ sub new {
 			path=>$obj->{path},
 		);
 	}
-	# ensure that the privpath exists if we do key generation 
-	if ( ( $obj->{rsa_keygen} ) or ($obj->{rsa_keygen}) ) {
-		$obj->ensure_path($obj->{privpath}); 
-	}
 	if ( ! $obj->{signature} ) { 
 		$obj->{signature}=qtc::signature->new(
 			privkey_file=>$obj->{privkey_file},
