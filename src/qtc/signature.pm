@@ -80,14 +80,14 @@ sub rsa_keygen {
 	$pubkey->ensure_path($path); 
 	$pubkey->to_filesystem($path); 
 	
-	$o->{privkey_file}="$path/rsa_".$call."_".$key_id.".key";
+	$o->{privkey_file}="$path/rsa_".$o->{call}."_".$key_id.".key";
 
 	open(WRITE, "> ".$o->{privkey_file}) or die "Can't write key to filesystem\n";
 	print WRITE $rsa->get_private_key_string or die "Can't write key to filesystem (write)\n"; 
 	close WRITE or die "Can't write key to filesystem (close)\n";
 	
 	# activate this key in the system....
-	$pubkey->link_to_path($obj->{path}."/in"); 		
+	$pubkey->link_to_path($o->{path}."/in"); 		
 }
 
 

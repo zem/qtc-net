@@ -93,6 +93,18 @@ sub setup {
 # object helpers
 ###############################################################
 sub qtc_query { my $obj=shift; return $obj->{qtc}->{query}; }
+sub qtc_publish { 
+	my $o=shift; 
+	if ( ! $o->{qtc}->{publish} ) { 
+		if ( ! $o->logged_in ) { return; }
+		$o->{qtc}->{publish}=qtc::publish->new(
+			privpath=>$o->get_priv_dir, 
+			call=>$o->q->param("publisher_call"),
+			password=>$o->q->param("publisher_password"),
+		); 
+	}
+	return $o->{qtc}->{publish};
+}
 sub q { my $obj=shift; return $obj->query; }
 
 sub get_priv_dir {
@@ -339,6 +351,11 @@ sub area_misc_buttons {
 	$r.="<table>"; 
 		$r.="<tr>"; 
 			if ( $obj->logged_in ) { 
+				$r.="<td>";
+					$obj->q->param("mode", "send_telegram"); 
+					$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>"send telegram"}));
+					$mode=$obj->q->param("mode", $mode);
+				$r.="</td>";
 				if ( $obj->q->param("call") ) {
 					$r.="<td>";
 						$obj->q->param("mode", "change_trust"); 
@@ -347,8 +364,8 @@ sub area_misc_buttons {
 					$r.="</td>";
 				}
 				$r.="<td>";
-					$obj->q->param("mode", "change_trust"); 
-					$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>"change trust"}));
+					$obj->q->param("mode", "sign_public_key"); 
+					$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>"sign key"}));
 					$mode=$obj->q->param("mode", $mode);
 				$r.="</td>";
 				$r.="<td>";
@@ -412,8 +429,7 @@ sub render_user_pass_logout {
 	delete $obj->{qtc}->{exports}->{publisher_call};
 	delete $obj->{qtc}->{exports}->{publisher_password};
 	$r.=$obj->h_tabled_form({}, 
-		"<td><b>YOUR Callsign:</b></td><td>".$obj->q->param("publisher_call")."</td>",
-		"<td><b>YOUR Callsign:</b></td><td>".$obj->q->param("publisher_password")."</td>",
+		"<tr><td><b>YOUR Callsign:</b></td><td>".$obj->q->param("publisher_call")."</td></tr>",
 		$obj->h_submit_for_tbl({value=>"publischer logout"}), 
 	);
 	$obj->{qtc}->{exports}->{publisher_call}=1;
@@ -544,12 +560,20 @@ sub mode_register_publisher_login {
 			$r.="<h4>ERROR: Your Callsign is already registered here</h4>"; 
 		}
 		if ( $ok ) {
-			# CREATE THE USER
+			$o->{qtc}->{publish}=qtc::publish->new(
+				path=>$o->{qtc}->{path}, 
+				rsa_keygen=>1,
+				privpath=>$o->get_priv_dir, 
+				call=>$o->q->param("publisher_call"),
+				password=>$o->q->param("publisher_password"),
+			); 
 			$o->q->param("mode", "show_messages"); 
 			return $o->mode_show_messages; 
 		}
 	}
 
+	delete $o->{qtc}->{exports}->{publisher_call};
+	delete $o->{qtc}->{exports}->{publisher_password};
 	$r.="<h3>Enter login credentials:</h3>";
 	$r.="<center>";
 	$r.=$o->h_tabled_form({},
@@ -583,6 +607,8 @@ sub mode_register_publisher_login {
 			value=>"create user",
 		}), 
 	);
+	$o->{qtc}->{exports}->{publisher_call}=1;
+	$o->{qtc}->{exports}->{publisher_password}=1;
 
 	$r.="</center>";
 	return $r; 
