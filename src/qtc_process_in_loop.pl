@@ -21,7 +21,7 @@ while ($_=shift(@ARGV)) {
 }
 
 my $processor=qtc::processor->new(
-	path=>$path,
+	root=>$path,
 	log=>$log, 
 	daemon=>$daemon, 
 ); 
