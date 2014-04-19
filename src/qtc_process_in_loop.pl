@@ -5,7 +5,7 @@ my $path=$ENV{QTC_ROOT};
 my $log=$ENV{QTC_PROCESSOR_LOG}; 
 my $daemon=1; 
 
-while (shift(@ARGV)) {
+while ($_=shift(@ARGV)) {
 	if ($_ eq  "-d") {
 		$path=shift(@ARGV); 
 		next; 
