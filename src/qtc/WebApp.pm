@@ -100,7 +100,7 @@ sub get_priv_dir {
 	my $user=$obj->q->param("publisher_call");
 	my $pass=$obj->q->param("publisher_password");
 	if ( ! $obj->{qtc}->{priv_dir} ) {
-		my $user_pass_sha=sha256_hex($user)."_".sha256_hex($pass);
+		my $user_pass_sha=$obj->qtc_query->call2fname($user)."_".sha256_hex($pass);
 		$obj->{qtc}->{priv_dir}=$obj->{qtc}->{priv_path_prefix}."/".$user_pass_sha;
 	}
 	return $obj->{qtc}->{priv_dir}; 
@@ -123,6 +123,14 @@ sub logged_in {
 	{ return 0; }
 }
 
+sub publisher_exists {
+	my $o=shift; 
+	my $user=$o->q->param("publisher_call");
+	if ( ! $user ) { return; }
+	my @scan=$o->qtc_query->scan_dir($o->{qtc}->{priv_path_prefix}, '^'.$o->qtc_query->call2fname($user).'_[a-f0-9]+$');
+	if ( $#scan == -1 ) { return; }
+	return 1; 
+}
 
 ##################################################################
 # HTML Generation (maybe not the best idea but there it is)
@@ -255,7 +263,9 @@ sub h_captcha {
 
 	my $x;
 	$x.="<tr><td></td><td>";
-	$x.="<img src=\"".$o->q->url(-full=>1)."?mode=captcha_image;token=".$o->{qtc}->{captcha}->generate_code(5)."\"></img>";
+	my $token=$o->{qtc}->{captcha}->generate_code(5);
+	$x.="<input type=\"hidden\" name=\"captcha_token\" value=\"$token\"></input>"; 
+	$x.="<img src=\"".$o->q->url(-full=>1)."?mode=captcha_image;token=".$token."\"></img>";
 	$x.="</td><tr>";
 
 	$x.=$o->h_e("tr", {}, 
@@ -510,8 +520,36 @@ sub mode_show_messages {
 
 sub mode_register_publisher_login {
 	my $o=shift; 
+
 	my $r; 
-	
+
+	if ( $o->q->param("submit") ) { 
+		# this means we have to create a user account but first 
+		# we should check a few things...
+		my $ok=1; 
+		if ( ! $o->q->param("publisher_call") ) {
+			$ok=0;
+			$r.="<h4>ERROR: The publisher call is empty!</h4>"; 
+		}
+		if ( $o->q->param("publisher_password") ne $o->q->param("publisher_password") ) {
+			$ok=0;
+			$r.="<h4>ERROR: Passwords are not the same</h4>"; 
+		}
+		if ( $o->{qtc}->{captcha}->check_code($o->q->param("captcha"),$o->q->param("captcha_token")) < 1 ) {
+			$ok=0;
+			$r.="<h4>ERROR: captcha verification failed</h4>"; 
+		}
+		if ( $o->publisher_exists ) {
+			$ok=0;
+			$r.="<h4>ERROR: Your Callsign is already registered here</h4>"; 
+		}
+		if ( $ok ) {
+			# CREATE THE USER
+			$o->q->param("mode", "show_messages"); 
+			return $o->mode_show_messages; 
+		}
+	}
+
 	$r.="<h3>Enter login credentials:</h3>";
 	$r.="<center>";
 	$r.=$o->h_tabled_form({},
