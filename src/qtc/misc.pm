@@ -82,6 +82,15 @@ sub get_pid {
 	return $p; 
 }
 
+sub wakeup_processor {
+	my $obj=shift;
+	eval { 
+		if ( -e $obj->{pidfile} ) {
+			kill('HUP', $obj->get_pid); 
+		}
+	};
+}
+
 
 ###############################################
 # the allowed letters routinges will strip 

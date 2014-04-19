@@ -26,7 +26,7 @@ sub new {
 	}
 	if ( ! -e $obj->{pidfile} ) {
 		open(PID, "> ".$obj->{pidfile}) or die "Cant open pidfile\n"; 
-		print(PID, $$) or die "can't write to pid file\n"; 
+		print(PID $$) or die "can't write to pid file\n"; 
 		close PID; 
 		if ( $obj->get_pid != $$ ) { die "the pid in the file we wrote just now is not ours\n"; }
 		$obj->{daemonized}=1; 
@@ -170,11 +170,10 @@ sub process_in_loop {
 			while ($obj->process_in()) { print STDERR "There may be more files, try another time\n" }
 		}
 		eval {
-			local $SIG{HUP}=sub { die "hup rcvd"; }
+			local $SIG{HUP}=sub { die "hup rcvd"; };
 			sleep 60;
 		}; 
-		if (($@) and ( $@ eq "hup rcvd" )) { print STDERR "hup received processing files now\n"; }
-		if (($@) and ( $@ ne "hup rcvd" )) { die $@; }
+		die $@ unless $@ =~ /^hup rcvd/; 
 	}
 }
 

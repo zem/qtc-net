@@ -15,6 +15,9 @@ sub new {
 	my %parm=(@_); 
 	my $obj=bless \%parm, $class; 
 	if ( ! $obj->{path} ) { $obj->{path}=$ENV{HOME}."/.qtc"; }
+	if ( ! $obj->{pidfile} ) { 
+		$obj->{pidfile}=$obj->{path}."/.qtc_processor.pid";
+	}
 	if ( ! $obj->{privpath} ) { $obj->{privpath}=$ENV{HOME}."/.qtc_private"; }
 	if ( ! $obj->{privkey_file} ) {
 		my @keyfiles=$obj->scan_dir($obj->{privpath}, '((rsa)|(dsa))_.+.key');
@@ -72,7 +75,8 @@ sub telegram {
 	);
 	$obj->sig->sign($msg); 
 
-	$msg->to_filesystem($obj->{path}."/in"); 
+	$msg->to_filesystem($obj->{path}."/in");
+	$obj->wakeup_processor; 
 }
 
 sub qsp {
@@ -90,6 +94,7 @@ sub qsp {
 	);
 	$obj->sig->sign($qsp); 
 	$qsp->to_filesystem($obj->{path}."/in");
+	$obj->wakeup_processor; 
 }
 
 sub pubkey {
@@ -99,6 +104,7 @@ sub pubkey {
 	my $qtc=qtc::msg->new(hex=>$args{hex});
 	$obj->sig->sign($qtc); 
 	$qtc->to_filesystem($obj->{path}."/in");
+	$obj->wakeup_processor; 
 }
 
 sub revoke {
@@ -117,6 +123,7 @@ sub revoke {
 	
 	$obj->sig->sign($qtc); 
 	$qtc->to_filesystem($obj->{path}."/in");
+	$obj->wakeup_processor; 
 }
 
 sub operator {
@@ -133,6 +140,7 @@ sub operator {
 	
 	$obj->sig->sign($qtc); 
 	$qtc->to_filesystem($obj->{path}."/in");
+	$obj->wakeup_processor; 
 }
 
 sub trust {
@@ -150,6 +158,7 @@ sub trust {
 	
 	$obj->sig->sign($qtc); 
 	$qtc->to_filesystem($obj->{path}."/in");
+	$obj->wakeup_processor; 
 }
 
 1; 

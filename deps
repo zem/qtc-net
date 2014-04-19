@@ -1,10 +1,9 @@
-#librpc-xml-perl
-#libxml-xpath-perl
-#libclass-dbi-sqlite-perl
 libcrypt-openssl-rsa-perl
 libcrypt-openssl-dsa-perl
 libdigest-sha-perl
+libcrypt-rijndael-perl
+libmime-base64-perl
 libwww-curl-perl
 libcgi-simple-perl
 libcgi-application-perl
-
+libauthen-captcha-perl
