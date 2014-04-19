@@ -54,7 +54,7 @@ sub publish {
 
 	if ( ! $msg ) { die "I need a qtc::msg object here\n"; }
 
-	my $res=$obj->lwp->put($url, 
+	my $res=$obj->lwp->put($obj->url, 
 		"Content-Type"=>"application/octet-stream",
 		Content=>pack("H*", $msg->as_hex),
 	); 

@@ -10,7 +10,10 @@ $url=shift(@ARGV);
 my $if=qtc::interface::http->new(url=>$url); 
 
 foreach my $file (@ARGV) {
-	my $msg=qtc::msg->new(path=>dirname($file), filename=>basename($file)); 
-	$if->publish($msg); 
+	eval {
+		my $msg=qtc::msg->new(path=>dirname($file), filename=>basename($file)); 
+		$if->publish($msg);
+	}; 
+	if ( $@ ) { print STDERR $@; }
 }
 

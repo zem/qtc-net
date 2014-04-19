@@ -173,7 +173,7 @@ sub process_in_loop {
 			local $SIG{HUP}=sub { die "hup rcvd"; };
 			sleep 60;
 		}; 
-		die $@ unless $@ =~ /^hup rcvd/; 
+		if ( $@ ) { die $@ unless $@ =~ /^hup rcvd/; } 
 	}
 }
 

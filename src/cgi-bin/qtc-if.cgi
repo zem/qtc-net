@@ -47,7 +47,7 @@ if ( $putdata ) {
 			-status=>200
 		);
 		print $msg->filename; 
-		print Dumper(\%ENV); 
+		#print Dumper(\%ENV); 
 	}
 	exit; 
 } 
