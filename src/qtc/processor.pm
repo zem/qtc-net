@@ -16,11 +16,34 @@ sub new {
 	if ( ! $obj->{root} ) { 
 		$obj->{root}=$ENV{HOME}."/.qtc"; 
 	}
-	if ( ! $obj->{key} ) { 
-		$obj->{key}=$ENV{HOME}."/.qtckey"; 
+	if ( $obj->{daemon} ) {
+		# deamonize
+		my $pid=fork(); 
+		if ( $pid != 0 ) { exit; }
 	}
-	
+	if ( ! $obj->{pidfile} ) { 
+		$obj->{pidfile}=$obj->{root}."/.qtc_processor.pid";
+	}
+	if ( ! -e $obj->{pidfile} ) {
+		open(PID, "> ".$obj->{pidfile}) or die "Cant open pidfile\n"; 
+		print(PID, $$) or die "can't write to pid file\n"; 
+		close PID; 
+		if ( $obj->get_pid != $$ ) { die "the pid in the file we wrote just now is not ours\n"; }
+		$obj->{daemonized}=1; 
+	}
+	if ( $obj->{log} ) { 
+		close STDERR; 
+		open(STDERR, ">> ".$obj->{log}) or die "can't open logfile ".$obj->{log}." \n";	
+	}	
+
    return $obj; 
+}
+
+sub DESTROY {
+	my $o=shift; 
+	if ( $o->{daemonized} ) {
+		unlink($o->{pidfile}); 
+	}
 }
 
 sub query {
@@ -107,8 +130,10 @@ sub process_in {
 	$obj->ensure_path($obj->{root}."/bad"); 
 	$obj->ensure_path($obj->{root}."/in"); 
 
+	my $cnt=0; 
 	foreach my $file ($obj->scan_dir($obj->{root}."/in", '.*\.qtc')){
 		if (( ! -e $obj->{root}."/out/".$file ) and ( ! -e $obj->{root}."/bad/".$file )) { 
+			$cnt++;
 			print STDERR "processing file $file\n"; 
 			eval { 
 				$msg=qtc::msg->new(
@@ -121,10 +146,10 @@ sub process_in {
 				# an error occured
 				print STDERR $@; 
 				link($obj->{root}."/in/".$file,  $obj->{root}."/bad/".$file) or die "yes really this link fail leads to death\n"; 
-
 			}
 		}
 	} 
+	return $cnt; 
 }
 
 # this is to be used for any message that is in /in
@@ -135,14 +160,21 @@ sub process_in_loop {
 
 	my $num=-1; 
 
+	$SIG{HUP}=sub {}; # we dont want sighup to kill us 
+
 	while (1) { 
 		my @files=$obj->scan_dir($obj->{root}."/in", '.*\.qtc');
 		if ( $#files != $num ) {
 			$num=$#files; 
 			# something changed, we have to process
-			$obj->process_in(); 
+			while ($obj->process_in()) { print STDERR "There may be more files, try another time\n" }
 		}
-		sleep 20; 
+		eval {
+			local $SIG{HUP}=sub { die "hup rcvd"; }
+			sleep 60;
+		}; 
+		if (($@) and ( $@ eq "hup rcvd" )) { print STDERR "hup received processing files now\n"; }
+		if (($@) and ( $@ ne "hup rcvd" )) { die $@; }
 	}
 }
 
@@ -340,7 +372,7 @@ sub remove_msg {
 	my $msg=shift; 
 	if ( $msg->type eq "telegram" ) { 
 		$obj->remove_telegram($msg); 
-		print "returning remove telegram\n";
+		print STDERR "returning remove telegram\n";
 		return; 
 	}
 	if ( $msg->type eq "qsp" ) { 
@@ -363,7 +395,7 @@ sub remove_msg {
 		$obj->remove_trust($msg); 
 		return; 
 	}
-	print $msg->type."is an unknown message type \n"; 
+	print STDERR $msg->type."is an unknown message type \n"; 
 }
 
 sub import_revoke {

@@ -68,6 +68,20 @@ sub scan_dir {
 	return (@aFiles);
 }
 
+sub get_pid {
+	my $o=shift; 
+	my $pfile=$o->{pidfile}; 
+
+	if ( ! -f $pfile ) { return undef; }
+	
+	my $p; 
+	open(PID, "< $pfile") or die "cant open pidfile\n"; 
+	while(<PID>) { $p.=$_; }
+	close PID ; 
+	
+	return $p; 
+}
+
 
 ###############################################
 # the allowed letters routinges will strip 

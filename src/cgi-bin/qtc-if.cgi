@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-
 use qtc::misc; 
 use qtc::msg; 
 use CGI::Simple; 

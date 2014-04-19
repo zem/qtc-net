@@ -373,6 +373,11 @@ sub area_misc_buttons {
 					$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>"lists and aliases"}));
 					$mode=$obj->q->param("mode", $mode);
 				$r.="</td>";
+				$r.="<td>";
+					$obj->q->param("mode", "change_password"); 
+					$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>"change password"}));
+					$mode=$obj->q->param("mode", $mode);
+				$r.="</td>";
 			}
 			if ( ! $obj->logged_in ) {
 				$r.="<td>";
