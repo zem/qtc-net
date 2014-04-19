@@ -32,6 +32,8 @@ if ( $putdata ) {
 		$putdata=unpack("H*", $putdata); 
 		$msg=qtc::msg->new(hex=>$putdata);
 		$msg->to_filesystem($root."/in"); 
+		$msg->{pidfile}=$root."/.qtc_processor.pid"; 
+		$msg->wakeup_processor; 
 	}; 
 	if ( $@ ) { 
 		print $q->header(

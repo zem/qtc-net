@@ -107,6 +107,12 @@ sub sync {
 		print WRITE $newts or die "Cant write into $tsfile\n"; 
 		close WRITE or die "Cant close $tsfile \n"; 
 	}
+
+	# try to wakeup the processor if we got any files 
+	if ( $obj->{message_count} > 0 ) {
+		my $misc=qtc::misc->new(pidfile=>$obj->{path}."/.qtc_processor.pid");
+		$misc->wakeup_processor;
+	}
 	return $obj->{message_count};
 }
 
