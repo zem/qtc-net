@@ -991,7 +991,7 @@ sub mode_change_trust {
 			and 
 			( $o->q->param("trustlevel") >= -1 )
 	) { 
-		$o->qtc_publish(
+		$o->qtc_publish->trust(
 			to=>$o->q->param("call"), 
 			trustlevel=>$o->q->param("trustlevel"),
 		);
