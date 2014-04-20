@@ -84,7 +84,7 @@ sub get_old_trust {
 		)
 	){
 		my $msg=qtc::msg->new(
-			path=>$o->{path}."/call/".$o->call2fname($p{to})."/trust", 
+			path=>$o->{path}."/call/".$o->call2fname($p{call})."/trust", 
 			filename=>$file
 		); 
 		if ( $msg->to eq $p{to} ) { return $msg; }
