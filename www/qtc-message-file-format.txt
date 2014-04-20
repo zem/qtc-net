@@ -190,4 +190,8 @@ our %data_types=(
 		enum=>21,
 		data_type=>"integer",
 	},
+	"key_date"=>{
+		enum=>22,
+		data_type=>"integer",
+	}, 
 );
