@@ -144,7 +144,7 @@ sub revoke {
 		$obj->sig->sign($qtc);
 	}
 	
-	if ($qtc->key_id ne $obj->signature_key_id) { die "Revokes must be published by key owner\n"; }
+	if ($qtc->key_id ne $qtc->signature_key_id) { die "Revokes must be published by key owner\n"; }
 
 	if ( $args{download} ) { 
 		return $qtc; 
