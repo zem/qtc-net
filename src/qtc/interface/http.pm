@@ -66,6 +66,9 @@ sub sync {
 	my $obj=shift; 
 	my $path=shift; 
 	
+	#print STDERR $obj->{path}."/in\n";
+	qtc::misc->new->ensure_path($obj->{path}."/in"); 
+
 	my $urlpath=$obj->url.$path; 
 	my $tsfile;
 	$obj->{message_count}=0; 
@@ -137,8 +140,8 @@ sub process_dir {
 			} else {
 				my $res=$obj->lwp->get($urlpath."/".$file); 
 				if ( ! $res->is_success ) { $die_later.="get $file failed\n"; next; }
-				my $pathfile=$obj->{path}."/in/".$file;
-				$die_later.=$obj->write_content($pathfile, $res->decoded_content); 
+				my $path=$obj->{path}."/in";
+				$die_later.=$obj->write_content($path, $file, $res->decoded_content); 
 			} 
 		}
 	}
@@ -167,8 +170,8 @@ sub process_tar {
 	
 	my $tar=Archive::Tar->new($tarfh); 
 	foreach my $file ($tar->get_files) { 
-		my $pathfile=$obj->{path}."/in/".$file->name;
-		$die_later.=$obj->write_content($pathfile, $file->get_content); 
+		my $path=$obj->{path}."/in";
+		$die_later.=$obj->write_content($path, $file->name, $file->get_content); 
 	}	
 	if ( $die_later ) { die $die_later; }
 	return $obj->{message_count}; 
@@ -176,12 +179,14 @@ sub process_tar {
 
 sub write_content {
 	my $obj=shift; 
-	my $pathfile=shift; 
+	my $path=shift; 
+	my $file=shift; 
 	my $content=shift; 
-	my $tmpfile=$$."_".time."_".$pathfile.".tmp"; 
+	my $pathfile=$path."/".$file; 
+	my $tmpfile=$path."/.".$$."_".time."_".$file.".tmp"; 
 	if ( -e $pathfile ) { return; } # no action if $pathfile is there 
 	if ( -e $tmpfile ) { return "write_content: Uuuuups $tmpfile exits\n"; }
-	open(WRITE, "> ".$tmpfile) or return "write_content: Cant open file ".$pathfile."\n"; 
+	open(WRITE, "> ".$tmpfile) or return "write_content: Cant open file ".$tmpfile."\n"; 
 	print  WRITE $content  or return "write_content: Cant write content of ".$pathfile."\n"; 
 	close WRITE or return "write_content: cant close file $pathfile\n"; 
 	link($tmpfile, $pathfile) or return "write_content: Link to $pathfile failed\n"; 
