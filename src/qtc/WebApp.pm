@@ -54,6 +54,8 @@ sub setup {
 		'show_messages' => 'mode_show_messages',
 		'register_publisher_login' => 'mode_register_publisher_login',
 		'save_publisher_login' => 'mode_save_publischer_login',
+		'key_management' => 'mode_key_management',
+		'pubkey_download' => 'mode_pubkey_download',
 	);
 	# CONFIGURE
 	if ( ! $obj->{qtc}->{path} ) { $obj->{qtc}->{path}=$ENV{HOME}."/.qtc"; }
@@ -178,11 +180,10 @@ sub h_tabled_form {
 sub h_form {
 	my $obj=shift;
 	my $p=shift; 
+	if ( ! $p->{action} ) { $p->{action}=$obj->q->url(-full=>1); }
+	if ( ! $p->{method} ) { $p->{method}="POST"; }
 	my @r=@_; 
-	my $x=$obj->h_e("form", {
-		action=>$obj->q->url(-full=>1),
-		method=>"POST",
-		}, 
+	my $x=$obj->h_e("form", $p, 
 		$obj->h_input_hidden,
 		@r,
 	); 
@@ -365,8 +366,8 @@ sub area_misc_buttons {
 					$r.="</td>";
 				}
 				$r.="<td>";
-					$obj->q->param("mode", "sign_public_key"); 
-					$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>"sign key"}));
+					$obj->q->param("mode", "key_management"); 
+					$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>"key management"}));
 					$mode=$obj->q->param("mode", $mode);
 				$r.="</td>";
 				$r.="<td>";
@@ -391,6 +392,19 @@ sub area_misc_buttons {
 			} 
 		$r.="</tr>"; 
 	$r.="</table>"; 
+}
+
+sub area_navigation {
+	my $obj=shift; 
+	my $r; 
+
+	$r.="<table width=\"100%\">\n";
+	$r.="<td align=\"left\">".$obj->area_ask_call."</td>\n";
+	$r.="<td align=\"center\">".$obj->area_misc_buttons."</td>\n";
+	$r.="<td align=\"right\">".$obj->area_user_pass."</td>\n";
+	$r.="</table><hr/>";
+	
+	return $r; 
 }
 
 sub render_user_pass_login {
@@ -484,11 +498,8 @@ sub mode_show_messages {
 	my $type=$q->param("type");
 	if ( $type !~ /^((all)|(new)|(sent))$/ ) { return "<h1>FAIL telegram type invalid</h1>"; }
 	my $r; 
-	$r.="<table width=\"100%\">\n";
-	$r.="<td align=\"left\">".$obj->area_ask_call."</td>\n";
-	$r.="<td align=\"center\">".$obj->area_misc_buttons."</td>\n";
-	$r.="<td align=\"right\">".$obj->area_user_pass."</td>\n";
-	$r.="</table><hr/>";
+
+	$r.=$obj->area_navigation; 
 
 	if ( ! $q->param("call") ) { return $r."<h3>Please enter a Call</h3>"; }
 
@@ -650,6 +661,78 @@ sub mode_captcha_image {
 	close READ; 
 	
 	return $r; 
+}
+
+# this will return one of the captcha images 
+sub mode_key_management {
+	my $o=shift; 
+	my $r; 
+	
+	if ( $o->q->param("pubkey.qtc") ) {
+			my $fh=$o->q->param("pubkey.qtc");
+			$r.="<h4>got a file upload</h4>";
+			my $x; 
+			while ($_=<$fh>) { $x.=$_; }
+		eval { 
+			$o->qtc_publish->pubkey(hex=>unpack("H*", $x)); 
+		}; 
+		if ( $@ ) {
+			print STDERR $@; # i want to see what went wrong. 
+			$r.="<h4>errors during upload</h4>";
+		} else { 
+			$o->q->param("mode", "show_messages"); 
+			return $o->mode_show_messages; 
+		}
+	} 
+	
+	$r.=$o->area_navigation; 
+
+	$r.="<h3>Public Key Download</h3> 
+		<p>You can Download your selfsigned public key message to get it signed and published 
+		with one of your other accounts/private keys, to activate this one.</p>";
+	$r.="<center>"; 
+	
+	my $mode=$o->q->param("mode");
+	$o->q->param("mode", "pubkey_download"); 
+	$r.=$o->h_form({}, $o->h_e("input", {type=>"submit", name=>"submit", value=>"pubkey download"}));
+	$mode=$o->q->param("mode", $mode);
+	
+	$r.="</center>"; 
+	
+	$r.="<h3>Public Key Upload</h3> 
+		<p>You can Upload a public key from another of YOUR accounts/private keys to get it 
+		signed and published on by this system.</p>";
+	$r.="<center>"; 
+	$r.=$o->h_tabled_form({enctype=>"multipart/form-data"},
+		$o->h_labled_input({
+			label=>"Public Key QTC:", 
+			type=>"file",
+			name=>"pubkey.qtc",
+			size=>50, 
+			maxlength=>1000,
+		}),
+		$o->h_submit_for_tbl({value=>"Upload"}), 
+	);
+	$r.="</center>"; 
+	
+	return $r; 
+}
+
+# this will return one of the captcha images 
+sub mode_pubkey_download {
+	my $o=shift; 
+	my $r; 
+
+	if ( ! $o->logged_in ) { return "Access denied"; }
+	my $msg=$o->qtc_publish->get_public_key_msg; 
+	
+	$o->header_add(
+		-type => 'application/octet-stream',
+		-attachment => $msg->filename,
+	);
+	$o->{disable_postrun}=1; 
+
+	return pack("H*", $msg->as_hex); 
 }
 
 1;

@@ -51,6 +51,15 @@ sub new {
 	return $obj; 
 }
 
+# ok you may ask, "why this, here?!?" 
+# it is because the privpath is well known to this module
+sub get_public_key_msg {
+	my $obj=shift; 
+	my @files=$obj->scan_dir($obj->{privpath}, "^pubkey_".$obj->call2fname($obj->{call}).'_[0-9a-f]+.qtc$');
+	if ( $#files == -1 ) { die "cant find any public key msg\n"; }
+	my $msg=qtc::msg->new(path=>$obj->{privpath}, filename=>$files[0]); 
+	return $msg; 
+}
 
 sub query { 
 	my $obj=shift; 
@@ -102,6 +111,7 @@ sub pubkey {
 	my %args=(@_); 
 
 	my $qtc=qtc::msg->new(hex=>$args{hex});
+	$qtc->msg_date(time); 
 	$obj->sig->sign($qtc); 
 	$qtc->to_filesystem($obj->{path}."/in");
 	$obj->wakeup_processor; 

@@ -662,6 +662,7 @@ sub to_filesystem {
 	
 	my $tmpfile=$$."_".time."_".$filename.".tmp"; 
 	if ( -e $path."/.".$tmpfile ) { die "$path/$tmpfile already exists \n"; }
+	if ( -e $path."/.".$filename ) { die "targetfile $path/$filename already exists \n"; }
 	open(WRITE, "> ".$path."/.".$tmpfile) or die "cant open $path/$filename\n"; 
 	print WRITE pack("H*", $obj->as_hex) or die "Can't write data to disk\n"; 
 	close(WRITE); 
