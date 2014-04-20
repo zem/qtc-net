@@ -97,12 +97,18 @@ our %msg_types=(
 		"set_of_aliases"=>[$valid_call], 
 		"set_of_lists"=>[$valid_call],
 	}, 
-	# keystorage
+	# keystorage a key has a valid date 
+	# you should publish a new key 
+	# periodically (once a year)
 	pubkey=>{
+		"key_date"=>$valid_date,  
 		"key_type"=>$valid_rsa_or_dsa,  
 		"key_id"=>$valid_checksum,  
 		"key"=>$valid_hex,
 	},
+	# revokes are designed to be self signed 
+	# this means they are valid even without a 
+	# korresponding pubkey
 	revoke=>{
 		"key_type"=>$valid_rsa_or_dsa,  
 		"key_id"=>$valid_checksum,  
