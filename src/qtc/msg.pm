@@ -181,11 +181,13 @@ our %msg_types=(
 	}, 
 	# keystorage
 	pubkey=>{
+		"key_date"=>$valid_date,  
 		"key_type"=>$valid_rsa_or_dsa,  
 		"key_id"=>$valid_checksum,  
 		"key"=>$valid_hex,
 	},
 	revoke=>{
+		"key_date"=>$valid_date,  
 		"key_type"=>$valid_rsa_or_dsa,  
 		"key_id"=>$valid_checksum,  
 		"key"=>$valid_hex,
