@@ -72,4 +72,24 @@ sub operator {
 	return; 
 }
 
+# receive an old trust message for a call 
+sub get_old_trust {
+	my $o=shift; 
+	my %p=@_; 
+	
+	foreach my $file (
+		$o->scan_dir(
+			$o->{path}."/call/".$o->call2fname($p{to})."/trust", 
+			'trust_'.$o->call2fname($p{call}).'_[0-9a-f]+\.qtc'
+		)
+	){
+		my $msg=qtc::msg->new(
+			path=>$o->{path}."/call/".$o->call2fname($p{to})."/trust", 
+			filename=>$file
+		); 
+		if ( $msg->to eq $p{to} ) { return $msg; }
+	}
+	return; 
+}
+
 1; 

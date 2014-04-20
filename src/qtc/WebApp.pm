@@ -59,6 +59,7 @@ sub setup {
 		'pubkey_download' => 'mode_pubkey_download',
 		'send_telegram' => 'mode_send_telegram',
 		'change_password' => 'mode_change_password',
+		'change_trust' => 'mode_change_trust',
 	);
 	# CONFIGURE
 	if ( ! $obj->{qtc}->{path} ) { $obj->{qtc}->{path}=$ENV{HOME}."/.qtc"; }
@@ -956,6 +957,83 @@ sub mode_change_password {
 		}), 
 	);
 	$o->{qtc}->{exports}->{publisher_password}=1;
+
+	$r.="</center>";
+	return $r; 
+}
+
+
+#############################################
+# normally the keys should also be checked 
+# but thats an implementation thing 
+############################################
+sub mode_change_trust {
+	my $o=shift; 
+
+	my $r; 
+	$r.=$o->area_navigation; 
+
+	if ( ! $o->logged_in ) { return "<h4>ERROR Please log in first</h4>"; }
+
+	if ( ! $o->q->param("call") ) { 
+		$r.="<h4>I need a call to set a trustlevel for</h4>";
+		return $r;  
+	}
+	if (
+			( defined $o->q->param("trustlevel") )
+			and
+			( $o->q->param("trustlevel") <= 1 )
+			and 
+			( $o->q->param("trustlevel") >= -1 )
+	) { 
+		$o->qtc_publish(
+			call=>$o->q->param("publisher_call"), 
+			to=>$o->q->param("call"), 
+			trustlevel=>$o->q->param("trustlevel"),
+		);
+		$o->q->param("mode", "show_messages"); 
+		return $o->mode_show_messages; 
+	}
+
+	my $msg=$o->qtc_query->get_old_trust(
+		call=>$o->q->param("publisher_call"),
+		to=>$o->q->param("call"),
+	);
+	my $trustlevel=0; 
+	if ( $msg ) { $trustlevel=$msg->trustlevel; }
+	my @chk0; if ( $trustlevel == 0 ) { @chk0=("checked", "checked"); }
+	my @chk1; if ( $trustlevel == 1 ) { @chk1=("checked", "checked"); } 
+	my @chk_neg; if ( $trustlevel == -1 ) { @chk_neg=("checked", "checked"); } 
+
+	$r.="<h3>Set Your Trust for ".$o->q->param("call").":</h3>";
+	$r.="<center>";
+	$r.=$o->h_tabled_form({},
+		$o->h_labled_input({
+			label=>"I absolutely trust this call:", 
+			type=>"radio", 
+			name=>"trustlevel",
+			value=>1,
+			@chk1, 
+		}),
+		$o->h_labled_input({
+			label=>"I don't care:", 
+			type=>"radio", 
+			name=>"trustlevel",
+			value=>0,
+			@chk0, 
+		}),
+		$o->h_labled_input({
+			label=>"I would not trust this call:", 
+			type=>"radio", 
+			name=>"trustlevel",
+			value=>"-1",
+			@chk_neg, 
+		}),
+		$o->h_submit_for_tbl({
+			onClick=>$o->js_confirm("Do you really want to change the trustlevel for this callsign?"),
+			value=>"change trustlevel",
+		}), 
+	);
 
 	$r.="</center>";
 	return $r; 
