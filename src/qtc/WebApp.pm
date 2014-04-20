@@ -164,7 +164,7 @@ sub h_input_hidden {
 			$r.=$obj->h_e("input", {
 					type=>"hidden", 
 					name=>$p,
-					value=>$obj->q->param($p),
+					value=>$val,
 				}
 			);
 		} 
@@ -1071,7 +1071,7 @@ sub mode_aliases_and_lists {
 	my @lists=$o->q->param("lists"); 
 
 	# get aliases and lists from this operator 
-	if ( ( $#aliases=-1 ) and ( $#lists=-1 ) ) { 
+	if ( ( $#aliases==-1 ) and ( $#lists==-1 ) ) { 
 		my $op=$o->qtc_query->operator($o->q->param("publisher_call")); 
 		if ( $op ) {
 			@aliases=$op->set_of_aliases; 
