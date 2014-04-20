@@ -263,6 +263,23 @@ sub h_labled_input {
 		), 
 	);
 }
+
+sub h_misc_button {
+	my $obj=shift; 
+	my $p=shift; 
+	my $mode=$obj->q->param("mode");
+	if ( ! $mode ) { $mode="show_messages"; } 
+	my $r; 
+	if ( $mode ne $p->{mode} ) {
+		$r.="<td>";
+			$obj->q->param("mode", $p->{mode}); 
+			$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>$p->{value}}));
+			$mode=$obj->q->param("mode", $mode);
+		$r.="</td>";
+	}
+	return $r; 
+}
+
 # you need to be in a table to use this....
 sub h_captcha {
 	my $o=shift; 
@@ -355,52 +372,41 @@ sub area_misc_buttons {
 	if ( ! $mode ) { $mode="show_messages"; } 
 	$r.="<table>"; 
 		$r.="<tr>"; 
-			if ( $mode ne "show_messages" ) {
-				$r.="<td>";
-					$obj->q->param("mode", "show_messages"); 
-					$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>"show telegrams"}));
-					$mode=$obj->q->param("mode", $mode);
-				$r.="</td>";
-			}
+			$r.=$obj->h_misc_button({
+				mode=>"show_messages", 
+				value=>"show telegrams",
+			}); 
 			if ( $obj->logged_in ) { 
 				if ( $mode ne "send_telegram" ) {
-					$r.="<td>";
-						$obj->q->param("mode", "send_telegram"); 
-						$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>"send telegram"}));
-						$mode=$obj->q->param("mode", $mode);
-					$r.="</td>";
+					$r.=$obj->h_misc_button({
+						mode=>"send_telegram", 
+						value=>"send telegram",
+					}); 
 				}
 				if ( $obj->q->param("call") ) {
-					$r.="<td>";
-						$obj->q->param("mode", "change_trust"); 
-						$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>"change trust"}));
-						$mode=$obj->q->param("mode", $mode);
-					$r.="</td>";
+					$r.=$obj->h_misc_button({
+						mode=>"change_trust", 
+						value=>"change trust",
+					}); 
 				}
-				$r.="<td>";
-					$obj->q->param("mode", "key_management"); 
-					$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>"key management"}));
-					$mode=$obj->q->param("mode", $mode);
-				$r.="</td>";
-				$r.="<td>";
-					$obj->q->param("mode", "aliases_and_lists"); 
-					$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>"lists and aliases"}));
-					$mode=$obj->q->param("mode", $mode);
-				$r.="</td>";
-				$r.="<td>";
-					$obj->q->param("mode", "change_password"); 
-					$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>"change password"}));
-					$mode=$obj->q->param("mode", $mode);
-				$r.="</td>";
+				$r.=$obj->h_misc_button({
+					mode=>"key_management", 
+					value=>"key management",
+				}); 
+				$r.=$obj->h_misc_button({
+					mode=>"aliases_and_lists", 
+					value=>"aliases and lists",
+				}); 
+				$r.=$obj->h_misc_button({
+					mode=>"change_password", 
+					value=>"change password",
+				}); 
 			}
 			if ( ! $obj->logged_in ) {
-				$r.="<td>";
-					$obj->q->param("mode", "register_publisher_login"); 
-					$r.=$obj->h_form({}, 
-						$obj->h_e("input", {type=>"submit", name=>"submit", value=>"register login"}),
-					);
-					$mode=$obj->q->param("mode", $mode);
-				$r.="</td>";
+				$r.=$obj->h_misc_button({
+					mode=>"register_publisher_login", 
+					value=>"register login",
+				}); 
 			} 
 		$r.="</tr>"; 
 	$r.="</table>"; 
