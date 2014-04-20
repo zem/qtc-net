@@ -858,6 +858,7 @@ sub mode_send_telegram {
 		} 
 	}
 
+	delete $o->{qtc}->{exports}->{call}; 
 	$r.="<center>";
 	$r.=$o->h_tabled_form({},
 		$o->h_labled_input({
@@ -890,6 +891,7 @@ sub mode_send_telegram {
 		}), 
 	);
 	$r.="</center>";
+	$o->{qtc}->{exports}->{call}=1; 
 
 	$r.="<p>Note: telegrams can be 300 small letter characters as well as numbers and some 
 	signs, the telegrams are automatically converted to a storeable format. 
