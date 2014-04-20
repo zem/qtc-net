@@ -89,10 +89,13 @@ sub keyring_clear {
 sub verify_signature {
 	my $obj=shift; 
 	my $msg=shift;
-	
+
 	my $keyhash=shift; 
+	if ( ! $keyhash ) {  
+		$keyhash=$obj->keyring($msg)->keyhash; 
+	}
 	my $sig=qtc::signature->new(
-		pubkey=>$obj->keyring($msg)->keyhash,
+		pubkey=>$keyhash,
 	);
 	if (! $sig->verify($msg->signed_content_bin, $msg->signature, $msg->signature_key_id) ) { 
 		die "Signature verification for message ".$msg->checksum." failed\n"; 
@@ -338,6 +341,31 @@ sub import_pubkey {
 	my $msg=shift; 
 	$obj->verify_signature($msg);	
 	
+	#this block removes old keys with the same signature from the repo
+	my @oldversions=$obj->scan_dir(
+		$obj->{root}."/call/".$msg->escaped_call."/pubkey",
+		"pubkey_([a-z]|[0-9]|-)+_[0-9a-f]+.qtc"
+	);
+	foreach my $oldversion (@oldversions) {
+		my $oldmsg=qtc::msg->new(
+			path=>$obj->{root}."/call/".$msg->escaped_call."/pubkey",
+			filename=>$oldmsg,
+		);
+		if (
+			( $msg->key_id eq $oldmsg->key_id ) 
+			and 
+			( $msg->signature_key_id eq $oldmsg->signature_key_id ) 
+		) { 
+			if ( $msg->key_date > $oldmsg->key_date ) {
+				$obj->remove_pubkey($oldmsg);
+			} else { 
+				# this message is old, link to bad
+				$msg->link_to_path($obj->{root}."/bad");
+				return; 
+			}
+		}
+	}
+	
 	$msg->link_to_path($obj->{root}."/call/".$msg->escaped_call."/pubkey");
 	$msg->link_to_path($obj->{root}."/out");
 
@@ -397,10 +425,13 @@ sub remove_msg {
 	print STDERR $msg->type."is an unknown message type \n"; 
 }
 
+# TODO Revokes should be self signed only
 sub import_revoke {
 	my $obj=shift; 
 	my $msg=shift; 
-	$obj->verify_signature($msg);	
+	my %keyhash; 
+	$keyhash{$msg->key_id}=$msg; 
+	$obj->verify_signature($msg,\%keyhash);	
 
 	my @qtcmsgs=$obj->scan_dir(
 		$obj->{root}."/out",

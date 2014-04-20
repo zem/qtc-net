@@ -71,6 +71,7 @@ sub rsa_keygen {
 	my $pubkey=qtc::msg->new(
 		type=>"pubkey",
 		call=>$o->{call},
+		key_date=>time,
 		key_type=>"rsa",
 		key_id=>$key_id,
 		key=>unpack("H*", $keydata),
@@ -81,7 +82,7 @@ sub rsa_keygen {
 	my $path=$o->{privpath};
 
 	my @dir=$pubkey->scan_dir($path, 'rsa_'.$call.'.*'); 
-	if ( $#dir >= 0 ) { die "ther is already a key, it may be a bad idea to write a new one\n"; }
+	if ( $#dir >= 0 ) { die "there is already a key, it may be a bad idea to write a new one\n"; }
 	
 	if ( $o->{debug} ) { print STDERR "Writing Keys to $path\n"; }
 	
