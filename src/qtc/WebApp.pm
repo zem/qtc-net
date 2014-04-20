@@ -54,7 +54,6 @@ sub setup {
 		'captcha_image' => 'mode_captcha_image',
 		'show_messages' => 'mode_show_messages',
 		'register_publisher_login' => 'mode_register_publisher_login',
-		'save_publisher_login' => 'mode_save_publischer_login',
 		'key_management' => 'mode_key_management',
 		'pubkey_download' => 'mode_pubkey_download',
 		'send_telegram' => 'mode_send_telegram',
@@ -455,7 +454,7 @@ sub render_user_pass_login {
 			name=>"publisher_password",
 			value=>$obj->q->param("publisher_password"), 
 		}),
-		$obj->h_submit_for_tbl({value=>"publischer login"}), 
+		$obj->h_submit_for_tbl({value=>"publisher login"}), 
 	);
 	$obj->{qtc}->{exports}->{publisher_call}=1;
 	$obj->{qtc}->{exports}->{publisher_password}=1;
@@ -475,7 +474,7 @@ sub render_user_pass_logout {
 	delete $obj->{qtc}->{exports}->{publisher_password};
 	$r.=$obj->h_tabled_form({}, 
 		"<tr><td><b>YOUR Callsign:</b></td><td>".$obj->q->param("publisher_call")."</td></tr>",
-		$obj->h_submit_for_tbl({value=>"publischer logout"}), 
+		$obj->h_submit_for_tbl({value=>"publisher logout"}), 
 	);
 	$obj->{qtc}->{exports}->{publisher_call}=1;
 	$obj->{qtc}->{exports}->{publisher_password}=1;
