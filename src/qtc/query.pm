@@ -79,7 +79,7 @@ sub get_old_trust {
 	
 	foreach my $file (
 		$o->scan_dir(
-			$o->{path}."/call/".$o->call2fname($p{to})."/trust", 
+			$o->{path}."/call/".$o->call2fname($p{call})."/trust", 
 			'trust_'.$o->call2fname($p{call}).'_[0-9a-f]+\.qtc'
 		)
 	){
