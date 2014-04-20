@@ -36,7 +36,7 @@ sub cgiapp_postrun {
 		-title=>"QTC Network Web Access",
 	); 
 
-	$out.=$obj->h_e("center", {}, $obj->h_h1({}, "QTC Net Web Access")); 
+	$out.=$obj->h_e("center", {}, $obj->h_h1({}, '<a href="'.$obj->{qtc}->{home_page}.'">QTC Net Web Access</a>')); 
 	$out.=$obj->h_e("hr"); 
 	$out.=$$out_ref; 
 
@@ -79,6 +79,7 @@ sub setup {
 		); 
 	}
 
+	if ( ! $obj->{qtc}->{home_page} ) { $obj->{qtc}->{home_page}=$obj->q->url(-full=>1); }
 
 	$obj->{qtc}->{exports}->{mode}=1;
 	$obj->{qtc}->{exports}->{call}=1;
