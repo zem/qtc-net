@@ -33,10 +33,10 @@ sub cgiapp_postrun {
 
 	my $cgi = $obj->query(); 
 	my $out=$cgi->start_html(
-		-title=>"QTC Network Web Access",
+		-title=>"ALPHA QTC Network Web Access ALPHA",
 	); 
 
-	$out.=$obj->h_e("center", {}, $obj->h_h1({}, '<a href="'.$obj->{qtc}->{home_page}.'">QTC Net Web Access</a>')); 
+	$out.=$obj->h_e("center", {}, $obj->h_h1({}, '<a href="'.$obj->{qtc}->{home_page}.'">(ALPHA) QTC Net Web Access (ALPHA)</a>')); 
 	$out.=$obj->h_e("hr"); 
 	$out.=$$out_ref; 
 
