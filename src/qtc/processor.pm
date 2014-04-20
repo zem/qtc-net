@@ -341,6 +341,21 @@ sub import_pubkey {
 	my $msg=shift; 
 	$obj->verify_signature($msg);	
 	
+	# check if there are any revokes for this key
+	my @revokes=$obj->scan_dir(
+		$obj->{root}."/call/".$msg->escaped_call."/revoke",
+		"revoke_([a-z]|[0-9]|-)+_[0-9a-f]+.qtc"
+	);
+	foreach my $revokefile (@revokes) {
+		my $revoke=qtc::msg->new(
+			path=>$obj->{root}."/call/".$msg->escaped_call."/revoke",
+			filename=>$revokefile,
+		); 
+		if ( $msg->key_id eq $revoke->key_id ) {
+			die "This key_id ".$msg->key_id." is revoked\n"; 
+		}
+	}
+	
 	#this block removes old keys with the same signature from the repo
 	my @oldversions=$obj->scan_dir(
 		$obj->{root}."/call/".$msg->escaped_call."/pubkey",
@@ -359,9 +374,7 @@ sub import_pubkey {
 			if ( $msg->key_date > $oldmsg->key_date ) {
 				$obj->remove_pubkey($oldmsg);
 			} else { 
-				# this message is old, link to bad
-				$msg->link_to_path($obj->{root}."/bad");
-				return; 
+				die "Key ".$msg->filename."is an old key, not importing\n"; 
 			}
 		}
 	}
