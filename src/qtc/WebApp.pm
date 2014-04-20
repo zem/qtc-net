@@ -1090,8 +1090,8 @@ sub mode_aliases_and_lists {
 	if ( $o->q->param("save_changes") eq "really" ) {
 		# send operator here 
 		$o->qtc_publish->operator(
-			set_of_aliases=>@aliases,
-			set_of_lists=>@lists,
+			set_of_aliases=>[@aliases],
+			set_of_lists=>[@lists],
 		); 
 		$o->q->param("mode", "show_messages"); 
 		return $o->mode_show_messages; 
