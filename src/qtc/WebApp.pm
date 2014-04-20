@@ -60,6 +60,7 @@ sub setup {
 		'send_telegram' => 'mode_send_telegram',
 		'change_password' => 'mode_change_password',
 		'change_trust' => 'mode_change_trust',
+		'aliases_and_lists' => 'mode_aliases_and_lists',
 	);
 	# CONFIGURE
 	if ( ! $obj->{qtc}->{path} ) { $obj->{qtc}->{path}=$ENV{HOME}."/.qtc"; }
@@ -159,13 +160,14 @@ sub h_input_hidden {
 	my $obj=shift; 
 	my $r; 
 	foreach my $p (keys %{$obj->{qtc}->{exports}}) {
-		if ( ! $obj->q->param($p) ) { next; }
-		$r.=$obj->h_e("input", {
-				type=>"hidden", 
-				name=>$p,
-				value=>$obj->q->param($p),
-			}
-		); 
+		foreach my $val ( $obj->q->param($p) ) {
+			$r.=$obj->h_e("input", {
+					type=>"hidden", 
+					name=>$p,
+					value=>$obj->q->param($p),
+				}
+			);
+		} 
 	}
 	return $r; 
 }
@@ -987,7 +989,6 @@ sub mode_change_trust {
 			( $o->q->param("trustlevel") >= -1 )
 	) { 
 		$o->qtc_publish(
-			call=>$o->q->param("publisher_call"), 
 			to=>$o->q->param("call"), 
 			trustlevel=>$o->q->param("trustlevel"),
 		);
@@ -1038,5 +1039,144 @@ sub mode_change_trust {
 	$r.="</center>";
 	return $r; 
 }
+
+sub apply_deletion_array {
+	my $o=shift; 
+	my $aref=shift; 
+	my @delarray=@_;
+	
+	# buld delhash 
+	my %delhash; 
+	foreach my $del ( @delarray ) { if ( $del ) { $delhash{$del}=1; } }
+
+	my @ret; 
+	foreach my $entry (@$aref) { 
+		if ( ! $entry ) { next; } 
+		if ( $delhash{$entry} ) { next; }
+		$delhash{$entry}=1; 
+		push @ret, $entry; 
+	}
+	return sort(@ret); 
+}
+
+sub mode_aliases_and_lists {
+	my $o=shift; 
+
+	my $r;
+	$r.=$o->area_navigation; 
+
+	if ( ! $o->logged_in ) { return "<h4>ERROR Please log in first</h4>"; }
+
+	my @aliases=$o->q->param("aliases"); 
+	my @lists=$o->q->param("lists"); 
+
+	# get aliases and lists from this operator 
+	if ( ( $#aliases=-1 ) and ( $#lists=-1 ) ) { 
+		my $op=$o->qtc_query->operator($o->q->param("publisher_call")); 
+		if ( $op ) {
+			@aliases=$op->set_of_aliases; 
+			@lists=$op->set_of_lists; 
+		}
+	}
+
+	push @aliases, $o->qtc_query->allowed_letters_for_call($o->q->param("add_alias")); 
+	push @lists, $o->qtc_query->allowed_letters_for_call($o->q->param("add_list")); 
+	@aliases=$o->apply_deletion_array(\@aliases, $o->q->param("delete_alias")); 
+	@lists=$o->apply_deletion_array(\@lists, $o->q->param("delete_list")); 
+
+	if ( $o->q->param("save_changes") eq "really" ) {
+		# send operator here 
+		$o->qtc_publish->operator(
+			set_of_aliases=>@aliases,
+			set_of_lists=>@lists,
+		); 
+		$o->q->param("mode", "show_messages"); 
+		return $o->mode_show_messages; 
+	}
+
+	$o->q->param("aliases", @aliases);
+	$o->q->param("lists", @lists);
+	
+	$r.='<p>Don\'t forget to save your changes when you are done</p>';
+
+	$r.="<h3>Aliases of ".$o->q->param("publisher_call").":</h3>";
+	
+	$o->{qtc}->{exports}->{aliases}=1; 
+	$o->{qtc}->{exports}->{lists}=1; 
+
+	my $x; 
+	foreach my $alias (@aliases) {
+		$x.=$o->h_labled_input({
+			label=>$alias,
+			type=>"checkbox",
+			name=>"delete_alias",
+			value=>$alias,
+		}); 
+	}
+	$r.='<center>';
+	$r.=$o->h_tabled_form({}, 
+		$x,
+		$o->h_submit_for_tbl({
+			value=>"remove selected"
+		})
+	); 
+	$r.=$o->h_tabled_form({}, 
+		$o->h_labled_input({
+			label=>"add alias:", 
+			type=>"text", 
+			size=>10, 
+			maxlength=>20, 
+			name=>"add_alias",
+		}),
+		$o->h_submit_for_tbl({value=>"next"}), 
+	);
+	$r.='</center>';
+
+	$r.="<h3>Lists of ".$o->q->param("publisher_call").":</h3>";
+	
+	$x='';
+	foreach my $list (@lists) {
+		$x.=$o->h_labled_input({
+			label=>$list,
+			type=>"checkbox",
+			name=>"delete_list",
+			value=>$list,
+		}); 
+	}
+	$r.='<center>';
+	$r.=$o->h_tabled_form({}, 
+		$x,
+		$o->h_submit_for_tbl({
+			value=>"remove selected"
+		})
+	); 
+	$r.=$o->h_tabled_form({}, 
+		$o->h_labled_input({
+			label=>"add list:", 
+			type=>"text", 
+			size=>10, 
+			maxlength=>20, 
+			name=>"add_list",
+		}),
+		$o->h_submit_for_tbl({value=>"next"}), 
+	);
+	$r.='</center>';
+	$r.='<center>';
+	$r.='<br></br>';
+	$r.='<br></br>';
+	$r.=$o->h_form({},
+		'<input type="hidden" name="save_changes" value="really"></input>', 
+		$o->h_e("input", {
+			type=>"submit", 
+			name=>"submit", 
+			value=>"SAVE CHANGES",
+			onClick=>$o->js_confirm("Send your changes to aliases and lists back into the Network?"), 
+		})
+	);
+	$r.='</center>';
+ 
+	return $r; 
+}
+
 
 1;
