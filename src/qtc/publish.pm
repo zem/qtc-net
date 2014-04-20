@@ -111,8 +111,9 @@ sub pubkey {
 	my %args=(@_); 
 
 	my $qtc=qtc::msg->new(hex=>$args{hex});
-	$qtc->msg_date(time); 
-	$obj->sig->sign($qtc); 
+	$qtc->drop_checksum; 
+	$qtc->key_date(time); 
+	$obj->sig->sign($qtc);
 	$qtc->to_filesystem($obj->{path}."/in");
 	$obj->wakeup_processor; 
 }
@@ -121,19 +122,36 @@ sub revoke {
 	my $obj=shift; 
 	my %args=(@_); 
 
-	my $pubkey=qtc::msg->new(hex=>$args{hex});
+	my $pubkey;
+	if ( $args{hex} ) {
+		$pubkey=qtc::msg->new(hex=>$args{hex});
+	} else {
+		$pubkey=$obj->get_public_key_msg(); 
+	}	
+
+	my $qtc; 
+
+	if ( $pubkey->type  eq "revoke" ) { # this already is a revoke 
+		$qtc=$pubkey; 
+	} else {
+		$qtc=qtc::msg->new(
+			call=>$obj->{call},
+			type=>"revoke",
+			key_type=>$pubkey->key_type,
+			key_id=>$pubkey->key_id,
+			key=>$pubkey->key,
+		); 
+		$obj->sig->sign($qtc);
+	}
 	
-	$qtc=qtc::msg->new(
-		call=>$obj->{call},
-		type=>"revoke",
-		key_type=>$pubkey->key_type,
-		key_id=>$pubkey->key_id,
-		key=>$pubkey->key,
-	); 
-	
-	$obj->sig->sign($qtc); 
-	$qtc->to_filesystem($obj->{path}."/in");
-	$obj->wakeup_processor; 
+	if ($qtc->key_id ne $obj->signature_key_id) { die "Revokes must be published by key owner\n"; }
+
+	if ( $args{download} ) { 
+		return $qtc->as_hex; 
+	} else {
+		$qtc->to_filesystem($obj->{path}."/in");
+		$obj->wakeup_processor;
+	}
 }
 
 sub operator {

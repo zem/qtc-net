@@ -187,7 +187,6 @@ our %msg_types=(
 		"key"=>$valid_hex,
 	},
 	revoke=>{
-		"key_date"=>$valid_date,  
 		"key_type"=>$valid_rsa_or_dsa,  
 		"key_id"=>$valid_checksum,  
 		"key"=>$valid_hex,
@@ -307,6 +306,25 @@ sub signature_key_id {
 #------------------------------------------------------------------------------------
 =pod
 
+=head2 drop_checksum()
+
+This drops all the checksums and signatures of a message. 
+This is used during key handling to sign a key with another 
+private key than the one held in the message. 
+
+=cut
+#------------------------------------------------------------------------------------
+sub drop_checksum {
+	my $obj=shift;
+	delete $obj->{signature};
+	delete $obj->{signature_key_id};
+	delete $obj->{checksum};
+	return; 
+}
+#------------------------------------------------------------------------------------
+
+=pod
+
 =head2 checksum()
 
 retures the checksum of the signed_content of the message.
@@ -332,7 +350,7 @@ sub checksum {
 	if ($obj->{checksum}!=sha256_hex($obj->signed_content_bin)) {
 		die "object checksum mismatch\n"; 
 	} 
-	return $obj->{checksum}
+	return $obj->{checksum};
 }
 
 #------------------------------------------------------------------------------------
