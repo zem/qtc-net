@@ -355,12 +355,21 @@ sub area_misc_buttons {
 	if ( ! $mode ) { $mode="show_messages"; } 
 	$r.="<table>"; 
 		$r.="<tr>"; 
-			if ( $obj->logged_in ) { 
+			if ( $mode ne "show_messages" ) {
 				$r.="<td>";
-					$obj->q->param("mode", "send_telegram"); 
-					$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>"send telegram"}));
+					$obj->q->param("mode", "show_messages"); 
+					$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>"show telegrams"}));
 					$mode=$obj->q->param("mode", $mode);
 				$r.="</td>";
+			}
+			if ( $obj->logged_in ) { 
+				if ( $mode ne "send_telegram" ) {
+					$r.="<td>";
+						$obj->q->param("mode", "send_telegram"); 
+						$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>"send telegram"}));
+						$mode=$obj->q->param("mode", $mode);
+					$r.="</td>";
+				}
 				if ( $obj->q->param("call") ) {
 					$r.="<td>";
 						$obj->q->param("mode", "change_trust"); 
