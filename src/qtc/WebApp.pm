@@ -669,6 +669,22 @@ sub mode_key_management {
 	my $o=shift; 
 	my $r; 
 	
+	if ( $o->q->param("revoke.qtc") ) {
+			my $fh=$o->q->param("revoke.qtc");
+			$r.="<h4>got a file upload</h4>";
+			my $x; 
+			while ($_=<$fh>) { $x.=$_; }
+		eval { 
+			$o->qtc_publish->revoke(hex=>unpack("H*", $x)); 
+		}; 
+		if ( $@ ) {
+			print STDERR $@; # i want to see what went wrong. 
+			$r.="<h4>errors during upload</h4>";
+		} else { 
+			$o->q->param("mode", "show_messages"); 
+			return $o->mode_show_messages; 
+		}
+	} 
 	if ( $o->q->param("pubkey.qtc") ) {
 			my $fh=$o->q->param("pubkey.qtc");
 			$r.="<h4>got a file upload</h4>";
@@ -695,7 +711,10 @@ sub mode_key_management {
 	
 	my $mode=$o->q->param("mode");
 	$o->q->param("mode", "pubkey_download"); 
-	$r.=$o->h_form({}, $o->h_e("input", {type=>"submit", name=>"submit", value=>"pubkey download"}));
+	$r.=$o->h_form({}, 
+		'<input type="hidden" name="key_type" value="pubkey"></input>',
+		$o->h_e("input", {type=>"submit", name=>"submit", value=>"pubkey download"}),
+	);
 	$mode=$o->q->param("mode", $mode);
 	
 	$r.="</center>"; 
@@ -716,6 +735,37 @@ sub mode_key_management {
 	);
 	$r.="</center>"; 
 	
+	$r.="<h3>Revoke Message Download</h3> 
+		<p>You SHOULD (BUT WE KNOW YOU WONT) download the revoke message for this 
+		key and store it at a save place. Wenn this message is published it means 
+		that the private key of this account is not valid anymore.</p>";
+	$r.="<center>"; 
+	my $mode=$o->q->param("mode");
+	$o->q->param("mode", "pubkey_download"); 
+	$r.=$o->h_form({}, 
+		'<input type="hidden" name="key_type" value="revoke"></input>',
+		$o->h_e("input", {type=>"submit", name=>"submit", value=>"revoke download"})
+	);
+	$mode=$o->q->param("mode", $mode);
+	$r.="</center>"; 
+	
+	$r.="<h3>Revoke Message Upload</h3> 
+		<p>You can Upload a revoke key message for a public key account if you 
+		have downloaded and stored it earlier. The message can be from another 
+		account/key but it should be valid.</p>";
+	$r.="<center>"; 
+	$r.=$o->h_tabled_form({enctype=>"multipart/form-data"},
+		$o->h_labled_input({
+			label=>"Revoke Key QTC:", 
+			type=>"file",
+			name=>"revoke.qtc",
+			size=>50, 
+			maxlength=>1000,
+		}),
+		$o->h_submit_for_tbl({value=>"Upload"}), 
+	);
+	$r.="</center>"; 
+	
 	return $r; 
 }
 
@@ -725,7 +775,15 @@ sub mode_pubkey_download {
 	my $r; 
 
 	if ( ! $o->logged_in ) { return "Access denied"; }
-	my $msg=$o->qtc_publish->get_public_key_msg; 
+	my $msg; 
+	if ( $o->q->param("key_type") eq "pubkey" ) {
+		$msg=$o->qtc_publish->get_public_key_msg; 
+	} elsif ( $o->q->param("key_type") eq "revoke" ) {
+		$msg=$o->qtc_publish->revoke(
+			download=>1,
+		); 
+	}
+	if ( ! $msg ) { return "i dont have a message, either key_type or a login is missing\n"; }
 	
 	$o->header_add(
 		-type => 'application/octet-stream',

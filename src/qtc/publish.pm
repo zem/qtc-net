@@ -147,7 +147,7 @@ sub revoke {
 	if ($qtc->key_id ne $obj->signature_key_id) { die "Revokes must be published by key owner\n"; }
 
 	if ( $args{download} ) { 
-		return $qtc->as_hex; 
+		return $qtc; 
 	} else {
 		$qtc->to_filesystem($obj->{path}."/in");
 		$obj->wakeup_processor;
