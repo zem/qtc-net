@@ -1,7 +1,6 @@
 package qtc::binary; 
 #use POSIX qw(strftime);
 use Digest::SHA qw(sha256_hex);
-use XML::XPath; 
 use qtc::signature; 
 use File::Basename; 
 use qtc::misc;
