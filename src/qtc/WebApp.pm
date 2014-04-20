@@ -56,6 +56,7 @@ sub setup {
 		'save_publisher_login' => 'mode_save_publischer_login',
 		'key_management' => 'mode_key_management',
 		'pubkey_download' => 'mode_pubkey_download',
+		'send_telegram' => 'mode_send_telegram',
 	);
 	# CONFIGURE
 	if ( ! $obj->{qtc}->{path} ) { $obj->{qtc}->{path}=$ENV{HOME}."/.qtc"; }
@@ -246,6 +247,7 @@ sub h_submit_for_tbl {
 		), 
 	);
 }
+
 # you need to be in a table to use this....
 sub h_labled_input {
 	my $obj=shift; 
@@ -256,7 +258,7 @@ sub h_labled_input {
 
 	return $obj->h_e("tr", {}, 
 		$obj->h_e("td", {align=>"left"}, "<b>".$label."</b>"), 
-		$obj->h_e("td", {align=>"right"},
+		$obj->h_e("td", {align=>"left"},
 			$obj->h_e("input", $p),
 		), 
 	);
@@ -769,7 +771,7 @@ sub mode_key_management {
 	return $r; 
 }
 
-# this will return one of the captcha images 
+# this will return a public or private key 
 sub mode_pubkey_download {
 	my $o=shift; 
 	my $r; 
@@ -792,6 +794,86 @@ sub mode_pubkey_download {
 	$o->{disable_postrun}=1; 
 
 	return pack("H*", $msg->as_hex); 
+}
+
+sub mode_send_telegram {
+	my $o=shift; 
+	my $r; 
+	$r.=$o->area_navigation; 
+
+	if ( ! $o->logged_in ) {
+		$r.="<h3>Please log in to use this feature</h3>"; 
+		return $r; 
+	}
+	if ( ( $o->q->param("submit") ) and ( $o->q->param("telegram") ) )  {
+		# convert characters 
+		$o->q->param("call", $o->qtc_query->allowed_letters_for_call($o->q->param("call")));
+		$o->q->param("to", $o->qtc_query->allowed_letters_for_call($o->q->param("to")));
+		$o->q->param("telegram", $o->qtc_query->allowed_letters_for_telegram($o->q->param("telegram")));
+	
+		my $ok=1; 
+		if (! $o->q->param("call")) { 
+			$r.="<h4>ERROR: Please enter a valid callsign </h4>";
+			$ok=0; 
+		}
+		if (! $o->q->param("to")) { 
+			$r.="<h4>ERROR: Please enter a valid telegram receiver callsign </h4>";
+			$ok=0; 
+		}
+		if (! $o->q->param("telegram")) { 
+			$r.="<h4>ERROR: Please enter a valid telegram text</h4>";
+			$ok=0; 
+		}
+		if ( $ok ) { 
+			$o->qtc_publish->telegram(
+				call=>$o->q->param("publisher_call"),
+				from=>$o->q->param("call"),
+				to=>$o->q->param("to"),
+				telegram=>$o->q->param("telegram"),
+			); 
+			$o->q->param("mode", "show_messages"); 
+			return $o->mode_show_messages; 
+		} 
+	}
+
+	$r.="<center>";
+	$r.=$o->h_tabled_form({},
+		$o->h_labled_input({
+			label=>"From:", 
+			type=>"text", 
+			size=>10, 
+			maxlength=>20, 
+			name=>"call",
+			value=>$o->q->param("call"), 
+		}),
+		$o->h_labled_input({
+			label=>"To:", 
+			type=>"text", 
+			size=>10, 
+			maxlength=>20, 
+			name=>"to",
+			value=>$o->q->param("to"), 
+		}),
+		$o->h_labled_input({
+			label=>"Telegram:", 
+			type=>"text", 
+			size=>100, 
+			maxlength=>300, 
+			name=>"telegram",
+			value=>$o->q->param("telegram"), 
+		}),
+		$o->h_submit_for_tbl({
+			onClick=>$o->js_confirm("Do you really want to send this Telegram?"),
+			value=>"send telegram",
+		}), 
+	);
+	$r.="</center>";
+
+	$r.="<p>Note: telegrams can be 300 small letter characters as well as numbers and some 
+	signs, the telegrams are automatically converted to a storeable format. 
+	This means lowercase convertion and every unknown character will vanish. </p>"; 
+	
+	return $r;
 }
 
 1;
