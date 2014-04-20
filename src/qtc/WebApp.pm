@@ -7,6 +7,7 @@ use Data::Dumper;
 use Digest::SHA qw(sha256_hex); 
 use POSIX qw(strftime); 
 use Authen::Captcha; # the Application Captcha plugin was not installable
+use File::Copy; 
 
 
 ###########################################################################
@@ -57,6 +58,7 @@ sub setup {
 		'key_management' => 'mode_key_management',
 		'pubkey_download' => 'mode_pubkey_download',
 		'send_telegram' => 'mode_send_telegram',
+		'change_password' => 'mode_change_password',
 	);
 	# CONFIGURE
 	if ( ! $obj->{qtc}->{path} ) { $obj->{qtc}->{path}=$ENV{HOME}."/.qtc"; }
@@ -114,9 +116,9 @@ sub q { my $obj=shift; return $obj->query; }
 
 sub get_priv_dir {
 	my $obj=shift; 
-	my $user=$obj->q->param("publisher_call");
-	my $pass=$obj->q->param("publisher_password");
 	if ( ! $obj->{qtc}->{priv_dir} ) {
+		my $user=$obj->q->param("publisher_call");
+		my $pass=$obj->q->param("publisher_password");
 		my $user_pass_sha=$obj->qtc_query->call2fname($user)."_".sha256_hex($pass);
 		$obj->{qtc}->{priv_dir}=$obj->{qtc}->{priv_path_prefix}."/".$user_pass_sha;
 	}
@@ -584,8 +586,9 @@ sub mode_register_publisher_login {
 	my $o=shift; 
 
 	my $r; 
+	$r.=$o->area_navigation; 
 
-	if ( $o->q->param("submit") ) { 
+	if ( $o->q->param("captcha_token") ) { 
 		# this means we have to create a user account but first 
 		# we should check a few things...
 		my $ok=1; 
@@ -889,6 +892,73 @@ sub mode_send_telegram {
 	This means lowercase convertion and every unknown character will vanish. </p>"; 
 	
 	return $r;
+}
+
+
+sub mode_change_password {
+	my $o=shift; 
+
+	my $r; 
+	$r.=$o->area_navigation; 
+
+	if ( ! $o->logged_in ) { return "<h4>ERROR Please log in first</h4>"; }
+
+	if ( $o->q->param("new_publisher_password") ) { 
+		my $ok=1; 
+		if ( $o->q->param("new_publisher_password") ne $o->q->param("verify_publisher_password")) {
+			$ok=0;
+			$r.="<h4>ERROR: The new passwords don't match</h4>"; 
+		}
+		if ( $ok ) {
+			my $oldpath=$o->get_priv_dir;
+			$o->q->param("publisher_password", $o->q->param("new_publisher_password"));
+			delete $o->{qtc}->{priv_dir}; 
+			if ( -e $o->get_priv_dir ) { return "<h1>BAD REQUEST, TARGET USERNAME PW ALREADY EXIST</h1>"; }
+			move($oldpath, $o->get_priv_dir) or return "<h1>password reset failed at move stage</h1>"; 
+			delete $o->{qtc}->{publish}; 
+
+			$o->q->param("mode", "show_messages"); 
+			return $o->mode_show_messages; 
+		}
+	}
+
+	delete $o->{qtc}->{exports}->{publisher_password};
+	$r.="<h3>Enter login credentials:</h3>";
+	$r.="<center>";
+	$r.=$o->h_tabled_form({},
+		$o->h_labled_input({
+			label=>"Current Password:", 
+			type=>"password", 
+			size=>10, 
+			maxlength=>50, 
+			name=>"publisher_password",
+			value=>$o->q->param("publisher_password"), 
+		}),
+		$o->h_labled_input({
+			label=>"New Password:", 
+			type=>"password", 
+			size=>10, 
+			maxlength=>50, 
+			name=>"new_publisher_password",
+			value=>$o->q->param("new_publisher_password"), 
+		}),
+		$o->h_labled_input({
+			label=>"Verify New Password:", 
+			type=>"password", 
+			size=>10, 
+			maxlength=>50, 
+			name=>"verify_publisher_password",
+			value=>$o->q->param("verify_publisher_password"), 
+		}),
+		$o->h_submit_for_tbl({
+			onClick=>$o->js_confirm("Do you really want to change the password for your callsign?"),
+			value=>"change password",
+		}), 
+	);
+	$o->{qtc}->{exports}->{publisher_password}=1;
+
+	$r.="</center>";
+	return $r; 
 }
 
 1;
