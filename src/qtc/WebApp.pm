@@ -67,6 +67,7 @@ sub setup {
 	# objects ....
 	if ( ! $obj->{qtc}->{query} ) { $obj->{qtc}->{query}=qtc::query->new(path=>$obj->{qtc}->{path}); }
 	if ( ! $obj->{qtc}->{captcha} ) { 
+		$obj->qtc_query->esure_path($obj->{qtc}->{captcha_data_dir}, $obj->{qtc}->{captcha_output_dir}); 
 		$obj->{qtc}->{captcha}=Authen::Captcha->new(
 			data_folder=>$obj->{qtc}->{captcha_data_dir},
 			output_folder=>$obj->{qtc}->{captcha_output_dir},
