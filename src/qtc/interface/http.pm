@@ -64,7 +64,7 @@ sub publish {
 
 sub sync {
 	my $obj=shift; 
-	my $path=shift; 
+	my $path=shift;  # the qtc path (/out /call/FOO/telegrams/new) goes in here as parameter
 	
 	#print STDERR $obj->{path}."/in\n";
 	qtc::misc->new->ensure_path($obj->{path}."/in"); 
@@ -75,6 +75,8 @@ sub sync {
 
 	my @args;
 
+	# the timestamp of the last call is stored in a file so only files newer than 
+	# the TS may get listet but first, load the old info.... 
 	if ( $obj->{use_ts} ) {
 		my $ts=0; 
 		$tsfile=$obj->{ts_dir}."/".sha256_hex($urlpath); 
