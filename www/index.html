@@ -16,9 +16,6 @@ to be decentralized and therefor faultproof, but it also trys to address securit
 long as this is important for public amateur radio messages.  </p>
 <img src="QTC-Net.svg"><br>
 <hr>
-This graphic trys to illustrate the network, it is somewhat ugly and too complicated, 
-and will be exchanged soon, but we have really trouble to explain QTC Net in two 
-scentences. <br>
 The net is basically a decentralized drop off point for short telegrams from one operator 
 to another operator. The Messages are all public as it is for Amateur Radio Service. The 
 Transfer from one endpoint station to the Network or the other way round will mostly be 
@@ -34,47 +31,47 @@ if there is enough bandwidth.
 <p>If you have your own application, right now there is one linux commandline thingie in the Source code, or 
 if you want to run your own message server you can access the http interface via 
 http://www.qtc-net.org/qtc-if.cgi in your application, or message downloader.</p>
-
-<h3>Frequently Asked Questions:</h3>
-<a href="faq.html">The FAQ is here.</a>
+<hr>
+<h3>Protocol:</h3>
+A Brief description of the Protocol <a href="protocol.txt">Protocol</a> <hr>
+<h3>HTTP Interface:</h3>
+A Brief description of <a href="http_interface.txt">an http interface for QTC Network</a> 
+<h3>QTC-Net Message Format:</h3>
+A Brief description of the <a href="qtc-message-file-format.txt"> message format</a> 
 <hr>
 <h3>Development:</h3>
 The Development will take place on <a href="https://github.com/zem/qtc-net.git">GIT-HUB</a>
 
-<hr>
 <h3>Development Status:</h3>
-We don't made a release yet. This means the code is still changing a lot. 
+An alpha version as preview is released. This means the code is still changing a lot. 
 <ul>
 	<li>qsolog is an 'I would like to be an adif logger when I am grown up' program that we use to test message creation</li>
 	<li>qtc::publish is a library and all you need to include to publish qtc messages</li>
 	<li>qtc::query is a library and all you need to include if you want to query for a set of qtc messages</li>
 	<li>qtc::processor is responsible for sorting all the messages into the filesytem structure</li>
+	<li>qtc::WebApp is an example web frontend</li>
+	<li>qtc::interface::http implements an incremential download interface via HTTP</li>
 </ul>
 So far if you want to see the code: qtc::msg module is already pod documented. It would be good to have that on 
 the rest of the code as well. So if you want to contribute just make a pull request on GIT-HUB. Or write a 
 Feedback or Bugreport. 
 <hr>
 
-<h3>Protocol:</h3>
-A Brief description of the Protocol <a href="protocol.txt">Protocol</a> this is derived from 
-the heavily brainstormed <a href="qtc-net-draft.txt">draft</a> as well as <a href="qtc-net-draft-02.txt">draft-02</a> 
-that contains every note we did, and every idea we hat. Not everything in those drafts was useful. 
-
+<h3>Frequently Asked Questions:</h3>
+<a href="faq.html">The FAQ is here.</a>
 <hr>
-<h3>HTTP Interface:</h3>
-A Brief description of <a href="http_interface.txt">an http interface for QTC Network</a> 
 
-<hr>
-<h3>QTC-Net Message Format:</h3>
-A Brief description of the <a href="qtc-message-file-format.txt"> message format</a> 
-
-<hr>
 <h3>Contact:</h3>
-As long as the net is not working, you can use our Mail which is 
+You can use our Mail which is 
 <ul>
 	<li>Hans: zem at fnordpol.de aka OE1SRC</li>
 	<li>Stefan: may at fnordpol.de aka OE1GIS</li>
 </ul>
+
+or you may send a qtc net telegram to the <b>qtcnet</b> list within the net, by just 
+addressing to qtcnet as a callsign. You can receive messages on that list by adding 
+that list to your callsign (aliases and lists in the webfrontend).
+
 <br>
 regards 
 <br>     Hans and Stefan
