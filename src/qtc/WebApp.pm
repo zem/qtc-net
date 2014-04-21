@@ -537,7 +537,7 @@ sub mode_show_telegrams {
 from any sender to any receiver, as well as access those telegrams and mark them as delivered when 
 they are delivered.</p>';
 		$r.='<p>you may browse to 
-<a href="'.$obj->{qtc}->{home_page}.'">'.$obj->{qtc}->{home_page}.'</a> if you want more information</p>'
+<a href="'.$obj->{qtc}->{home_page}.'">'.$obj->{qtc}->{home_page}.'</a> if you want more information</p>';
 		return $r; 
  
 	}
