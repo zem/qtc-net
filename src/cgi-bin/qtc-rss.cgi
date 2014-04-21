@@ -44,6 +44,7 @@ print'  <channel>
 ';
 print '<atom:link href="'.$q->escapeHTML($q->url(-full=>1, -query=>1)).'" rel="self" type="application/rss+xml" />';
 foreach my $call (@calls) {
+$call=$qry->allowed_letters_for_call($call); 
 $callurl=$url."?call=".$q->url_encode($call);
 
 	foreach my $msg ($qry->list_telegrams($call, $type)) {
