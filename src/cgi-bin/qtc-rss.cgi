@@ -31,23 +31,22 @@ print '<?xml version="1.0" encoding="utf-8"?>
 
 
 
-foreach my $call (@calls) {
-
-$callurl=$url."?call=".$q->url_encode($call);
-
 print'  <channel>
-    <title>Telegrams for '.$q->escapeHTML($call).'</title>
-    <link>'.$callurl.'</link>
-    <description>New Telegrams channel for '.$q->escapeHTML($call).'</description>
+    <title>QTC Net Telegrams</title>
+    <link>'.$url.'</link>
+    <description>New Telegrams channel for '.$url.'</description>
     <language>en-en</language>
     <copyright>GPLV3 qtc-rss.cgi</copyright>
     <pubDate>'.strftime("%Y-%m-%d %H:%M:%S UTC", gmtime(time)).'</pubDate>
 ';
+foreach my $call (@calls) {
+$callurl=$url."?call=".$q->url_encode($call);
+
 	foreach my $msg ($qry->list_telegrams($call, "new")) {
 		print '
     <item>
       <title>'.$q->escapeHTML($msg->telegram).'</title>
-      <description>from: '.$q->escapeHTML($msg->from).'  to: '.$q->escapeHTML($msg->to).'</description>
+      <description>from: '.$q->escapeHTML($msg->from).'  to: '.$q->escapeHTML($call).' '.$q->escapeHTML($msg->to).'</description>
       <link>'.$callurl.'</link>
       <author>'.$q->escapeHTML($msg->call).'</author>
       <guid>'.$q->escapeHTML($msg->filename).'</guid>
@@ -56,10 +55,9 @@ print'  <channel>
 ';
 
 	}
- 
+}
 print '  </channel>
 ';
-}
 
 print '</rss>';
 
