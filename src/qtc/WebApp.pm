@@ -48,11 +48,11 @@ sub cgiapp_postrun {
 
 sub setup {
 	my $obj = shift;
-	$obj->start_mode('show_messages');
+	$obj->start_mode('show_telegrams');
 	$obj->mode_param('mode');
 	$obj->run_modes(
 		'captcha_image' => 'mode_captcha_image',
-		'show_messages' => 'mode_show_messages',
+		'show_telegrams' => 'mode_show_telegrams',
 		'register_publisher_login' => 'mode_register_publisher_login',
 		'key_management' => 'mode_key_management',
 		'pubkey_download' => 'mode_pubkey_download',
@@ -274,7 +274,7 @@ sub h_misc_button {
 	my $obj=shift; 
 	my $p=shift; 
 	my $mode=$obj->q->param("mode");
-	if ( ! $mode ) { $mode="show_messages"; } 
+	if ( ! $mode ) { $mode="show_telegrams"; } 
 	my $r; 
 	if ( $mode ne $p->{mode} ) {
 		$r.="<td>";
@@ -375,11 +375,11 @@ sub area_misc_buttons {
 	my $obj=shift; 
 	my $r; 
 	my $mode=$obj->q->param("mode");
-	if ( ! $mode ) { $mode="show_messages"; } 
+	if ( ! $mode ) { $mode="show_telegrams"; } 
 	$r.="<table>"; 
 		$r.="<tr>"; 
 			$r.=$obj->h_misc_button({
-				mode=>"show_messages", 
+				mode=>"show_telegrams", 
 				value=>"show telegrams",
 			}); 
 			if ( $obj->logged_in ) { 
@@ -515,7 +515,7 @@ sub js_confirm {
 ###############################################################
 # webapp modes 
 ##############################################################
-sub mode_show_messages {
+sub mode_show_telegrams {
 	my $obj=shift; 
 	my $q=$obj->query;
 	if ( ! $q->param("type") ) { $q->param("type", "new"); }
@@ -530,7 +530,17 @@ sub mode_show_messages {
 
 	$r.=$obj->area_navigation; 
 
-	if ( ! $q->param("call") ) { return $r."<h3>Please enter a Call</h3>"; }
+	if ( ! $q->param("call") ) { 
+		$r.="<h3>Please enter a call in the upper left corner or login in the upper right one.</h3>";
+		$r.='<p></p>
+<p>QTC Net is a decentralized telegram system for amateur radio. A user can check in a telegram 
+from any sender to any receiver, as well as access those telegrams and mark them as delivered when 
+they are delivered.</p>';
+		$r.='<p>you may browse to 
+<a href="'.$obj->{qtc}->{home_page}.'">'.$obj->{qtc}->{home_page}.'</a> if you want more information</p>'
+		return $r; 
+ 
+	}
 
 	#prepare qsp checksum hash
 	my %qsp; 
@@ -625,8 +635,8 @@ sub mode_register_publisher_login {
 				call=>$o->q->param("publisher_call"),
 				password=>$o->q->param("publisher_password"),
 			); 
-			$o->q->param("mode", "show_messages"); 
-			return $o->mode_show_messages; 
+			$o->q->param("mode", "show_telegrams"); 
+			return $o->mode_show_telegrams; 
 		}
 	}
 
@@ -710,8 +720,8 @@ sub mode_key_management {
 			print STDERR $@; # i want to see what went wrong. 
 			$r.="<h4>errors during upload</h4>";
 		} else { 
-			$o->q->param("mode", "show_messages"); 
-			return $o->mode_show_messages; 
+			$o->q->param("mode", "show_telegrams"); 
+			return $o->mode_show_telegrams; 
 		}
 	} 
 	if ( $o->q->param("pubkey.qtc") ) {
@@ -726,8 +736,8 @@ sub mode_key_management {
 			print STDERR $@; # i want to see what went wrong. 
 			$r.="<h4>errors during upload</h4>";
 		} else { 
-			$o->q->param("mode", "show_messages"); 
-			return $o->mode_show_messages; 
+			$o->q->param("mode", "show_telegrams"); 
+			return $o->mode_show_telegrams; 
 		}
 	} 
 	
@@ -858,8 +868,8 @@ sub mode_send_telegram {
 				to=>$o->q->param("to"),
 				telegram=>$o->q->param("telegram"),
 			); 
-			$o->q->param("mode", "show_messages"); 
-			return $o->mode_show_messages; 
+			$o->q->param("mode", "show_telegrams"); 
+			return $o->mode_show_telegrams; 
 		} 
 	}
 
@@ -928,8 +938,8 @@ sub mode_change_password {
 			move($oldpath, $o->get_priv_dir) or return "<h1>password reset failed at move stage</h1>"; 
 			delete $o->{qtc}->{publish}; 
 
-			$o->q->param("mode", "show_messages"); 
-			return $o->mode_show_messages; 
+			$o->q->param("mode", "show_telegrams"); 
+			return $o->mode_show_telegrams; 
 		}
 	}
 
@@ -1000,8 +1010,8 @@ sub mode_change_trust {
 			to=>$o->q->param("call"), 
 			trustlevel=>$o->q->param("trustlevel"),
 		);
-		$o->q->param("mode", "show_messages"); 
-		return $o->mode_show_messages; 
+		$o->q->param("mode", "show_telegrams"); 
+		return $o->mode_show_telegrams; 
 	}
 
 	my $msg=$o->qtc_query->get_old_trust(
@@ -1098,8 +1108,8 @@ sub mode_aliases_and_lists {
 			set_of_aliases=>[@aliases],
 			set_of_lists=>[@lists],
 		); 
-		$o->q->param("mode", "show_messages"); 
-		return $o->mode_show_messages; 
+		$o->q->param("mode", "show_telegrams"); 
+		return $o->mode_show_telegrams; 
 	}
 
 	$o->q->param("aliases", @aliases);
