@@ -1,14 +1,16 @@
 #!/usr/bin/perl
 use qtc::query; 
-use qtc::misc; 
-use qtc::msg; 
 use CGI::Simple; 
-use File::Basename; 
 use POSIX qw(strftime); 
+use Digest::SHA qw(sha256_hex); 
 
 my $q = CGI::Simple->new;
 my @calls=$q->param("call"); 
 #@calls=("oe1gsu", "dm3da", "oe1src"); 
+
+my $type=$q->param("type"); 
+if ( ! $type ) { $type="new"; }
+if ( $type !~ /^new|all|sent$/ ) { die "unknown type"; }
 
 # return file 
 print $q->header(
@@ -29,28 +31,26 @@ print '<?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0">
 ';
 
-
-
 print'  <channel>
-    <title>QTC Net Telegrams</title>
+    <title>'.$type.' QTC Net Telegrams</title>
     <link>'.$url.'</link>
     <description>New Telegrams channel for '.$url.'</description>
     <language>en-en</language>
     <copyright>GPLV3 qtc-rss.cgi</copyright>
-    <pubDate>'.strftime("%Y-%m-%d %H:%M:%S UTC", gmtime(time)).'</pubDate>
+    <pubDate>'.strftime("%y %m %d %H:%M:%S UT", gmtime(time)).'</pubDate>
 ';
 foreach my $call (@calls) {
 $callurl=$url."?call=".$q->url_encode($call);
 
-	foreach my $msg ($qry->list_telegrams($call, "new")) {
+	foreach my $msg ($qry->list_telegrams($call, $type)) {
 		print '
     <item>
       <title>'.$q->escapeHTML($msg->telegram).'</title>
       <description>from: '.$q->escapeHTML($msg->from).'  to: '.$q->escapeHTML($call).' '.$q->escapeHTML($msg->to).'</description>
       <link>'.$callurl.'</link>
-      <author>'.$q->escapeHTML($msg->call).'</author>
-      <guid>'.$q->escapeHTML($msg->filename).'</guid>
-      <pubDate>'.strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($msg->telegram_date)).'</pubDate>
+      <author>'.$q->escapeHTML($msg->call).'@lookslikeanemail</author>
+      <guid isPermaLink="false">'.$q->escapeHTML($msg->filename).'</guid>
+      <pubDate>'.strftime("%y-%m-%d %H:%M:%S UT", gmtime($msg->telegram_date)).'</pubDate>
     </item>
 ';
 
