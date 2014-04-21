@@ -12,7 +12,7 @@ my $type=$q->param("type");
 if ( ! $type ) { $type="new"; }
 if ( $type !~ /^new|all|sent$/ ) { die "unknown type"; }
 
-my $dateformat="%a, %d %b %y %T %z";
+my $dateformat="%a, %d %b %Y %T +0000";
 #my $dateformat="%Y-%m-%d %H:%M:%S UTC";
 
 # return file 
@@ -51,7 +51,7 @@ $callurl=$url."?call=".$q->url_encode($call);
       <title>'.$q->escapeHTML($msg->telegram).'</title>
       <description>from: '.$q->escapeHTML($msg->from).'  to: '.$q->escapeHTML($call).' '.$q->escapeHTML($msg->to).'</description>
       <link>'.$callurl.'</link>
-      <author>'.$q->escapeHTML($msg->call).'@lookslikeanemail</author>
+      <author>'.$q->escapeHTML($msg->call)." &lt;".$q->escapeHTML($msg->call).'@lookslikeanemail&gt;</author>
       <guid isPermaLink="false">'.$q->escapeHTML($msg->filename).'</guid>
       <pubDate>'.strftime($dateformat, gmtime($msg->telegram_date)).'</pubDate>
     </item>
