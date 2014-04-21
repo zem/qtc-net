@@ -12,6 +12,9 @@ my $type=$q->param("type");
 if ( ! $type ) { $type="new"; }
 if ( $type !~ /^new|all|sent$/ ) { die "unknown type"; }
 
+my $dateformat="%a, %d %b %y %T %z";
+#my $dateformat="%Y-%m-%d %H:%M:%S UTC";
+
 # return file 
 print $q->header(
 	-type=>'application/x-rss+xml',
@@ -37,7 +40,7 @@ print'  <channel>
     <description>New Telegrams channel for '.$url.'</description>
     <language>en-en</language>
     <copyright>GPLV3 qtc-rss.cgi</copyright>
-    <pubDate>'.strftime("%y %m %d %H:%M:%S UT", gmtime(time)).'</pubDate>
+    <pubDate>'.strftime($dateformat, gmtime(time)).'</pubDate>
 ';
 foreach my $call (@calls) {
 $callurl=$url."?call=".$q->url_encode($call);
@@ -50,7 +53,7 @@ $callurl=$url."?call=".$q->url_encode($call);
       <link>'.$callurl.'</link>
       <author>'.$q->escapeHTML($msg->call).'@lookslikeanemail</author>
       <guid isPermaLink="false">'.$q->escapeHTML($msg->filename).'</guid>
-      <pubDate>'.strftime("%y-%m-%d %H:%M:%S UT", gmtime($msg->telegram_date)).'</pubDate>
+      <pubDate>'.strftime($dateformat, gmtime($msg->telegram_date)).'</pubDate>
     </item>
 ';
 
