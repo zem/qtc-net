@@ -523,6 +523,11 @@ sub mode_show_messages {
 	if ( $type !~ /^((all)|(new)|(sent))$/ ) { return "<h1>FAIL telegram type invalid</h1>"; }
 	my $r; 
 
+	if ( ( $obj->logged_in ) and ( ! $q->param("call") ) ) {
+		$q->param("call", $q->param("publisher_call"));
+		#$r.="<h3>You may search for telegrams to other calls in the upper left, I display the telegrams to YOUR publisher call until then</h3>"; 
+	}
+
 	$r.=$obj->area_navigation; 
 
 	if ( ! $q->param("call") ) { return $r."<h3>Please enter a Call</h3>"; }
