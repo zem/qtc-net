@@ -17,7 +17,7 @@ my $dateformat="%a, %d %b %Y %T +0000";
 
 # return file 
 print $q->header(
-	-type=>'application/x-rss+xml',
+	-type=>'application/rss+xml',
 );
 
 my $url=$ENV{QTC_WEB_URL};
@@ -42,7 +42,7 @@ print'  <channel>
     <copyright>GPLV3 qtc-rss.cgi</copyright>
     <pubDate>'.strftime($dateformat, gmtime(time)).'</pubDate>
 ';
-print '<atom:link href="'.$q->url(-full=>1).'" rel="self" type="application/rss+xml" />';
+print '<atom:link href="'.$q->url(-full=>1, -query=>1).'" rel="self" type="application/rss+xml" />';
 foreach my $call (@calls) {
 $callurl=$url."?call=".$q->url_encode($call);
 
@@ -52,7 +52,7 @@ $callurl=$url."?call=".$q->url_encode($call);
       <title>'.$q->escapeHTML($msg->telegram).'</title>
       <description>from: '.$q->escapeHTML($msg->from).'  to: '.$q->escapeHTML($call).' '.$q->escapeHTML($msg->to).'</description>
       <link>'.$callurl.'</link>
-      <author>'.$q->escapeHTML($msg->call).'@lookslikeanemail ('.$q->escapeHTML($msg->call).')</author>
+      <author>'.$q->escapeHTML($msg->call).' ('.$q->escapeHTML($msg->call).')</author>
       <guid isPermaLink="false">'.$q->escapeHTML($msg->filename).'</guid>
       <pubDate>'.strftime($dateformat, gmtime($msg->telegram_date)).'</pubDate>
     </item>
