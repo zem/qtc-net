@@ -31,7 +31,7 @@ $qry=qtc::query->new(
 );
 
 print '<?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
 ';
 
 print'  <channel>
@@ -42,6 +42,7 @@ print'  <channel>
     <copyright>GPLV3 qtc-rss.cgi</copyright>
     <pubDate>'.strftime($dateformat, gmtime(time)).'</pubDate>
 ';
+print '<atom:link href="'.$q->url(-full=>1).'" rel="self" type="application/rss+xml" />';
 foreach my $call (@calls) {
 $callurl=$url."?call=".$q->url_encode($call);
 
@@ -51,7 +52,7 @@ $callurl=$url."?call=".$q->url_encode($call);
       <title>'.$q->escapeHTML($msg->telegram).'</title>
       <description>from: '.$q->escapeHTML($msg->from).'  to: '.$q->escapeHTML($call).' '.$q->escapeHTML($msg->to).'</description>
       <link>'.$callurl.'</link>
-      <author>'.$q->escapeHTML($msg->call)." &lt;".$q->escapeHTML($msg->call).'@lookslikeanemail&gt;</author>
+      <author>'.$q->escapeHTML($msg->call).'@lookslikeanemail ('.$q->escapeHTML($msg->call).')</author>
       <guid isPermaLink="false">'.$q->escapeHTML($msg->filename).'</guid>
       <pubDate>'.strftime($dateformat, gmtime($msg->telegram_date)).'</pubDate>
     </item>
