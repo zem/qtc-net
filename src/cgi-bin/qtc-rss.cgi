@@ -42,7 +42,7 @@ print'  <channel>
     <copyright>GPLV3 qtc-rss.cgi</copyright>
     <pubDate>'.strftime($dateformat, gmtime(time)).'</pubDate>
 ';
-print '<atom:link href="'.$q->url(-full=>1, -query=>1).'" rel="self" type="application/rss+xml" />';
+print '<atom:link href="'.$q->escapeHTML($q->url(-full=>1, -query=>1)).'" rel="self" type="application/rss+xml" />';
 foreach my $call (@calls) {
 $callurl=$url."?call=".$q->url_encode($call);
 
