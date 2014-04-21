@@ -472,12 +472,14 @@ sub render_user_pass_logout {
 	my $r;  
 	delete $obj->{qtc}->{exports}->{publisher_call};
 	delete $obj->{qtc}->{exports}->{publisher_password};
+	delete $obj->{qtc}->{exports}->{mode};
 	$r.=$obj->h_tabled_form({}, 
 		"<tr><td><b>YOUR Callsign:</b></td><td>".$obj->q->param("publisher_call")."</td></tr>",
 		$obj->h_submit_for_tbl({value=>"publisher logout"}), 
 	);
 	$obj->{qtc}->{exports}->{publisher_call}=1;
 	$obj->{qtc}->{exports}->{publisher_password}=1;
+	$obj->{qtc}->{exports}->{mode}=1;
 
 	return $r;
 }
