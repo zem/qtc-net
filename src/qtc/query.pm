@@ -17,6 +17,20 @@ sub new {
 	return $obj; 
 }
 
+sub latest_changes { 
+	my $obj=shift; 
+	my $number=shift; 
+	if ( ! $number ) { $number=0; }
+	else { $number = $number * -1 }
+	
+	my @msgs;
+	foreach my $file (($obj->scan_dir($obj->{path}."/out", '.+\.qtc'))[$number..-1]) {
+		unshift @msgs, qtc::msg->new(path=>$obj->{path}."/call/$call/telegrams/$type", filename=>$file); 
+	}
+
+	return @msgs; 
+}
+
 sub list_telegrams { 
 	my $obj=shift; 
 	my $call=$obj->call2fname(shift); 

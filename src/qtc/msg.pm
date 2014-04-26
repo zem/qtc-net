@@ -368,12 +368,18 @@ humans may use this to distinguish between several messages, without
 knowing its content. It is calculated out of the checksum, and can not 
 be set. this is a 36*36=1296 possibilitys big checksum, well enough. 
 
+The basis of the hr_refnum() is the sha256 checksum of the object. if the 
+method is called with an argument, the argument is used instead of the 
+objects own checksum as basis.  
+
 =cut
 #------------------------------------------------------------------------------------
 sub hr_refnum {
 	my $obj=shift; 
-	my $num1=hex(substr($obj->checksum, 0, 4));
-	my $num2=hex(substr($obj->checksum, 4, 4));
+	my $chksum=shift; 
+	if ( ! $chksum ) { $chksum=$obj->checksum; }
+	my $num1=hex(substr($chksum, 0, 4));
+	my $num2=hex(substr($chksum, 4, 4));
 	$num1=int(($num1/hex("ffff"))*35.99);
 	$num2=int(($num2/hex("ffff"))*35.99);
 	if ( $num1 > 9 ) { $num1=chr($num1-10+0x61); }

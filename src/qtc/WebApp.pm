@@ -60,6 +60,7 @@ sub setup {
 		'change_password' => 'mode_change_password',
 		'change_trust' => 'mode_change_trust',
 		'aliases_and_lists' => 'mode_aliases_and_lists',
+		'latest_changes' => 'mode_latest_changes',
 	);
 	# CONFIGURE
 	if ( ! $obj->{qtc}->{path} ) { $obj->{qtc}->{path}=$ENV{HOME}."/.qtc"; }
@@ -379,6 +380,10 @@ sub area_misc_buttons {
 	$r.="<table>"; 
 		$r.="<tr>"; 
 			$r.=$obj->h_misc_button({
+				mode=>"latest_changes", 
+				value=>"latest changes",
+			}); 
+			$r.=$obj->h_misc_button({
 				mode=>"show_telegrams", 
 				value=>"show telegrams",
 			}); 
@@ -484,8 +489,41 @@ sub render_user_pass_logout {
 	return $r;
 }
 
+sub render_latest_changes {
+	my $o=shift; 
 
-sub format_msg_in_html {
+	my $r;
+	
+	$r.='<h3>Latest Changes:</h3>';
+
+	foreach my $msg ($obj->qtc_query->latest_changes(20) ) {
+		if ( $msg->type eq 'telegram' ) {
+			$r.='<p><b>'.$msg->call.'</b> published a telegram:<center>';
+			$r.=$o->format_telegram_in_html($msg);
+			$r.='</center></p>'; 
+		}
+		if ( $msg->type eq 'qsp' ) {
+			$r.='<p><b>'.$msg->call.'</b> delivered telegram number '.$msg->hr_refnum($msg->telegram_checksum).
+				' to '.$msg->to.' at '.strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($msg->telegram_date)).'</p>'; 
+		}
+		if ( $msg->type eq 'pubkey' ) {
+			$r.='<p><b>'.$msg->call.'</b> added a key</p>'; 
+		}
+		if ( $msg->type eq 'revoke' ) {
+			$r.='<p><b>'.$msg->call.'</b> revoked a key</p>'; 
+		}
+		if ( $msg->type eq 'trust' ) {
+			$r.='<p><b>'.$msg->call.'</b> sets trustlevel of '.$msg->to.' to '.$msg->trustlevel.'</p>'; 
+		}
+		if ( $msg->type eq 'operator' ) {
+			$r.='<p><b>'.$msg->call.'</b> has updated his aliases and lists information</p>'; 
+		}
+	}
+ 
+	return $r; 
+}
+
+sub format_telegram_in_html {
 	my $o=shift; 
 	my $msg=shift; 
 	my $r; 
@@ -535,11 +573,15 @@ sub mode_show_telegrams {
 	if ( ! $q->param("call") ) { 
 		$r.="<h3>Please enter a call in the upper left corner or login in the upper right one.</h3>";
 		$r.='<p></p>
-<p>QTC Net is a decentralized telegram system for amateur radio. A user can check in a telegram 
-from any sender to any receiver, as well as access those telegrams and mark them as delivered when 
-they are delivered.</p>';
+<p>QTC Net is a relay system for messages form of telegrams for amateur radio. It\'s goal is to establish the 
+communication between stations that who can not reach themself directly. </p>
+<p>A delivery agent can receive telegrams from a remote station during a qso. The received telegrams 
+will be published by him. A delivery agent can send telegrams to the remote station. The telegrams will be marked 
+as delivered in the qtc-net by him. </p>';
 		$r.='<p>you may browse to 
 <a href="'.$obj->{qtc}->{home_page}.'">'.$obj->{qtc}->{home_page}.'</a> if you want more information</p>';
+		$r.='<hr/>';
+		$r.=$obj->render_latest_changes; 
 		return $r; 
  
 	}
@@ -560,7 +602,7 @@ they are delivered.</p>';
 			next; 
 		} 
 		push @rows, $obj->h_tr({},
-			$obj->h_td({}, $obj->format_msg_in_html($msg)),
+			$obj->h_td({}, $obj->format_telegram_in_html($msg)),
 			$obj->filter_login_required(
 				$obj->h_td({}, $obj->h_e("input", {type=>"checkbox", name=>"qsp", value=>$msg->checksum})),
 			), 
@@ -1198,5 +1240,16 @@ sub mode_aliases_and_lists {
 	return $r; 
 }
 
+
+sub mode_latest_changes {
+	my $o=shift; 
+
+	my $r;
+	$r.=$o->area_navigation; 
+	
+	$r.=$o->render_latest_changes; 
+ 
+	return $r; 
+}
 
 1;
