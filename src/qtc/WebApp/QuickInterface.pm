@@ -9,12 +9,13 @@ sub cgiapp_postrun {
 	my $obj=shift; 
 	my $out_ref=shift;
 	
-	# THINK ABOUT ENCAPSULATING OUT REF	
+	$$out_ref="<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<qtc>\n".$$out_ref."</qtc>"; 
 }
 
 sub setup {
 	my $obj = shift;
 	$obj->SUPER::setup(); 
+	$o->header_add( -type => 'application/xml' );
 	
 	$obj->run_modes(
 		'show_telegrams' => 'mode_show_telegrams',
@@ -32,33 +33,21 @@ sub mode_show_telegrams {
 	my $q=$obj->query;
 	if ( ! $q->param("type") ) { $q->param("type", "new"); }
 	my $type=$q->param("type");
-	if ( $type !~ /^((all)|(new)|(sent))$/ ) { return "<h1>FAIL telegram type invalid</h1>"; }
+	if ( $type !~ /^((all)|(new)|(sent))$/ ) { return "<error>unknown search type</error>"; }
 	my $r; 
 
 	if ( ( $obj->logged_in ) and ( ! $q->param("call") ) ) {
 		$q->param("call", $q->param("publisher_call"));
-		#$r.="<h3>You may search for telegrams to other calls in the upper left, I display the telegrams to YOUR publisher call until then</h3>"; 
 	}
 
-	$r.=$obj->area_navigation; 
-
 	if ( ! $q->param("call") ) { 
-		$r.="<h3>Please enter a call in the upper left corner or login in the upper right one.</h3>";
-		$r.='<p></p>
-<p>QTC Net is a decentralized telegram system for amateur radio. A user can check in a telegram 
-from any sender to any receiver, as well as access those telegrams and mark them as delivered when 
-they are delivered.</p>';
-		$r.='<p>you may browse to 
-<a href="'.$obj->{qtc}->{home_page}.'">'.$obj->{qtc}->{home_page}.'</a> if you want more information</p>';
-		return $r; 
- 
+		return '<error>I need a call to do any work</error>'; 
 	}
 
 	#prepare qsp checksum hash
 	my %qsp; 
 	foreach $chk ($q->param("qsp")) { $qsp{$chk}=1; }
 
-	$r.="<h3>$type qtc telegrams for ".$q->param("call").":</h3>";
 	my @msgs=$obj->qtc_query->list_telegrams($q->param("call"), $type);
 	my @rows; 
 	foreach my $msg (@msgs) {  
@@ -69,47 +58,18 @@ they are delivered.</p>';
 			);
 			next; 
 		} 
-		push @rows, $obj->h_tr({},
-			$obj->h_td({}, $obj->format_msg_in_html($msg)),
-			$obj->filter_login_required(
-				$obj->h_td({}, $obj->h_e("input", {type=>"checkbox", name=>"qsp", value=>$msg->checksum})),
-			), 
-		); 
+		$r.="<telegram>\n";
+		$r.="	<checksum>".$msg->checksum."</checksum>";
+		$r.="	<signature>".$msg->signature."</signature>";
+		$r.="	<signature_key_id>".$msg->signature_key_id."</signature_key_id>";
+		$r.="	<call>".$msg->call."</call>";
+		$r.="	<hr_refnum>".$msg->hr_refnum."</hr_refnum>";
+		$r.="	<from>".$msg->from."</from>";
+		$r.="	<to>".$msg->to."</to>";
+		$r.="	<telegram_date>".$msg->telegram_date."</telegram_date>";
+		$r.="	<telegram>".$msg->telegram."</telegram>";
+		$r.="</telegram>\n"; 
 	} 	
-
-	$r.=$obj->h_e("center",{}, $obj->h_form({}, 
-		$obj->h_table({}, 
-			@rows,
-			$obj->h_tr({},
-				$obj->h_td({}), 
-				$obj->filter_login_required(
-					$obj->h_td({}, $obj->h_e("input", {
-						type=>"submit", 
-						name=>"submit", 
-						value=>"QSP",
-						onClick=>$obj->js_confirm("Have you really forwarded the checked messages to $call?"),
-					})),
-				), 
-			),
-		), 
-	)); 
-	$r.="<b>Show me: ";
-	$r.="<table><tr>";
-	$q->param("type", "new"); 
-	$r.="<td>".$obj->h_form({},
-		$obj->h_e("input", {type=>"submit", name=>"submit", value=>"new"}),
-	)."</td>"; 
-	$q->param("type", "all"); 
-	$r.="<td>".$obj->h_form({},
-		$obj->h_e("input", {type=>"submit", name=>"submit", value=>"all"}),
-	)."</td>"; 
-	$q->param("type", "sent"); 
-	$r.="<td>".$obj->h_form({},
-		$obj->h_e("input", {type=>"submit", name=>"submit", value=>"sent"}),
-	)."</td>"; 
-	$q->param("type", $type); 
-	$r.="</tr></table>";
-	$r.="</b>";
 	return $r; 
 }
 
@@ -120,10 +80,10 @@ sub mode_send_telegram {
 	$r.=$o->area_navigation; 
 
 	if ( ! $o->logged_in ) {
-		$r.="<h3>Please log in to use this feature</h3>"; 
+		$r.="<error>Please log in to use this feature</error>"; 
 		return $r; 
 	}
-	if ( ( $o->q->param("submit") ) and ( $o->q->param("telegram") ) )  {
+	if ( $o->q->param("telegram") )  {
 		# convert characters 
 		$o->q->param("call", $o->qtc_query->allowed_letters_for_call($o->q->param("call")));
 		$o->q->param("to", $o->qtc_query->allowed_letters_for_call($o->q->param("to")));
@@ -131,15 +91,15 @@ sub mode_send_telegram {
 	
 		my $ok=1; 
 		if (! $o->q->param("call")) { 
-			$r.="<h4>ERROR: Please enter a valid callsign </h4>";
+			$r.="<error>Please enter a valid callsign </error>";
 			$ok=0; 
 		}
 		if (! $o->q->param("to")) { 
-			$r.="<h4>ERROR: Please enter a valid telegram receiver callsign </h4>";
+			$r.="<error>Please enter a valid telegram receiver callsign</error>";
 			$ok=0; 
 		}
 		if (! $o->q->param("telegram")) { 
-			$r.="<h4>ERROR: Please enter a valid telegram text</h4>";
+			$r.="<error>Please enter a valid telegram text</error>";
 			$ok=0; 
 		}
 		if ( $ok ) { 
@@ -154,46 +114,7 @@ sub mode_send_telegram {
 		} 
 	}
 
-	delete $o->{qtc}->{exports}->{call}; 
-	$r.="<center>";
-	$r.=$o->h_tabled_form({},
-		$o->h_labled_input({
-			label=>"From:", 
-			type=>"text", 
-			size=>10, 
-			maxlength=>20, 
-			name=>"call",
-			value=>$o->q->param("call"), 
-		}),
-		$o->h_labled_input({
-			label=>"To:", 
-			type=>"text", 
-			size=>10, 
-			maxlength=>20, 
-			name=>"to",
-			value=>$o->q->param("to"), 
-		}),
-		$o->h_labled_input({
-			label=>"Telegram:", 
-			type=>"text", 
-			size=>100, 
-			maxlength=>300, 
-			name=>"telegram",
-			value=>$o->q->param("telegram"), 
-		}),
-		$o->h_submit_for_tbl({
-			onClick=>$o->js_confirm("Do you really want to send this Telegram?"),
-			value=>"send telegram",
-		}), 
-	);
-	$r.="</center>";
-	$o->{qtc}->{exports}->{call}=1; 
-
-	$r.="<p>Note: telegrams can be 300 small letter characters as well as numbers and some 
-	signs, the telegrams are automatically converted to a storeable format. 
-	This means lowercase convertion and every unknown character will vanish. </p>"; 
-	
-	return $r;
+	return "<error>You should provide call from to and telegram + loogin credentials</error>";
 }
 
 
