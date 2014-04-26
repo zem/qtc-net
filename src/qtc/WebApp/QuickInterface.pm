@@ -15,7 +15,7 @@ sub cgiapp_postrun {
 sub setup {
 	my $obj = shift;
 	$obj->SUPER::setup(); 
-	$o->header_add( -type => 'application/xml' );
+	$obj->header_add( -type => 'application/xml' );
 	
 	$obj->run_modes(
 		'show_telegrams' => 'mode_show_telegrams',
@@ -59,15 +59,15 @@ sub mode_show_telegrams {
 			next; 
 		} 
 		$r.="<telegram>\n";
-		$r.="	<checksum>".$msg->checksum."</checksum>";
-		$r.="	<signature>".$msg->signature."</signature>";
-		$r.="	<signature_key_id>".$msg->signature_key_id."</signature_key_id>";
-		$r.="	<call>".$msg->call."</call>";
-		$r.="	<hr_refnum>".$msg->hr_refnum."</hr_refnum>";
-		$r.="	<from>".$msg->from."</from>";
-		$r.="	<to>".$msg->to."</to>";
-		$r.="	<telegram_date>".$msg->telegram_date."</telegram_date>";
-		$r.="	<telegram>".$msg->telegram."</telegram>";
+		$r.="	<checksum>".$msg->checksum."</checksum>\n";
+		$r.="	<signature>".$msg->signature."</signature>\n";
+		$r.="	<signature_key_id>".$msg->signature_key_id."</signature_key_id>\n";
+		$r.="	<call>".$msg->call."</call>\n";
+		$r.="	<hr_refnum>".$msg->hr_refnum."</hr_refnum>\n";
+		$r.="	<from>".$msg->from."</from>\n";
+		$r.="	<to>".$msg->to."</to>\n";
+		$r.="	<telegram_date>".$msg->telegram_date."</telegram_date>\n";
+		$r.="	<telegram>".$msg->telegram."</telegram>\n";
 		$r.="</telegram>\n"; 
 	} 	
 	return $r; 
@@ -77,7 +77,6 @@ sub mode_show_telegrams {
 sub mode_send_telegram {
 	my $o=shift; 
 	my $r; 
-	$r.=$o->area_navigation; 
 
 	if ( ! $o->logged_in ) {
 		$r.="<error>Please log in to use this feature</error>"; 
