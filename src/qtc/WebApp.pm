@@ -498,9 +498,9 @@ sub render_latest_changes {
 
 	foreach my $msg ($o->qtc_query->latest_changes(20) ) {
 		if ( $msg->type eq 'telegram' ) {
-			$r.='<p><b>'.$msg->call.'</b> published a telegram:<center>';
+			$r.='<p><b>'.$msg->call.'</b> published a telegram:<table align="center" width="70%"><tr><td>';
 			$r.=$o->format_telegram_in_html($msg);
-			$r.='</center></p>'; 
+			$r.='</td></tr></table></p>'; 
 		}
 		if ( $msg->type eq 'qsp' ) {
 			$r.='<p><b>'.$msg->call.'</b> delivered telegram number '.$msg->hr_refnum($msg->telegram_checksum).
