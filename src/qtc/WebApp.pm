@@ -496,7 +496,7 @@ sub render_latest_changes {
 	
 	$r.='<h3>Latest Changes:</h3>';
 
-	foreach my $msg ($obj->qtc_query->latest_changes(20) ) {
+	foreach my $msg ($o->qtc_query->latest_changes(20) ) {
 		if ( $msg->type eq 'telegram' ) {
 			$r.='<p><b>'.$msg->call.'</b> published a telegram:<center>';
 			$r.=$o->format_telegram_in_html($msg);
@@ -504,7 +504,7 @@ sub render_latest_changes {
 		}
 		if ( $msg->type eq 'qsp' ) {
 			$r.='<p><b>'.$msg->call.'</b> delivered telegram number '.$msg->hr_refnum($msg->telegram_checksum).
-				' to '.$msg->to.' at '.strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($msg->telegram_date)).'</p>'; 
+				' to '.$msg->to.' at '.strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($msg->qsp_date)).'</p>'; 
 		}
 		if ( $msg->type eq 'pubkey' ) {
 			$r.='<p><b>'.$msg->call.'</b> added a key</p>'; 

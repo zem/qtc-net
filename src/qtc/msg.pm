@@ -169,7 +169,7 @@ our %msg_types=(
 	}, 
 	# this is the qsp info where data is stored
 	qsp=>{
-		"qsl_date"=>$valid_date, 
+		"qsp_date"=>$valid_date, 
 		"telegram_checksum"=>$valid_checksum,
 		"to"=>$valid_call,  #the to field is important for lists 
 	}, 

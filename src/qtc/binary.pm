@@ -62,7 +62,7 @@ our %data_types=(
 		enum=>10,
 		data_type=>"string",
 	},
-	"qsl_date"=>{
+	"qsp_date"=>{
 		enum=>11,
 		data_type=>"integer",
 	},

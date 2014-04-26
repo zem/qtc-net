@@ -97,7 +97,7 @@ sub qsp {
 	my $qsp=qtc::msg->new(
         type=>"qsp",
         call=>$obj->{call},
-        qsl_date=>time,
+        qsp_date=>time,
         to=>$args{to},
         telegram_checksum=>$msg->checksum, 
 	);
