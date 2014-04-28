@@ -208,7 +208,7 @@ sub msg {
 
 example: 
 	
-($bytestring, $remaininghexstring)=pull_byte($hexstring)
+($bytestring, $remaininghexstring)=$obj->pull_byte($hexstring)
 
 Gets one byte (two characters) from a Hexadecimal big endian 
 encoded string and returns the resulting bytestring as wenll 
@@ -223,6 +223,21 @@ sub pull_byte {
 	return (substr($hex, 0, 2), substr($hex, 2)); 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 pull_data()
+
+example: 
+	
+($bytestring, $remaininghexstring)=$obj->pull_data($len, $hexstring)
+
+This one does similar things as pull_byte() except that it pulls n bytes 
+as defined in $len. Everything is done with hexadecimal strings so n bytes 
+means n*2 string characters. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub pull_data {
 	my $obj=shift;
 	my $len=shift;  
@@ -230,6 +245,30 @@ sub pull_data {
 	return (substr($hex, 0, $len*2), substr($hex, $len*2)); 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 get_key()
+
+example: 
+	
+($keynumver, $remaininghexstring)=$obj->get_key($hexstring)
+
+get_key() gets one of the integer numbers with a variable byte size 
+as described in the qtc_binary_message_format.txt. If you are familiar 
+with ebml, it is basically the same. 
+
+The length of the key in bytes is stored by counting the first n zero 
+bits, terminated by the apperance of the first one bit. so 0b1 means 
+one byte length. 0b01 means two byte length and so on. The rest of the 
+byte as well as the n following bytes (if any) is holding the value as 
+integer. 
+
+again (like pull_data and pull_byte) this function returns the remaining 
+hex string with the integer value. 
+
+=cut
+#------------------------------------------------------------------------------------
 # get the number of a field or its length out of the hex data stream.... 
 sub get_key {
 	my $obj=shift;
@@ -263,6 +302,19 @@ sub get_key {
 	die "we have a problem here, because a number is larger than we can detect. a better implementation is needed\n";
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 create_key()
+
+example: 
+	
+$hexstring=$obj->create_key($integer)
+
+This does the other way round of get_key() it creates a hexadecimal string that represents an 
+
+=cut
+#------------------------------------------------------------------------------------
 # creates a hexadecimal key (either id or length)  
 sub create_key {
 	my $obj=shift;
