@@ -1,3 +1,48 @@
+#-----------------------------------------------------------------------------------
+=pod
+
+=head1 NAME
+
+qtc::binary - implementation of qtc-nets binary file format in perl
+
+=head1 SYNOPSIS
+
+use qtc::binary;
+
+$obj->{bin}=qtc::binary->new(msg=>$obj);
+
+$hexstring=$obj->bin->gen_hex_payload("type", "call", sort keys %{$msg_types{$obj->{type}}});
+
+$hexstring=$obj->bin->gen_hex_msg(
+	"version",
+	"signature",
+	"signature_key_id",
+	"type",
+	"call",
+	sort keys %{$msg_types{$obj->{type}}}
+);
+
+$obj->bin->parse(unpack("H*", $bin));
+
+=head1 DESCRIPTION
+
+The qtc::binary class implements everything that is needed to handle 
+the data stored in qtc::nets binary message format as described on 
+http://www.qtc-net.org/www. 
+
+It is ususally called as subclass of a qtc::msg object, to seperate 
+the namespaces of the binary handler functions from the message data. 
+
+If it needs a fields data from the qtc::msg it calls 
+$qtc_msg->value($field) on the other hand it is writing data 
+directly into the qtc::msg objects hashref.
+
+Within this object also the message names and their corresponding 
+counters and data types as defined in qtc_binary_message.txt are 
+configured, in the our %data_types hash within this object.  
+
+=cut
+#-----------------------------------------------------------------------------------
 package qtc::binary; 
 #use POSIX qw(strftime);
 use Digest::SHA qw(sha256_hex);
@@ -117,13 +162,24 @@ our %data_types=(
 );
 
 
-###################################################
-# Data Storage Types
-###################################################
-# binary
-# integer
-# string
+#------------------------------------------------------------------------------------
+=pod
 
+=head2 new(parameter=>"value" ...)
+
+Parameters: msg=>$qtcmsg
+
+Returns: a qtc::binary object
+
+The creator function of this object returns a qtc::binary object. It needs the 
+Message object in the Parameter msg=> to know where to save back to or read in the 
+parsed values from. 
+
+It is usually also stored within the qtc::message object itself. So both objects 
+can access each other. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub new { 
 	my $class=shift; 
 	my %parm=(@_); 
@@ -131,11 +187,35 @@ sub new {
 	return $obj; 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 msg()
+
+Returns: the qtc::msg object connected with this object
+
+=cut
+#------------------------------------------------------------------------------------
 sub msg { 
 	my $obj=shift; 
 	return $obj->{msg}; 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 pull_byte()
+
+example: 
+	
+($bytestring, $remaininghexstring)=pull_byte($hexstring)
+
+Gets one byte (two characters) from a Hexadecimal big endian 
+encoded string and returns the resulting bytestring as wenll 
+as the remaining hexstring. 
+
+=cut
+#------------------------------------------------------------------------------------
 # gets one hexadecimal byte + returns the right part of that string
 sub pull_byte {
 	my $obj=shift; 
