@@ -311,7 +311,9 @@ example:
 	
 $hexstring=$obj->create_key($integer)
 
-This does the other way round of get_key() it creates a hexadecimal string that represents an 
+This does the other way round of get_key() it creates a hexadecimal string that
+represents a variable integer key witch the leading 0b01 combination pointing to 
+it's string length. 
 
 =cut
 #------------------------------------------------------------------------------------
@@ -348,6 +350,21 @@ sub create_key {
 	die "we have a problem here, because a number is larger than we can encode. a better implementation is needed\n";
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 mk_field()
+
+example: 
+	
+$hexstring=$obj->mk_field($name, $data)
+
+This creates a field. It looks up the integer to the field name in %data_types
+it also converts the data if needed, and returns a FIELD LENGTH DATA triplet as 
+hexadecimal string. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub mk_field {
 	my $obj=shift; 
 	my $name=shift; 
@@ -379,6 +396,21 @@ sub mk_field {
 	return $key.$len.$encdata;	
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 mk_field()
+
+example: 
+	
+$hexstring=$obj->encode_integer($integer)
+
+this encodes an unsigned integer in its hexadecimal representation, 
+but as short as possible, which means 8 bit for 0-255 then 16 then 24 
+and so on.
+
+=cut
+#------------------------------------------------------------------------------------
 sub encode_integer {
 	my $obj=shift; 
 	my $data=shift; 
@@ -397,6 +429,19 @@ sub encode_integer {
 	return $encdata; 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 get_enumeration_index()
+
+example: 
+	
+$index=$obj->enumeration_index($name, @values)
+
+this returns the position of $name in @values starting with 1
+
+=cut
+#------------------------------------------------------------------------------------
 sub get_enumeration_index {
 	my $obj=shift; 
 	my $key=shift; 
@@ -409,6 +454,21 @@ sub get_enumeration_index {
 	die "uups this enumeration value $key does not exists in @values \n"; 
 }
 
+
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 get_keyname()
+
+example: 
+	
+$name=$obj->enumeration_index($key_number)
+
+returns the name of a key given by a number, the number is configured in 
+enum in %data_types
+
+=cut
+#------------------------------------------------------------------------------------
 sub get_keyname {
 	my $obj=shift; 
 	my $key=shift; 
@@ -418,6 +478,21 @@ sub get_keyname {
 	die "uups this enumeration value $key does not exists in %data_types \n"; 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 parse()
+
+example: 
+	
+$obj->parse($hexstring)
+
+parses a hexstring that contains a full qtc binary message
+the resulting name/value pairs are stored into the qtc::msg 
+object that is linked to this object. (new() method)  
+
+=cut
+#------------------------------------------------------------------------------------
 sub parse { 
 	my $obj=shift;
 	my $hex=shift; 
@@ -476,6 +551,23 @@ sub parse {
 	}
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 gen_hex_payload()
+
+example: 
+	
+$hexstring=$obj->gen_hex_payload(@keylist)
+
+This generates a sequence of FIELD LENGTH DATA triplets for every key given by 
+keylist, in that order. The values are received from the qtc::msg object, linked 
+with this object. The data is returned as hexadecimal encodd string. If you add 
+a magic and a message length you have a complete qtc binary message file. The 
+next method will do exactly that. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub gen_hex_payload { 
 	my $obj=shift;
 	my @fields=@_; 
@@ -489,6 +581,20 @@ sub gen_hex_payload {
 	return $ret; 
 }	
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 gen_hex_msh()
+
+example: 
+	
+$hexstring=$obj->gen_hex_msg(@keylist)
+
+like gen_hex_payload() but this will add the magic and an overall message length to 
+complete the message. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub gen_hex_msg { 
 	my $obj=shift;
 	my @fields=@_; 
@@ -496,4 +602,16 @@ sub gen_hex_msg {
 	return unpack("H*", $magic).$obj->create_key((length($ret)/2)).$ret;
 }	
 
-1; 
+1;
+
+=pod
+
+=head1 AUTHOR
+
+Hans Freitag <oe1src@oevsv.at>
+
+=head1 LICENCE
+
+GPL v3
+
+=cut
