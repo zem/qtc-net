@@ -1,6 +1,48 @@
+#-----------------------------------------------------------------------------------
+=pod
+
+=head1 NAME
+
+qtc::msg - object class that handles the various qtc-net messages in perl
+
+=head1 SYNOPSIS
+
+use qtc::misc;
+
+my $misc=qtc::misc->new();
+
+or 
+
+@ISA=("qtc::misc"); 
+
+=head1 DESCRIPTION
+
+The qtc::misc objects provides miscellaneous that can be used 
+by other qtc librarys. 
+
+Basicly those are methods that are needed in more than one segment 
+of the codebase, or that can't be sorted into one segment of the 
+code base. 
+
+=cut
+#-----------------------------------------------------------------------------------
 package qtc::misc; 
 use File::Basename; 
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 new(parameter=>"value", ...)
+
+Optional parameters: pidfile=>$pid_filename
+
+Returns: a qtc::misc object
+
+This is a generic creator method for an object. If inherited it returns 
+the child object, otherwise a qtc::misc one. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub new { 
 	my $class=shift; 
 	my %parm=(@_); 
@@ -8,6 +50,19 @@ sub new {
 	return $obj; 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 fname2call()
+
+my $call=$obj->fname2call($filename); 
+
+This method converts the filename representation of a callsign into a 
+valid callsign. It addresses the problems that / is a directory splitter 
+and therefore reserved in filenames. so this exchanges the - with a /. 
+
+=cut
+#------------------------------------------------------------------------------------
 # an escaped call for filesystem purposes
 sub fname2call {
 	my $obj=shift; 
@@ -17,6 +72,19 @@ sub fname2call {
 	return $call; 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 call2fname()
+
+my $filename=$obj->fname2call($call); 
+
+This method converts a callsign into its filename representation. 
+It addresses the problems that / is a directory splitter 
+and therefore reserved in filenames. so this exchanges the / with a -. 
+
+=cut
+#------------------------------------------------------------------------------------
 # an escaped call for filesystem purposes
 sub call2fname {
 	my $obj=shift; 
@@ -26,6 +94,20 @@ sub call2fname {
 	return $call; 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 ensure_path()
+
+$obj->ensure_path($dir); 
+
+Ensures that the path $dir really iss there. If it is not, it creates one, if 
+that fails it dies. The path creation is done recursively. The method can be used 
+if a code requires to have a directory present, if you want to copy or link a file 
+to it for example. 
+
+=cut
+#------------------------------------------------------------------------------------
 ############################################################
 # maybe we can borrow this from some sort of helper lib
 ############################################################
@@ -43,6 +125,20 @@ sub ensure_path {
 	# it is ok otherwise
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 scan_dir()
+
+my @basenames=$obj->scan_dir($dir, $regex); 
+
+This the ls of the project. it does an opendir and scans for files matching 
+$regex (it is a perl regular expression) the resulting file list, without 
+. and .. of course is returned. The returned filenames are basenames without 
+path.
+
+=cut
+#------------------------------------------------------------------------------------
 sub scan_dir {
 	my $objSelf=shift;
 	my $sDir=shift;
@@ -68,6 +164,18 @@ sub scan_dir {
 	return (@aFiles);
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 scan_dir()
+
+my @basenames=$obj->scan_dir_ordered($dir, $regex); 
+
+like scan_dir() but returns a list ordered by mtime and alphabet if two files 
+have the same mtime. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub scan_dir_ordered {
 	my $obj=shift;
 	my $dir=shift;
@@ -81,6 +189,20 @@ sub scan_dir_ordered {
 	return @files; 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 get_pid()
+
+my $pid=$obj->get_pid($pidfile); 
+my $pid=$obj->get_pid(); 
+
+This returns the pid out of a pidfile given either as method parameter or 
+through the pidfile option of the object. The PIDfile contains the pid as 
+string without any linebreaks.  
+
+=cut
+#------------------------------------------------------------------------------------
 sub get_pid {
 	my $o=shift; 
 	my $pfile=$o->{pidfile}; 
@@ -95,6 +217,19 @@ sub get_pid {
 	return $p; 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 wakeup_processor()
+
+$obj->wakeup_processor(); 
+
+sends a kill -HUP to the qtc net processor, causing the processor to stop 
+it's sleep and start processing of messages immidiately. $obj->{pidfile} 
+must be used for this method. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub wakeup_processor {
 	my $obj=shift;
 	eval { 
@@ -109,6 +244,19 @@ sub wakeup_processor {
 # the allowed letters routinges will strip 
 # down user data as needed. 
 ###############################################
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 allowed_letters_for_telegram()
+
+my $telegram_text=$obj->allowed_letters_for_telegram($text); 
+
+this does a lower case convertion and strips away any character that is not 
+allowed for qtc-net telegrams. it also cuts the string down to the allowed 
+300 characters for a message. The new telegram text if any is then returned. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub allowed_letters_for_telegram {
 	my $obj=shift; 
 	my $telegram=shift; 
@@ -126,6 +274,18 @@ sub allowed_letters_for_telegram {
 	return $t; 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 allowed_letters_for_call()
+
+my $callsign_text=$obj->allowed_letters_for_call($text); 
+
+this does a lower case convertion and strips away any character that is not 
+allowed for callsigns. The new callsign text if any is then returned. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub allowed_letters_for_call {
 	my $obj=shift; 
 	my $call=shift; 
@@ -142,3 +302,14 @@ sub allowed_letters_for_call {
 }
 
 1; 
+=pod
+
+=head1 AUTHOR
+
+Hans Freitag <oe1src@oevsv.at>
+
+=head1 LICENCE
+
+GPL v3
+
+=cut
