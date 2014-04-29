@@ -507,7 +507,7 @@ sub AUTOLOAD {
 
 =pod
 
-=head3 value($field, ($data))
+=head2 value($field, ($data))
 
 you may also use the value($field) method to get access to the objects data. 
 the advantage is when you do not exactly know which parameter you will call 
@@ -550,7 +550,7 @@ sub value {
 #------------------------------------------------------------------------------------
 =pod
 
-=head3 is_object_valid()
+=head2 is_object_valid()
 
 This parameter checks the whole objects data including the checksums if it seems
 to be plausible. otherwise it will cause death. So if there is an invalid caracter 
@@ -570,7 +570,7 @@ sub is_object_valid {
 #------------------------------------------------------------------------------------
 =pod
 
-=head3 is_field_valid($field)
+=head2 is_field_valid($field)
 
 like the is_object_valid() is_field_valid() checks a specific field for 
 syntactical validity. it is called by is_object_valid() for each field. 
@@ -598,7 +598,7 @@ sub is_field_valid {
 #------------------------------------------------------------------------------------
 =pod
 
-=head3 signed_content_hex()
+=head2 signed_content_hex()
 
 This function returns the part of the qtc::msg that is going to be signed or 
 verified as big endian hex. 
@@ -615,7 +615,7 @@ sub signed_content_hex {
 
 =pod
 
-=head3 signed_content_bin()
+=head2 signed_content_bin()
 
 like signed_content_hex() but the return of this function is pure binary, this is really 
 what is to be signed, just in case someone has the idea to read a qtc::msg with C. 
@@ -628,7 +628,7 @@ sub signed_content_bin {
 
 =pod
 
-=head3 as_hex()
+=head2 as_hex()
 
 this returns a hexadecimal Big endian encoded string that contains the complete message 
 including a signature. The String can be pack() 'ed and written to disk, or maybe used 
@@ -651,7 +651,7 @@ sub as_hex {
 
 =pod
 
-=head3 filename()
+=head2 filename()
 
 this returns a standarized filename of the qtc::msg the filename is unique across 
 the whole network in the form: type_call_checksum.qtc This means easy lookup for 
@@ -676,7 +676,7 @@ sub filename {
 
 =pod
 
-=head3 to_filesystem($path)
+=head2 to_filesystem($path)
 
 writes an object down to the configured path in the Filesystem, using the filename() methods 
 filename.  The object remembers the configured path so other files may later been hardlinked 
@@ -707,7 +707,7 @@ sub to_filesystem {
 
 =pod
 
-=head3 link_to_path($path)
+=head2 link_to_path($path)
 
 links the qtc::msg file written by  to_filesystem() to another path, or a set of 
 paths. 
@@ -726,7 +726,7 @@ sub link_to_path {
 
 =pod
 
-=head3 unlink_at_path($path)
+=head2 unlink_at_path($path)
 
 unlinks the qtc::msg file at the given path, or set of 
 paths. 
@@ -743,7 +743,7 @@ sub unlink_at_path {
 
 =pod
 
-=head3 load_file($path, $filename)
+=head2 load_file($path, $filename)
 
 loads a file to the object
 
