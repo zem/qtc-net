@@ -499,6 +499,7 @@ sub remove_msgs_below {
 	}
 }
 
+# import the new operator status
 sub import_operator {
 	my $obj=shift; 
 	my $msg=shift; 
@@ -509,6 +510,7 @@ sub import_operator {
 		if ( $oldop->record_date >= $msg->record_date ) { 
 			die "there is an old operator message newer than this one skip this\n"; 
 		}
+		print STDERR "I first need to remove the old operator message ".$oldop->checksum."\n"; 
 		$obj->remove_operator($oldop); 
 	}
 	
@@ -530,12 +532,17 @@ sub import_operator {
 			symlink($msg->escaped_call, $obj->{root}."/call/$f_alias") or die "3 failed to link to $f_alias\n"; 
 		}
 	}
-	
+
+	# we need to go through each list $list is holding the listname
 	foreach my $list ($msg->set_of_lists) {
 		my $abs_link=$obj->{root}."/lists/".$obj->call2fname($list)."/".$msg->escaped_call;
+		print STDERR "list operations we need to link $abs_link\n"; 
 		if ( ! -e $abs_link ) {
+			print STDERR "the link does not exist so ensure_path\n"; 
 			$obj->ensure_path($obj->{root}."/lists/".$obj->call2fname($list)); 
+			print STDERR "path ".$obj->{root}."/lists/".$obj->call2fname($list)." ensured\n"; 
 			symlink("../../call/".$msg->escaped_call, $abs_link) or die "4 failed to link to list \n"; 
+			print STDERR "linked "."../../call/".$msg->escaped_call." to ".$abs_link."\n"; 
 		}
 	}
 	
@@ -566,7 +573,7 @@ sub remove_operator {
 			foreach my $file ($obj->scan_dir($abs_link."/telegrams/all", "telegram.+.qtc")) {
 				my $telegram=qtc::msg->new(path=>$abs_link."/telegrams/all", filename=>$file); 
 				if ( $telegram->to eq $list) { 
-					$obj->remove_msg($msg); 
+					$obj->remove_msg($telegram); 
 				}
 			}
 			unlink($abs_link) or die "cant unlink $abs_link\n"; 
