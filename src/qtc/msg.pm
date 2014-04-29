@@ -487,7 +487,9 @@ sub has_valid_type {
 =pod
 
 =head2 AUTOLOAD
+
 =head3 parameter($value)
+
 =head3 $r=parameter()
 
 in general a parameter may be called or set via autoloader 
