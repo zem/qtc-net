@@ -24,7 +24,7 @@ sub latest_changes {
 	else { $number = $number * -1 }
 	
 	my @msgs;
-	foreach my $file (($obj->scan_dir($obj->{path}."/out", '.+\.qtc'))[$number..-1]) {
+	foreach my $file (($obj->scan_dir_ordered($obj->{path}."/out", '.+\.qtc'))[$number..-1]) {
 		unshift @msgs, qtc::msg->new(path=>$obj->{path}."/out", filename=>$file); 
 	}
 

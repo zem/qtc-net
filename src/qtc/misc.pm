@@ -68,6 +68,19 @@ sub scan_dir {
 	return (@aFiles);
 }
 
+sub scan_dir_ordered {
+	my $obj=shift;
+	my $dir=shift;
+	my $prefix=shift; 
+	my @files; 
+	
+	foreach my $file ($obj->scan_dir($dir, $prefix)) {
+		push @files, sprintf("%011d", (stat($dir."/".$file))[9])."/".$file; 
+	}
+	@files=map {basename($_)} sort(@files); 
+	return @files; 
+}
+
 sub get_pid {
 	my $o=shift; 
 	my $pfile=$o->{pidfile}; 
