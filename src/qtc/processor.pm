@@ -1,6 +1,7 @@
 package qtc::processor; 
 use qtc::msg; 
 use qtc::query; 
+use IO::Handle;
 use File::Basename; 
 use qtc::signature; 
 use qtc::keyring; 
@@ -34,6 +35,7 @@ sub new {
 	if ( $obj->{log} ) { 
 		close STDERR; 
 		open(STDERR, ">> ".$obj->{log}) or die "can't open logfile ".$obj->{log}." \n";	
+		STDERR->autoflush(1); 
 	}	
 
    return $obj; 
