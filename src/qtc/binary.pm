@@ -1,3 +1,48 @@
+#-----------------------------------------------------------------------------------
+=pod
+
+=head1 NAME
+
+qtc::binary - implementation of qtc-nets binary file format in perl
+
+=head1 SYNOPSIS
+
+use qtc::binary;
+
+$obj->{bin}=qtc::binary->new(msg=>$obj);
+
+$hexstring=$obj->bin->gen_hex_payload("type", "call", sort keys %{$msg_types{$obj->{type}}});
+
+$hexstring=$obj->bin->gen_hex_msg(
+	"version",
+	"signature",
+	"signature_key_id",
+	"type",
+	"call",
+	sort keys %{$msg_types{$obj->{type}}}
+);
+
+$obj->bin->parse(unpack("H*", $bin));
+
+=head1 DESCRIPTION
+
+The qtc::binary class implements everything that is needed to handle 
+the data stored in qtc::nets binary message format as described on 
+http://www.qtc-net.org/www. 
+
+It is ususally called as subclass of a qtc::msg object, to seperate 
+the namespaces of the binary handler functions from the message data. 
+
+If it needs a fields data from the qtc::msg it calls 
+$qtc_msg->value($field) on the other hand it is writing data 
+directly into the qtc::msg objects hashref.
+
+Within this object also the message names and their corresponding 
+counters and data types as defined in qtc_binary_message.txt are 
+configured, in the our %data_types hash within this object.  
+
+=cut
+#-----------------------------------------------------------------------------------
 package qtc::binary; 
 #use POSIX qw(strftime);
 use Digest::SHA qw(sha256_hex);
@@ -117,13 +162,24 @@ our %data_types=(
 );
 
 
-###################################################
-# Data Storage Types
-###################################################
-# binary
-# integer
-# string
+#------------------------------------------------------------------------------------
+=pod
 
+=head2 new(parameter=>"value" ...)
+
+Parameters: msg=>$qtcmsg
+
+Returns: a qtc::binary object
+
+The creator function of this object returns a qtc::binary object. It needs the 
+Message object in the Parameter msg=> to know where to save back to or read in the 
+parsed values from. 
+
+It is usually also stored within the qtc::message object itself. So both objects 
+can access each other. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub new { 
 	my $class=shift; 
 	my %parm=(@_); 
@@ -131,11 +187,35 @@ sub new {
 	return $obj; 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 msg()
+
+Returns: the qtc::msg object connected with this object
+
+=cut
+#------------------------------------------------------------------------------------
 sub msg { 
 	my $obj=shift; 
 	return $obj->{msg}; 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 pull_byte()
+
+example: 
+	
+($bytestring, $remaininghexstring)=$obj->pull_byte($hexstring)
+
+Gets one byte (two characters) from a Hexadecimal big endian 
+encoded string and returns the resulting bytestring as wenll 
+as the remaining hexstring. 
+
+=cut
+#------------------------------------------------------------------------------------
 # gets one hexadecimal byte + returns the right part of that string
 sub pull_byte {
 	my $obj=shift; 
@@ -143,6 +223,21 @@ sub pull_byte {
 	return (substr($hex, 0, 2), substr($hex, 2)); 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 pull_data()
+
+example: 
+	
+($bytestring, $remaininghexstring)=$obj->pull_data($len, $hexstring)
+
+This one does similar things as pull_byte() except that it pulls n bytes 
+as defined in $len. Everything is done with hexadecimal strings so n bytes 
+means n*2 string characters. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub pull_data {
 	my $obj=shift;
 	my $len=shift;  
@@ -150,6 +245,30 @@ sub pull_data {
 	return (substr($hex, 0, $len*2), substr($hex, $len*2)); 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 get_key()
+
+example: 
+	
+($keynumver, $remaininghexstring)=$obj->get_key($hexstring)
+
+get_key() gets one of the integer numbers with a variable byte size 
+as described in the qtc_binary_message_format.txt. If you are familiar 
+with ebml, it is basically the same. 
+
+The length of the key in bytes is stored by counting the first n zero 
+bits, terminated by the apperance of the first one bit. so 0b1 means 
+one byte length. 0b01 means two byte length and so on. The rest of the 
+byte as well as the n following bytes (if any) is holding the value as 
+integer. 
+
+again (like pull_data and pull_byte) this function returns the remaining 
+hex string with the integer value. 
+
+=cut
+#------------------------------------------------------------------------------------
 # get the number of a field or its length out of the hex data stream.... 
 sub get_key {
 	my $obj=shift;
@@ -183,6 +302,21 @@ sub get_key {
 	die "we have a problem here, because a number is larger than we can detect. a better implementation is needed\n";
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 create_key()
+
+example: 
+	
+$hexstring=$obj->create_key($integer)
+
+This does the other way round of get_key() it creates a hexadecimal string that
+represents a variable integer key witch the leading 0b01 combination pointing to 
+it's string length. 
+
+=cut
+#------------------------------------------------------------------------------------
 # creates a hexadecimal key (either id or length)  
 sub create_key {
 	my $obj=shift;
@@ -216,6 +350,21 @@ sub create_key {
 	die "we have a problem here, because a number is larger than we can encode. a better implementation is needed\n";
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 mk_field()
+
+example: 
+	
+$hexstring=$obj->mk_field($name, $data)
+
+This creates a field. It looks up the integer to the field name in %data_types
+it also converts the data if needed, and returns a FIELD LENGTH DATA triplet as 
+hexadecimal string. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub mk_field {
 	my $obj=shift; 
 	my $name=shift; 
@@ -247,6 +396,21 @@ sub mk_field {
 	return $key.$len.$encdata;	
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 mk_field()
+
+example: 
+	
+$hexstring=$obj->encode_integer($integer)
+
+this encodes an unsigned integer in its hexadecimal representation, 
+but as short as possible, which means 8 bit for 0-255 then 16 then 24 
+and so on.
+
+=cut
+#------------------------------------------------------------------------------------
 sub encode_integer {
 	my $obj=shift; 
 	my $data=shift; 
@@ -265,6 +429,19 @@ sub encode_integer {
 	return $encdata; 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 get_enumeration_index()
+
+example: 
+	
+$index=$obj->enumeration_index($name, @values)
+
+this returns the position of $name in @values starting with 1
+
+=cut
+#------------------------------------------------------------------------------------
 sub get_enumeration_index {
 	my $obj=shift; 
 	my $key=shift; 
@@ -277,6 +454,21 @@ sub get_enumeration_index {
 	die "uups this enumeration value $key does not exists in @values \n"; 
 }
 
+
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 get_keyname()
+
+example: 
+	
+$name=$obj->enumeration_index($key_number)
+
+returns the name of a key given by a number, the number is configured in 
+enum in %data_types
+
+=cut
+#------------------------------------------------------------------------------------
 sub get_keyname {
 	my $obj=shift; 
 	my $key=shift; 
@@ -286,6 +478,21 @@ sub get_keyname {
 	die "uups this enumeration value $key does not exists in %data_types \n"; 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 parse()
+
+example: 
+	
+$obj->parse($hexstring)
+
+parses a hexstring that contains a full qtc binary message
+the resulting name/value pairs are stored into the qtc::msg 
+object that is linked to this object. (new() method)  
+
+=cut
+#------------------------------------------------------------------------------------
 sub parse { 
 	my $obj=shift;
 	my $hex=shift; 
@@ -344,6 +551,23 @@ sub parse {
 	}
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 gen_hex_payload()
+
+example: 
+	
+$hexstring=$obj->gen_hex_payload(@keylist)
+
+This generates a sequence of FIELD LENGTH DATA triplets for every key given by 
+keylist, in that order. The values are received from the qtc::msg object, linked 
+with this object. The data is returned as hexadecimal encodd string. If you add 
+a magic and a message length you have a complete qtc binary message file. The 
+next method will do exactly that. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub gen_hex_payload { 
 	my $obj=shift;
 	my @fields=@_; 
@@ -357,6 +581,20 @@ sub gen_hex_payload {
 	return $ret; 
 }	
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 gen_hex_msh()
+
+example: 
+	
+$hexstring=$obj->gen_hex_msg(@keylist)
+
+like gen_hex_payload() but this will add the magic and an overall message length to 
+complete the message. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub gen_hex_msg { 
 	my $obj=shift;
 	my @fields=@_; 
@@ -364,4 +602,16 @@ sub gen_hex_msg {
 	return unpack("H*", $magic).$obj->create_key((length($ret)/2)).$ret;
 }	
 
-1; 
+1;
+
+=pod
+
+=head1 AUTHOR
+
+Hans Freitag <oe1src@oevsv.at>
+
+=head1 LICENCE
+
+GPL v3
+
+=cut

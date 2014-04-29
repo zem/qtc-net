@@ -23,8 +23,6 @@ sub setup {
 	);
 }
 
-
-
 ###############################################################
 # webapp modes 
 ##############################################################
@@ -56,6 +54,10 @@ sub mode_show_telegrams {
 				msg=>$msg,
 				to=>$q->param("call"),
 			);
+			$r.="<qsp>\n";
+			$r.="	<telegram_checksum>".$msg->checksum."</telegram_checksum>\n";
+			$r.="	<to>".$q->param("call")."</to>\n";
+			$r.="</qsp>\n";
 			next; 
 		} 
 		$r.="<telegram>\n";
@@ -73,11 +75,9 @@ sub mode_show_telegrams {
 	return $r; 
 }
 
-
 sub mode_send_telegram {
 	my $o=shift; 
 	my $r; 
-
 	if ( ! $o->logged_in ) {
 		$r.="<error>Please log in to use this feature</error>"; 
 		return $r; 
@@ -108,8 +108,14 @@ sub mode_send_telegram {
 				to=>$o->q->param("to"),
 				telegram=>$o->q->param("telegram"),
 			); 
+			$r.="<sent_telegram>\n";
+			$r.="	<call>".$o->q->param("publisher_call")."</call>\n"; 
+			$r.="	<from>".$o->q->param("call")."</from>\n"; 
+			$r.="	<to>".$o->q->param("to")."</to>\n"; 
+			$r.="	<telegram>".$o->q->param("telegram")."</telegram>\n"; 
+			$r.="</sent_telegram>\n";
 			$o->q->param("mode", "show_telegrams"); 
-			return $o->mode_show_telegrams; 
+			return $r.$o->mode_show_telegrams; 
 		} 
 	}
 
