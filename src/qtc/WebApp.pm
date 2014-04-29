@@ -501,23 +501,30 @@ sub render_latest_changes {
 			$r.='<p><b>'.$msg->call.'</b> published a telegram:<table align="center" width="70%"><tr><td>';
 			$r.=$o->format_telegram_in_html($msg);
 			$r.='</td></tr></table></p>'; 
+			next; 
 		}
 		if ( $msg->type eq 'qsp' ) {
 			$r.='<p><b>'.$msg->call.'</b> delivered telegram number '.$msg->hr_refnum($msg->telegram_checksum).
 				' to '.$msg->to.' at '.strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($msg->qsp_date)).'</p>'; 
+			next; 
 		}
 		if ( $msg->type eq 'pubkey' ) {
 			$r.='<p><b>'.$msg->call.'</b> added a key</p>'; 
+			next; 
 		}
 		if ( $msg->type eq 'revoke' ) {
 			$r.='<p><b>'.$msg->call.'</b> revoked a key</p>'; 
+			next; 
 		}
 		if ( $msg->type eq 'trust' ) {
 			$r.='<p><b>'.$msg->call.'</b> sets trustlevel of '.$msg->to.' to '.$msg->trustlevel.'</p>'; 
+			next; 
 		}
 		if ( $msg->type eq 'operator' ) {
 			$r.='<p><b>'.$msg->call.'</b> has updated his aliases and lists information</p>'; 
+			next; 
 		}
+		$r.='<p><b>'.$msg->call.'</b> has send a '.$msg->type.' message</p>'; 
 	}
  
 	return $r; 
