@@ -1,0 +1,230 @@
+    THE QTC::WebApp QUICK APPLICATION INTERFACE
+    -------------------------------------------
+
+What is it for?
+---------------
+
+You may find the Quick interface useful if you want to connect your application
+to QTC-net but you don't want to make a full implementation of the QTC Net
+Stack, and you cant or dont wand to use perl in your project. 
+
+The Quick Interface is not an interface to QTC net, it is an application interface 
+for the QTC Nets example WebApp. The Advantage is that your application can maintain 
+basic features like searching for messages and publishing telegrams and qsps without 
+the implementation of aliases lists trustlevels and key signing. This can be done from 
+the WebApps account. 
+
+
+Access
+------
+
+The access url (it is a CGI again) is: 
+
+https://www.qtc-net.org/qtc-web-xml.cgi
+
+
+You REALLY SHOULD do POST Requests! If you implement a get request, you will
+write down the publisher_password any access log between your client and the
+server and thats bad. 
+
+
+All the data from you to the server is done by those POST requests, like a 
+web browser would do. So you need to learn the field names you need to send and 
+you may find a library helping you with that http request lying around somewhere. 
+
+The returned data is an XML document that is enclosed in a qtc tag and contains 
+three types of subnodes: 
+
+	> qsp
+	> telegram
+	> sent_telegram
+	> error
+
+example in the next section. 
+
+query for telegrams
+-------------------
+
+you need to set the 
+
+ - call 
+
+parameter to the call you are working with (qso partner). 
+
+$ curl -k -X POST -F call=oe1gis https://www.qtc-net.org/qtc-web-xml.cgi
+
+
+will get you a document like this: 
+
+------------------------------------------------------------------
+<?xml version="1.0" encoding="UTF-8"?>
+<qtc>
+<telegram>
+        <checksum>cc0b1caa1b53fad3cead4cfc038cb29002f6dcf9fc20599b7b0a236586855330</checksum>
+        <signature>6ff0290df05b37ffc53ff9e315a71443310c95b9d26916dbbdaffd01c0c53ba08d37190f0fbb9605ad24ebf15958d0046cf9ff9152276b3b97e6b4cadd07360d3783c5edb3cad77fbde4ca7fb84ac48cc60d1abe39b6b3e56eda84491b9f01e17cf06f510ace876a1869955b3a3310cd62ba03bc667d07ecb0fe0bc1a1ec1a3d2dfe5d25055b069cda9b9493c2bbb15f906894e92c32a14480bf89bde475e100ceb1552d089793c0b200537306f278c913c3c49415bcba5bb6c2181a7cbad4199a22a17e3505d10112cb465199df94040dd298156eea358c851f69502454fb7edac9c9b25388526e2726f926a407c883a0116fd0f5479ba738607993bc9b5e3d</signature>
+        <signature_key_id>abfb79df9e6a3dfc5e5ab15036287c21ffb7b10d0e87eab873904f66d64ca48f</signature_key_id>
+        <call>oe1src</call>
+        <hr_refnum>s4</hr_refnum>
+        <from>oe1src</from>
+        <to>qtcnet</to>
+        <telegram_date>1398058637</telegram_date>
+        <telegram>lets see if the lists are working</telegram>
+</telegram>
+<telegram>
+        <checksum>5f76b6a5e8aa397fa48964af49ea76259fd0802fa1fc3a92c741926475e42054</checksum>
+        <signature>0205dfd5d572810449f90f571f925c20422548fbfc16c7a099b957a601d09c1759e23a6487ebfa6471f71a44c9d14938e5195f10c582464347c95f25402465145c0849ead56cbcb412c1cb0765a31b9e604d07eb7cd25194a6c494be44d7070a38ad5a9699a6faccf7263bf523db011e2708d608084f634f57f3ac888428583425d8e4f4ef9b15e288bdf22c65cee1e7ec6ece1dfc5c3af268efc598daeea2e901aa946c8e09ef0b9a3c79c1e247737cc77be2b76ad249503e0415a66cf1277f92e300e9ed06e80f2dc40dc3c6abeae23fa0216e6dbb98fbfffb281ff8f6dbd9ec7a8abb714b09c73b46bb75e916ad9a5aa7232e99906b50491b10d710da8a2a</signature>
+        <signature_key_id>d922ab97dccb795421bf83a6ea7c2c4598129b309dda2584ce1d1bd4d20899cc</signature_key_id>
+        <call>oe1gis</call>
+        <hr_refnum>dp</hr_refnum>
+        <from>oe1gis</from>
+        <to>qtcnet</to>
+        <telegram_date>1398102733</telegram_date>
+        <telegram>yes it works</telegram>
+</telegram>
+<telegram>
+        <checksum>a505c606267903acd2277148a32a0103fcfe44e2789526f647a2f678c2de7e38</checksum>
+        <signature>6c30ab430123b4ed6032d57e0222d5ff556a1f106555700337ba12b316ca11b01ec073e4497152b4d86a5b9e94cef4a0c3082baa5d213d78b6b106aff46a9648626f8909546340f8973801f07e3efa79d7e01a0c72bc95a0b594248be11e2b68587b71366696a540218ac13e723374437360fd7dabdf5dfda38a921b975e771905eb24b4f33e550a20d6e60b3ce2f6d5af7b8cf79a9a3704079047ab87dade19693c60f51ecc9f845e92a3fc0e0f8b43ae4d479189fb996e0dff4a5b97fc4d7c5cee22804bce2aae33e09b11f04f9799d319575aa9c816e4d64fd4405c60a05e6dd2f5239c277de9db2041c1c0fdfad61fe9abacd87c410debe421a30d834394</signature>
+        <signature_key_id>abfb79df9e6a3dfc5e5ab15036287c21ffb7b10d0e87eab873904f66d64ca48f</signature_key_id>
+        <call>oe1src</call>
+        <hr_refnum>nr</hr_refnum>
+        <from>oe1src</from>
+        <to>qtcnet</to>
+        <telegram_date>1398752954</telegram_date>
+        <telegram>try out lists</telegram>
+</telegram>
+</qtc>
+------------------------------------------------------------------------------------
+
+You can see, the telegram tag has the following child nodes:
+
+> checksum
+> signature
+> signature_key_id
+> call
+> hr_refnum
+> from
+> to
+> telegram_date
+> telegram 
+
+so you get all the new telegrams addressed to oe1gis. If you want to see all or sent telegrams you may use the 
+
+- type   (new|all|sent) 
+
+parameter in addition to the call parameter, to select that kind of message.  
+
+$ curl -k -X POST -F call=oe1gis -F type=sent https://www.qtc-net.org/qtc-web-xml.cgi
+
+
+
+
+sending qsp
+-----------
+
+you may send some qsps to the  messages you selected. This needs a few more parameters: 
+
+- call               the call you are working on
+- [type]             this really iss optional because normally you dont want to qsp a 
+                     sent or qsped message
+- publisher_call     is your call/qtcWeb login name
+- publisher_password   is your secret 
+- qsp               can be set one or more times each time with the checksum of a telegram message. 
+
+lets try out: 
+
+
+$ curl -k -X POST -F call=oe1gis \
+	-F publisher_call=oe1src \
+	-F publisher_password=somesupersecret \
+	-F qsp=cc0b1caa1b53fad3cead4cfc038cb29002f6dcf9fc20599b7b0a236586855330 \
+	-F qsp=a505c606267903acd2277148a32a0103fcfe44e2789526f647a2f678c2de7e38  \
+	https://www.qtc-net.org/qtc-web-xml.cgi
+
+
+result: 
+------------------------------------------------------------
+<?xml version="1.0" encoding="UTF-8"?>
+<qtc>
+<qsp>
+        <telegram_checksum>cc0b1caa1b53fad3cead4cfc038cb29002f6dcf9fc20599b7b0a236586855330</telegram_checksum>
+        <to>oe1gis</to>
+</qsp>
+<telegram>
+        <checksum>5f76b6a5e8aa397fa48964af49ea76259fd0802fa1fc3a92c741926475e42054</checksum>
+        <signature>0205dfd5d572810449f90f571f925c20422548fbfc16c7a099b957a601d09c1759e23a6487ebfa6471f71a44c9d14938e5195f10c582464347c95f25402465145c0849ead56cbcb412c1cb0765a31b9e604d07eb7cd25194a6c494be44d7070a38ad5a9699a6faccf7263bf523db011e2708d608084f634f57f3ac888428583425d8e4f4ef9b15e288bdf22c65cee1e7ec6ece1dfc5c3af268efc598daeea2e901aa946c8e09ef0b9a3c79c1e247737cc77be2b76ad249503e0415a66cf1277f92e300e9ed06e80f2dc40dc3c6abeae23fa0216e6dbb98fbfffb281ff8f6dbd9ec7a8abb714b09c73b46bb75e916ad9a5aa7232e99906b50491b10d710da8a2a</signature>
+        <signature_key_id>d922ab97dccb795421bf83a6ea7c2c4598129b309dda2584ce1d1bd4d20899cc</signature_key_id>
+        <call>oe1gis</call>
+        <hr_refnum>dp</hr_refnum>
+        <from>oe1gis</from>
+        <to>qtcnet</to>
+        <telegram_date>1398102733</telegram_date>
+        <telegram>yes it works</telegram>
+</telegram>
+<qsp>
+        <telegram_checksum>a505c606267903acd2277148a32a0103fcfe44e2789526f647a2f678c2de7e38</telegram_checksum>
+        <to>oe1gis</to>
+</qsp>
+</qtc>
+----------------------------------------------------------------
+
+this is a list again that shows the telegrams to you as well as an approval that 
+the qsp really was submitted. 
+
+The qsp node has the following childs: 
+
+> telegram_checksum
+> to 
+
+The to field is important for the qtc messaging system because if a telegram was sent to a list, it may have more than one qsp, one for each receiver. 
+
+
+sending telegrams
+-----------------
+
+you need the following set of parameters for a telegram: 
+
+- mode               must have the value send_telegram
+- call               the call you are working on (telegram from call) 
+- publisher_call     is your call/qtcWeb login name
+- publisher_password   is your secret 
+- to                 the telegram receiver 
+- telegram           the telegram text  
+
+all right? lets have an example: 
+
+
+curl -k -X POST \
+	-F mode=send_telegram \
+	-F call=dd5tt/p  \
+	-F publisher_call=oe1src \
+	-F publisher_password=supermegasecretpassword \
+	-F to=qtcnet \
+	-F 'telegram=there is a quick qtc WebApp xml interface, i am documenting now, have a look' \
+	https://www.qtc-net.org/qtc-web-xml.cgi
+
+
+result: 
+-------------------------------------------------
+<?xml version="1.0" encoding="UTF-8"?>
+<qtc>
+<sent_telegram>
+        <call>oe1src</call>
+        <from>dd5tt/p</from>
+        <to>qtcnet</to>
+        <telegram>there is a quick qtc webapp xml interface, i am documenting now, have a look</telegram>
+</sent_telegram>
+</qtc>
+-----------------------------------------------------
+
+as result you get what you published. sent_telegram tags childs: 
+
+> call  (your publisher call)
+> from
+> to 
+> telegram
+
+
+
+Thats all folks. Quick, isn't it? 
+
+
