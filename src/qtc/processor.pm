@@ -1,3 +1,41 @@
+#-----------------------------------------------------------------------------------
+=pod
+
+=head1 NAME
+
+qtc::processor - class that sorts qtc messages 
+
+=head1 SYNOPSIS
+
+use qtc::processor;
+
+my $processor=qtc::processor->new(
+   root=>$path,
+   log=>$log, 
+   daemon=>$daemon, 
+); 
+$processor->process_in_loop; 
+
+=head1 DESCRIPTION
+
+The QTC Processor is responsible for sorting all QTC Messages 
+from /in to the filesystem structure as described in protocol.txt
+
+It may run as daemon, and it will look for qtc messages every 60 seconds. 
+However an application may send a HUP signal which causes the processor 
+to wake up immidiately. 
+
+Each message type has its own import() method as well as its own 
+remove() method.  If a message needs some reprocessing it will removed 
+from the tree which causes the processor to sort it back in during its 
+next run. 
+
+because many of the methods and librarys will die on failure, the processor also 
+implements some exception handling during the process loop (this is called eval {} 
+in perl)
+
+=cut
+#-----------------------------------------------------------------------------------
 package qtc::processor; 
 use qtc::msg; 
 use qtc::query; 
@@ -9,7 +47,23 @@ use Data::Dumper;
 use qtc::misc;
 @ISA=(qtc::misc);
 
-# this package does all the linking of a qtc-net message to its right folders 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 new(parameter=>"value", ...)
+
+Optional parameters: 
+root=>$path_to_dir_structure
+pidfile=>$pid_filename #default: $path_to_dir_structure/.qtc_processor.pid
+log=>$logfile
+daemon=>1, # means daemonize 
+
+Returns: a qtc::processor object
+
+This creates a processor object. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub new { 
    my $class=shift; 
    my %parm=(@_); 
@@ -41,6 +95,15 @@ sub new {
    return $obj; 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 DESTROY()
+
+if the process runs as daemon, unlink the pid file on exit 
+
+=cut
+#------------------------------------------------------------------------------------
 sub DESTROY {
 	my $o=shift; 
 	if ( $o->{daemonized} ) {
@@ -48,6 +111,16 @@ sub DESTROY {
 	}
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 query()
+
+Returns a fully initialized qtc::query object, for querys on the 
+QTC filesystem tree.  
+
+=cut
+#------------------------------------------------------------------------------------
 sub query {
 	my $obj=shift; 
 	if ( ! $obj->{query} ) { 
@@ -56,6 +129,19 @@ sub query {
 	return $obj->{query};
 }	
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 keyring($msg)
+
+This returns a qtc::keyring object for the call that published the 
+message $msg, if the message is a public key, it is put into the keyring as well. 
+we could not validate a self signed public key. 
+
+if there is anything strange with that injected message qtc::keyring will handle. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub keyring {
 	my $obj=shift;
 	my $msg=shift;
@@ -81,6 +167,15 @@ sub keyring {
 	return $obj->{keyring}->{$call};
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 keyring_clear($call)
+
+This clears the keyring cache for a specific call, for example after a revoke. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub keyring_clear {
 	my $obj=shift; 
 	my $call=shift; 
@@ -88,6 +183,16 @@ sub keyring_clear {
 	delete $obj->{keyring}->{$call};
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 verify_signature($msg)
+
+This verifies the signature of a message. It will cause death if verification 
+fails. That exception can then be handled, in process_in(). 
+
+=cut
+#------------------------------------------------------------------------------------
 sub verify_signature {
 	my $obj=shift; 
 	my $msg=shift;
@@ -104,7 +209,16 @@ sub verify_signature {
 	}
 }
 
-# this is to be used for any message that is not in /in
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 process_file($file)
+
+This loads the *.qtc file given by $file into a qtc::msg object 
+it then links the message to /in and starts processing of that message.
+
+=cut
+#------------------------------------------------------------------------------------
 sub process_file { 
 	my $obj=shift; 
 	my $file=shift; 
@@ -117,7 +231,16 @@ sub process_file {
 	$obj->process($msg); 
 }
 
-# this is to be used for any message that is in /in
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 process_one_msg_from_in($file_basename)
+
+This starts file processing of a file that is in /in
+note that only the files basename is needed as argument. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub process_one_msg_from_in { 
 	my $obj=shift; 
 	my $file=shift; 
@@ -129,7 +252,23 @@ sub process_one_msg_from_in {
 	$obj->process($msg);
 }
 
-# this is to be used for any message that is in /in
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 process_in()
+
+This starts a process run for all unprocessed, new 
+messages in /in
+
+That means every message that is in in but not in either 
+/out or /bad needs some processing. So it is loaded 
+and the resulting object is given to the process() mehthod. 
+
+Exeption handling is also done here. If process() dies the 
+message will be linked to /bad
+
+=cut
+#------------------------------------------------------------------------------------
 sub process_in { 
 	my $obj=shift;
 	$obj->ensure_path($obj->{root}."/bad"); 
@@ -157,7 +296,16 @@ sub process_in {
 	return $cnt; 
 }
 
-# this is to be used for any message that is in /in
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 process_in_loop()
+
+This calls process_in() in a loop. it will sleep for 60 seconds and then look for new 
+messages in /in. If the process receives a HUP signal it will wake up immidiately. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub process_in_loop { 
 	my $obj=shift;
 	$obj->ensure_path($obj->{root}."/bad"); 
@@ -182,6 +330,15 @@ sub process_in_loop {
 	}
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 process_hex($hex_msg)
+
+This will process a message that is given as hexadecimal string argument
+
+=cut
+#------------------------------------------------------------------------------------
 sub process_hex { 
 	my $obj=shift; 
 	my $hex=shift; 
@@ -194,6 +351,16 @@ sub process_hex {
 	$obj->process($msg); 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 write_msg_to_in($msg)
+
+This writes a message to in, with a bit of precaution, if the message already 
+exist, it will die() before it trys. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub write_msg_to_in {
 	my $obj=shift; 
 	my $msg=shift; 
@@ -204,6 +371,17 @@ sub write_msg_to_in {
 	$msg->to_filesystem($obj->{root}."/in");
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 process($msg)
+
+This sorts $msg into the folder structure. 
+basically it calls the right import_...() method for each 
+message type that does the job.  
+
+=cut
+#------------------------------------------------------------------------------------
 # so lets guess we have a message that is in $root/in 
 # and it is not bad otherwise this message would be 
 # linked to bad messages by the exception routine. 
@@ -240,8 +418,24 @@ sub process {
 }
 
 
-################
-# importing rules
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 import and remove methods
+
+
+=cut
+#------------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 import_telegram($msg)
+
+This imports a telegram message to the filesystem structure
+
+=cut
+#------------------------------------------------------------------------------------
 sub import_telegram {
 	my $obj=shift; 
 	my $msg=shift; 
@@ -269,8 +463,15 @@ sub import_telegram {
 	}
 }
 
-################
-# importing rules
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 remove_telegram($msg)
+
+This removes a telegram from the filesystem structure
+
+=cut
+#------------------------------------------------------------------------------------
 sub remove_telegram {
 	my $obj=shift; 
 	my $msg=shift; 
@@ -288,6 +489,25 @@ sub remove_telegram {
 	$msg->unlink_at_path($obj->{root}."/out");
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 msg_has_no_qsp($msg)
+
+alternative msg_has_no_qsp($msg)
+
+checks if a message is not yet delivered. It could happen in big networks that the 
+delivery notification was imported before the message was, in that case a message should 
+not me linked to new messages. 
+
+an optional filename_to parameter set the to for the case that the message was delivered 
+to a list. $f_to must be filesystem compliat (see call2fname() for that). If not set, 
+$obj->call2fname($msg->to) is used. 
+
+The method returns 0  if msg has a qsp and 1 on success if msg has no qsp.
+
+=cut
+#------------------------------------------------------------------------------------
 sub msg_has_no_qsp {
 	my $obj=shift; 
 	my $msg=shift; 
@@ -314,6 +534,16 @@ sub msg_has_no_qsp {
 }
 
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 import_qsp($msg)
+
+This imports a qsp message to the filesystem structure. 
+It also removes the delivered telegram from the list of new telegrams
+
+=cut
+#------------------------------------------------------------------------------------
 sub import_qsp {
 	my $obj=shift; 
 	my $msg=shift; 
@@ -330,8 +560,17 @@ sub import_qsp {
 	}
 	$msg->link_to_path($obj->{root}."/out");
 }
-################
-# importing rules
+
+
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 remove_qsp($msg)
+
+This removes a qsp message from the filesystem structure
+
+=cut
+#------------------------------------------------------------------------------------
 sub remove_qsp {
 	my $obj=shift; 
 	my $msg=shift; 
@@ -340,6 +579,15 @@ sub remove_qsp {
 	$msg->unlink_at_path($obj->{root}."/out");
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 import_pubkey($msg)
+
+This imports a pubkey message to the filesystem structure
+
+=cut
+#------------------------------------------------------------------------------------
 sub import_pubkey {
 	my $obj=shift; 
 	my $msg=shift; 
@@ -400,6 +648,16 @@ sub import_pubkey {
 	}
 	
 }
+
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 remove_pubkey($msg)
+
+This removes a pubkey message from the filesystem structure
+
+=cut
+#------------------------------------------------------------------------------------
 sub remove_pubkey {
 	my $obj=shift; 
 	my $msg=shift; 
@@ -411,6 +669,17 @@ sub remove_pubkey {
 	$obj->keyring_clear($msg->call); 
 }
 
+
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 remove_msg($msg)
+
+This removes any qtc message object from the filesystem structure 
+by calling the right remove method.... 
+
+=cut
+#------------------------------------------------------------------------------------
 sub remove_msg { 
 	my $obj=shift; 
 	my $msg=shift; 
@@ -442,7 +711,15 @@ sub remove_msg {
 	print STDERR $msg->type."is an unknown message type \n"; 
 }
 
-# TODO Revokes should be self signed only
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 import_revoke($msg)
+
+This imports a revoke message to the filesystem structure
+
+=cut
+#------------------------------------------------------------------------------------
 sub import_revoke {
 	my $obj=shift; 
 	my $msg=shift; 
@@ -465,6 +742,17 @@ sub import_revoke {
 	$msg->link_to_path($obj->{root}."/out");
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 remove_revoke($msg)
+
+This removes a revoke message from the filesystem structure.
+It is here for completeness reasons, but normally it should never 
+be used. 
+
+=cut
+#------------------------------------------------------------------------------------
 # normally this is not called.... i think 
 sub remove_revoke {
 	my $obj=shift; 
@@ -474,6 +762,18 @@ sub remove_revoke {
 	$msg->unlink_at_path($obj->{root}."/out");
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 remove_msgs_below($path, argument=>"value", ...)
+
+This removes all messages below a path, and its subdirectorys. 
+
+parameters: 
+    mrproper=>1    # means it deletes the directory if empty. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub remove_msgs_below {
 	my $obj=shift; 
 	my $path=shift; 
@@ -501,6 +801,15 @@ sub remove_msgs_below {
 	}
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 import_operator($msg)
+
+This imports a operator message to the filesystem structure
+
+=cut
+#------------------------------------------------------------------------------------
 # import the new operator status
 sub import_operator {
 	my $obj=shift; 
@@ -552,6 +861,15 @@ sub import_operator {
 	$msg->link_to_path($obj->{root}."/out");
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 remove_operator$msg)
+
+This removes an operator message from the filesystem structure
+
+=cut
+#------------------------------------------------------------------------------------
 sub remove_operator {
 	my $obj=shift; 
 	my $msg=shift; 
@@ -587,6 +905,15 @@ sub remove_operator {
 	$msg->unlink_at_path($obj->{root}."/out");
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 import_trust($msg)
+
+This imports a telegram message to the filesystem structure
+
+=cut
+#------------------------------------------------------------------------------------
 sub import_trust {
 	my $obj=shift; 
 	my $msg=shift; 
@@ -596,6 +923,16 @@ sub import_trust {
 
 	$msg->link_to_path($obj->{root}."/out");
 }
+
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 remove_trust($msg)
+
+This removes a trust message from the filesystem structure
+
+=cut
+#------------------------------------------------------------------------------------
 sub remove_trust {
 	my $obj=shift; 
 	my $msg=shift; 
@@ -605,3 +942,14 @@ sub remove_trust {
 }
 
 1; 
+=pod
+
+=head1 AUTHOR
+
+Hans Freitag <oe1src@oevsv.at>
+
+=head1 LICENCE
+
+GPL v3
+
+=cut
