@@ -332,6 +332,9 @@ sub area_ask_call {
 	} else {
 		$obj->q->param("call", $call);
 	}
+	my $mode=$obj->q->param("mode");
+	if ( ! $mode ) { $mode="show_telegrams"; } 
+	$obj->q->param("mode", "show_telegrams");
 	delete $obj->{qtc}->{exports}->{call}; 
 	$r.=$obj->h_tabled_form({}, 
 		$obj->h_labled_input({
@@ -345,6 +348,7 @@ sub area_ask_call {
 		$obj->h_submit_for_tbl({value=>"QTC?"}), 
 	);
 	$obj->{qtc}->{exports}->{call}=1; 
+	$obj->q->param("mode", $mode);
 
 	return $r; 
 }
