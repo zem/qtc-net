@@ -255,13 +255,15 @@ sub import_telegram {
 	}
 	$msg->link_to_path($obj->{root}."/out");
 	
+	# mailing list handling 
 	my $listpath=$obj->{root}."/lists/".$obj->call2fname($msg->to);
-	foreach my $list ($obj->scan_dir($listpath, ".+")) {
-		if ( -l $listpath."/".$list ) { 
-			# TODO Fix this 
-			$msg->link_to_path($listpath."/".$list."/telegrams/all");
-			if ( $obj->msg_has_no_qsp($msg, $list) ) {
-				$msg->link_to_path($listpath."/".$list."/telegrams/new");
+	foreach my $listmember ($obj->scan_dir($listpath, ".+")) {
+		if ( -l $listpath."/".$listmember ) { 
+			# if one of the listmembers has sent this message to the list, he does not need it. 
+			if ( $obj->call2fname($msg->to) eq $listmember ) { next; }
+			$msg->link_to_path($listpath."/".$listmember."/telegrams/all");
+			if ( $obj->msg_has_no_qsp($msg, $listmember) ) {
+				$msg->link_to_path($listpath."/".$listmember."/telegrams/new");
 			}
 		}
 	}
