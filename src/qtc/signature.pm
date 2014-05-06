@@ -1,3 +1,50 @@
+#-----------------------------------------------------------------------------------
+=pod
+
+=head1 NAME
+
+qtc::signature - class for signature creation and verification 
+
+=head1 SYNOPSIS
+
+	use qrc::signature
+
+	my $sig=qtc::signature->new(
+		pubkey=>$keyhash,
+	);
+
+	if (! $sig->verify($msg->signed_content_bin, $msg->signature, $msg->signature_key_id) ) { 
+		die "Signature verification for message ".$msg->checksum." failed\n"; 
+	}
+
+or
+
+	use qtc::signature;
+	
+	$obj->{signature}=qtc::signature->new(
+		privkey_file=>$obj->{privkey_file},
+		password=>$obj->{password},
+		
+		path=>$obj->{path}, 
+		privpath=>$obj->{privpath}, 
+		call=>$obj->{call},
+		
+		dsa_keygen=>$obj->{dsa_keygen},
+		rsa_keygen=>$obj->{rsa_keygen},
+	);
+
+	$obj->{signature}->sign($msg); 
+
+
+=head1 DESCRIPTION
+
+QTC Signature is a signature abstraction library for qtc::msg it helps 
+you to create and verify signatures of qtc messages. It will (soon) implement 
+both rsa and dsa type signatures with Crypt::OpenSSL. right now only dsa is 
+supported. 
+
+=cut
+#-----------------------------------------------------------------------------------
 #Signature abstraction module for qtc net. 
 package qtc::signature; 
 use Data::Dumper;
@@ -10,9 +57,35 @@ use MIME::Base64;
 use Digest::SHA qw(sha256_hex); 
 #use Crypt::Rijndael;
 
-#######################################################
-# obviously generic right now
-########################################################
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 new(parameter=>"value", ...)
+
+Optional parameters: 
+
+privkey_file=>$privkey_file, # path to your private key file
+password=>$key_password, # NOT IMPLEMENTED, encryption of your 
+                         # private key file
+path=>$path_to_qtc_root, # this is where the qtc root directory is 
+
+privpath=>$obj->{privpath}, # this is information for rsa_keygen, 
+                            # it tells you to which path the new 
+                            # key should be put to
+call=>$obj->{call}, # this is also for rsa_keygen, it tells you the call for 
+                    # which the key is generated
+
+dsa_keygen=>1, or rsa_keygen=>1, # if either rsa_keygen or dsa_keygen is set to 1 
+                                 # a key will be automatically generated 
+											# during object creation, right now only rsa is 
+                                 # implemented
+
+Returns: a qtc::signature object
+
+This creates a signature object. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub new { 
 	my $class=shift; 
 	my %parm=(@_); 
@@ -56,6 +129,15 @@ sub new {
 	return $obj; 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 rsa_keygen()
+
+Creates a new rsa private key. This is triggered from new() method.  
+
+=cut
+#------------------------------------------------------------------------------------
 sub rsa_keygen {
 	my $o=shift; 
 
@@ -108,6 +190,15 @@ sub rsa_keygen {
 
 
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 sign($msg)
+
+This signs a qtc::msg ogject. It will die in failure. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub sign {
 	my $obj=shift; 
 	my $msg=shift;
@@ -127,6 +218,22 @@ sub sign {
 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 verify($signed_content_bin, $signature, $signature_key_id)
+
+This is to verify a signature of a qtc::msg object, you put the 
+required arguments from the message object into the arguments of 
+the method.
+
+It returns 0 on fail or 1 on succsess, on critical issues, it dies.  
+
+Maybe I will consider adding the possibility to do verify($msg) 
+in the future. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub verify {
 	my $obj=shift; 
 	my $signed_content_bin=shift;
@@ -155,12 +262,36 @@ sub verify {
 	return 0; 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 prepare_rsa_key($key)
+
+This is an internal function to build a base64 encoded readable text string for 
+Crypt::OpenSSL::RSA out of the hexadecimal representation of the key data. 
+
+returns: loadable key skalar. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub prepare_rsa_pubkey {
 	my $obj=shift; 
 	my $key=shift; 
 	return "-----BEGIN RSA PUBLIC KEY-----\n".encode_base64(pack("H*", $key))."-----END RSA PUBLIC KEY-----\n"
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 prepare_dsa_key($key)
+
+This is an internal function to build a base64 encoded readable text string for 
+Crypt::OpenSSL::DSA out of the hexadecimal representation of the key data. 
+
+returns: loadable key skalar. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub prepare_dsa_pubkey {
 	my $obj=shift; 
 	my $key=shift; 
@@ -168,3 +299,14 @@ sub prepare_dsa_pubkey {
 }
 
 1; 
+=pod
+
+=head1 AUTHOR
+
+Hans Freitag <oe1src@oevsv.at>
+
+=head1 LICENCE
+
+GPL v3
+
+=cut
