@@ -7,7 +7,7 @@ qtc::signature - class for signature creation and verification
 
 =head1 SYNOPSIS
 
-	use qrc::signature
+	use qrc::signature;
 
 	my $sig=qtc::signature->new(
 		pubkey=>$keyhash,
@@ -65,17 +65,17 @@ use Digest::SHA qw(sha256_hex);
 Optional parameters: 
 
 privkey_file=>$privkey_file, # path to your private key file
-password=>$key_password, # NOT IMPLEMENTED, encryption of your 
+ password=>$key_password, # NOT IMPLEMENTED, encryption of your 
                          # private key file
-path=>$path_to_qtc_root, # this is where the qtc root directory is 
+ path=>$path_to_qtc_root, # this is where the qtc root directory is 
 
-privpath=>$obj->{privpath}, # this is information for rsa_keygen, 
+ privpath=>$obj->{privpath}, # this is information for rsa_keygen, 
                             # it tells you to which path the new 
                             # key should be put to
-call=>$obj->{call}, # this is also for rsa_keygen, it tells you the call for 
+ call=>$obj->{call}, # this is also for rsa_keygen, it tells you the call for 
                     # which the key is generated
 
-dsa_keygen=>1, or rsa_keygen=>1, # if either rsa_keygen or dsa_keygen is set to 1 
+ dsa_keygen=>1, or rsa_keygen=>1, # if either rsa_keygen or dsa_keygen is set to 1 
                                  # a key will be automatically generated 
 											# during object creation, right now only rsa is 
                                  # implemented

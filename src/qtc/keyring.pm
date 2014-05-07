@@ -1,3 +1,37 @@
+#-----------------------------------------------------------------------------------
+=pod
+
+=head1 NAME
+
+qtc::keyring - a class that loads a public key ring
+
+=head1 SYNOPSIS
+
+ use qrc::keyring;
+ 
+ $keyring=qtc::keyring->new(
+    call=>$call,
+    root=>$qtc_root_path,
+    keys=>\@additional_keys, 
+ );
+ my $keyhashref=$keyring->keyhash; 
+ my $keysarrayref=$keyring->keys; 
+
+
+=head1 DESCRIPTION
+
+QTC keyring class is used to load the public key messages of a publisher, into 
+an array. It will automatically verify the keys signature, as well as if all 
+the other keys are signed by one root key. 
+
+It sorts out the good keys from the bad ones. the goal is that you can realy 
+trust the keys that passed through this filter. 
+
+This is not an easy task especially if you are unsure who send that key to you,
+that means it will have some bugs, and design flaws. 
+
+=cut
+#-----------------------------------------------------------------------------------
 package qtc::keyring; 
 use qtc::msg; 
 use qtc::signature; 
@@ -6,6 +40,42 @@ use Data::Dumper;
 use qtc::misc;
 @ISA=(qtc::misc);
 
+=head2 new(parameter=>"value", ...)
+
+The object creator method. returns a qtc keyrink object. 
+
+Parameters:
+ root    to set the qtc base dir 
+ call    to set the call for which the keys should be loaded
+ keys    is an arrayref that contains additional keys to be 
+         added to the ring
+
+The object holds several data structures: 
+
+=head3 $obj->{tree}={}
+
+This represents a signature tree in the following form: 
+
+ $obj->{tree}->{$key_id}->{key_obj}=$pubkey_msg
+ $obj->{tree}->{$key_id}->{$signed_key_id}->{key_obj}=$another_pubkey_msg
+
+and so on. We use this to get all the public keys a user may have in order. 
+
+=head3 $obj->{keys}=[]
+
+This array initially holds all public keys. You may add some from the outside, 
+just in case you are a processor and you want to verify a self signed public key 
+for the first time you see it. 
+
+keys will be deleted later during object creation and replaced with a validated 
+set of keys. 
+
+=head3 $obj->{keyhash}={}
+
+The keyhash holds a flat reference: $obj->{keyhash}->{$key_id}=$key_obj this 
+provides a much faster lookup than looping through arrays every time. 
+
+=cut
 # this package does all the linking of a qtc-net message to its right folders 
 sub new { 
    my $class=shift; 
@@ -31,6 +101,19 @@ sub new {
    return $obj; 
 }
 
+#---------------------------------------------------------
+=pod
+
+=head2 load_keys()
+
+Is called by new() 
+
+This loads all the keys from the calls pubkey directory 
+into the keys arrayref, it will then build the key tree by calling 
+the build_tree() method. 
+
+=cut
+#---------------------------------------------------------
 sub load_keys {
 	my $obj=shift;
 	my $path=$obj->{root}."/call/".$obj->call2fname($obj->{call})."/pubkey";
@@ -62,6 +145,15 @@ sub load_keys {
 
 }
 
+#---------------------------------------------------------
+=pod
+
+=head2 grep_signed_by($key_id)
+
+returns an array of keys signed by the key_id given as parameter
+
+=cut
+#---------------------------------------------------------
 sub grep_signed_by {
 	my $obj=shift; 
 	my $key_id=shift; 
@@ -75,6 +167,17 @@ sub grep_signed_by {
 	return @ret; 
 }
 
+#---------------------------------------------------------
+=pod
+
+=head2 build_tree($tree_hashref)
+
+this builds the tree as described in new(), it wants a 
+hashref pointing to the level that is currently build, and 
+it will call itself recursively for every sublevel. 
+
+=cut
+#---------------------------------------------------------
 sub build_tree {
 	my $obj=shift; 
 	my $hashref=shift; 
@@ -94,6 +197,17 @@ sub build_tree {
 	}
 }
 
+#---------------------------------------------------------
+=pod
+
+=head2 validate_tree()
+
+This validates the whole tree structure, that means it checks 
+every signature and delets every invalid tree segments. It calls 
+valitate_subtree() for every subtree. 
+
+=cut
+#---------------------------------------------------------
 sub validate_tree {
 	my $obj=shift;
 
@@ -111,6 +225,17 @@ sub validate_tree {
 	$obj->validate_subtree($obj->{tree})
 }
 
+#---------------------------------------------------------
+=pod
+
+=head2 validate_subtree($hashref)
+
+This validates a subtree of the tree structure, that means it checks 
+every signature and delets every invalid tree segments. It calls 
+valitate_subtree() recursively for every subtree. 
+
+=cut
+#---------------------------------------------------------
 sub validate_subtree {
 	my $obj=shift;
 	my $hashref=shift; 
@@ -135,11 +260,29 @@ sub validate_subtree {
 	
 }
 
+#---------------------------------------------------------
+=pod
+
+=head2 keyhash()
+
+returns the keyhash reference to all validated keys.
+
+=cut
+#---------------------------------------------------------
 sub keyhash {
 	my $obj=shift; 
 	return $obj->{keyhash};
 }
 
+#---------------------------------------------------------
+=pod
+
+=head2 keys()
+
+returns the keyarray reference to all validated keys.
+
+=cut
+#---------------------------------------------------------
 sub keys {
 	my $obj=shift; 
 	return $obj->{keys};
@@ -147,3 +290,14 @@ sub keys {
 
 
 1; 
+=pod
+
+=head1 AUTHOR
+
+Hans Freitag <oe1src@oevsv.at>
+
+=head1 LICENCE
+
+GPL v3
+
+=cut
