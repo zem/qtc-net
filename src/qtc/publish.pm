@@ -1,3 +1,34 @@
+#-----------------------------------------------------------------------------------
+=pod
+
+=head1 NAME
+
+qtc::publish - methods to help you to messages to qtc-net
+
+=head1 SYNOPSIS
+
+ use qtc::publish;
+ 
+ my $publish=qtc::publish->new(
+   path=>$path,
+   privpath=>$directory_where_private_key_is,
+ ); 
+ $publish->telegram(
+   from=>"oe1src",
+	to=>"dd5tt",
+	telegram=>"hello me",
+ );
+
+=head1 DESCRIPTION
+
+This object class provides helper functions to publish messages in the 
+qtc-net. It needs a private key file lying around in a privpath directory 
+together with its self signed public key message.
+
+It needs as well the path to the qtc net filesystem structure. 
+
+=cut
+#-----------------------------------------------------------------------------------
 package qtc::publish; 
 use File::Basename; 
 use qtc::msg; 
@@ -7,9 +38,23 @@ use qtc::misc;
 @ISA=("qtc::misc"); 
 
 
-# this package provides methods that deliver 
-# specific messages.....
+#-------------------------------------------------------
+=pod
 
+=head2 new(parameter=>"value", ...)
+
+Object creator function, returns qtc::publish object
+
+Parameter: 
+ path=>$path_to_qtc_root,  # required
+ privpath=>$directory_where_private_key_is,  # required
+ pidfile=>$processor_pid, # optional, defaults within the 
+                          # path/.qtc_processor.pid
+ privkey_file=>$keyfile   # optional, if the filename cant 
+                          # be automaticaly detected
+
+=cut
+#-------------------------------------------------------
 sub new { 
 	my $class=shift; 
 	my %parm=(@_); 
@@ -51,6 +96,18 @@ sub new {
 	return $obj; 
 }
 
+
+#-------------------------------------------------------
+=pod
+
+=head2 get_public_key_msg()
+
+returns the public key message, of the publisher. this method is placed in 
+the publish module, because this module well knows the privpath where the 
+message can be found. 
+
+=cut
+#-------------------------------------------------------
 # ok you may ask, "why this, here?!?" 
 # it is because the privpath is well known to this module
 sub get_public_key_msg {
@@ -61,16 +118,48 @@ sub get_public_key_msg {
 	return $msg; 
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 query()
+
+returns a qtc::qwuery object
+
+=cut
+#-------------------------------------------------------
 sub query { 
 	my $obj=shift; 
 	return $obj->{query}; 
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 sig()
+
+returns a qtc::signature object
+
+=cut
+#-------------------------------------------------------
 sub sig { 
 	my $obj=shift; 
 	return $obj->{signature}; 
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 telegram(parameter=>"value", ...)
+
+publishes a telegram
+
+parameters: 
+ to=>$to_call,
+ from=>$from_call,
+ telegram=>$telegram_text,
+
+=cut
+#-------------------------------------------------------
 sub telegram {
 	my $obj=shift; 
 	my %args=(@_); 
@@ -88,6 +177,19 @@ sub telegram {
 	$obj->wakeup_processor; 
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 qsp(parameter=>"value", ...)
+
+publishes a qsp message
+
+parameters: 
+ to=>$to_call,
+ msg=>$telegram_qtc_msg_object,
+
+=cut
+#-------------------------------------------------------
 sub qsp {
 	my $obj=shift; 
 	my %args=(@_);
@@ -106,6 +208,22 @@ sub qsp {
 	$obj->wakeup_processor; 
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 pubkey(parameter=>"value", ...)
+
+publishes a public key  message
+
+parameters: 
+ hex=>$pubkey_message_as_hex,
+
+the messages signature is cut of and the message is signed 
+with the current public/private key pair. This means you can 
+sign any other public key to prove that it is yours. 
+
+=cut
+#-------------------------------------------------------
 sub pubkey {
 	my $obj=shift; 
 	my %args=(@_); 
@@ -118,6 +236,28 @@ sub pubkey {
 	$obj->wakeup_processor; 
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 revoke(parameter=>"value", ...)
+
+publish or download a revoke key  message
+
+parameters: 
+ hex=>$pubkey_message_as_hex, # optional
+                              # get_local_public key if ommitted
+ download=>1,      # if true the revoke key will be returned by this function, 
+                   # if false the revoke key will be published
+
+if the key uploaded in hex=>"" is a pubkey, a revoke message will be generated, but, 
+the revoke must be self signed. 
+
+if hex=>"" contains a revoke message, that message will be published (or download if download=>1) 
+
+if hex=>"" is empty the current public key will be used. 
+
+=cut
+#-------------------------------------------------------
 sub revoke {
 	my $obj=shift; 
 	my %args=(@_); 
@@ -154,6 +294,22 @@ sub revoke {
 	}
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 operator(parameter=>"value", ...)
+
+publishes an operator  message
+
+parameters: 
+ set_of_aliases=>[...],
+ set_of_lists=>[...],
+
+This publishes an operator message. the sets are lists of callsigns or 
+bulletin lists, connected to that callsign. 
+
+=cut
+#-------------------------------------------------------
 sub operator {
 	my $obj=shift; 
 	my %args=(@_); 
@@ -171,6 +327,19 @@ sub operator {
 	$obj->wakeup_processor; 
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 trust(parameter=>"value", ...)
+
+publishes a trustlevel message
+
+parameters: 
+ to=>$to_call,
+ trustlevel=>$level, # may be 1, 0 or -1 
+
+=cut
+#-------------------------------------------------------
 sub trust {
 	my $obj=shift; 
 	my %args=(@_); 
@@ -190,3 +359,14 @@ sub trust {
 }
 
 1; 
+=pod
+
+=head1 AUTHOR
+
+Hans Freitag <oe1src@oevsv.at>
+
+=head1 LICENCE
+
+GPL v3
+
+=cut
