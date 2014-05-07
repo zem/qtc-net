@@ -1,3 +1,27 @@
+#-----------------------------------------------------------------------------------
+=pod
+
+=head1 NAME
+
+qtc::query - query for messages in the folder structure
+
+=head1 SYNOPSIS
+
+use qtc::query;
+
+my $query=qtc::query->new(
+   path=>$path,
+); 
+my @result_msg=$query->latest_changes(20); 
+
+=head1 DESCRIPTION
+
+The Query Object implements several querys at the qtc-net Filesysstem 
+structure. It may used by local clients in combination with the qtc::publish 
+object, to get access to all the QTC net functions. 
+
+=cut
+#-----------------------------------------------------------------------------------
 package qtc::query; 
 use File::Basename; 
 use qtc::msg; 
@@ -9,6 +33,18 @@ use qtc::misc;
 # this package provides methods that deliver 
 # specific messages.....
 
+#-------------------------------------------------------
+=pod
+
+=head2 new(parameter=>"value", ...)
+
+Object creator function, returns qtc::query object
+
+Parameter: 
+ path=>$path_to_qtc_root,  # required
+
+=cut
+#-------------------------------------------------------
 sub new { 
 	my $class=shift; 
 	my %parm=(@_); 
@@ -17,6 +53,15 @@ sub new {
 	return $obj; 
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 latest_changes($number)
+
+Returns the latest $number network changes ordered by time. 
+
+=cut
+#-------------------------------------------------------
 sub latest_changes { 
 	my $obj=shift; 
 	my $number=shift; 
@@ -31,6 +76,17 @@ sub latest_changes {
 	return @msgs; 
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 list_telegrams($call, $type)
+
+Returns telegrams for $call where type can be one of 
+undef, new, all, sent
+if $type is undef all new telegrams are returned. 
+
+=cut
+#-------------------------------------------------------
 sub list_telegrams { 
 	my $obj=shift; 
 	my $call=$obj->call2fname(shift); 
@@ -44,6 +100,16 @@ sub list_telegrams {
 	return @msgs; 
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 num_telegrams($call, $type)
+
+Returns the number of telegrans for $call where type can be one of new, all, sent
+if $type is ommitted the number of new telegrams is returned. 
+
+=cut
+#-------------------------------------------------------
 sub num_telegrams { 
 	my $obj=shift; 
 	my $call=$obj->call2fname(shift); 
@@ -54,6 +120,15 @@ sub num_telegrams {
 	return $#msgs+1; 
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 pubkey_hash($call)
+
+Returns a pubkey hashref for $call
+
+=cut
+#-------------------------------------------------------
 sub pubkey_hash {
 	my $obj=shift;
 	my $call=shift; 
@@ -64,6 +139,15 @@ sub pubkey_hash {
 	return $keyring->keyhash; 
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 pubkey_array($call)
+
+Returns a pubkey arrayref for $call
+
+=cut
+#-------------------------------------------------------
 sub pubkey_array {
 	my $obj=shift;
 	my $call=shift; 
@@ -74,6 +158,15 @@ sub pubkey_array {
 	return $keyring->keys; 
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 operator($call)
+
+Returns the latest operator message for $call if any
+
+=cut
+#-------------------------------------------------------
 sub operator {
 	my $obj=shift; 
 	my $call=$obj->call2fname(shift); 
@@ -86,6 +179,17 @@ sub operator {
 	return; 
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 get_old_trust(call=>$call)
+
+This returns the trustlevel message that we previously 
+published for that call. Just in case that we want to change 
+trust and want to know if it is needed first. 
+
+=cut
+#-------------------------------------------------------
 # receive an old trust message for a call 
 sub get_old_trust {
 	my $o=shift; 
@@ -107,3 +211,14 @@ sub get_old_trust {
 }
 
 1; 
+=pod
+
+=head1 AUTHOR
+
+Hans Freitag <oe1src@oevsv.at>
+
+=head1 LICENCE
+
+GPL v3
+
+=cut
