@@ -85,7 +85,7 @@ sub new {
 		close PID; 
 		if ( $obj->get_pid != $$ ) { die "the pid in the file we wrote just now is not ours\n"; }
 		$obj->{daemonized}=1; 
-	}
+	} else { die "There is a pid file and it is not ours\n"; }
 	if ( $obj->{log} ) { 
 		close STDERR; 
 		open(STDERR, ">> ".$obj->{log}) or die "can't open logfile ".$obj->{log}." \n";	
