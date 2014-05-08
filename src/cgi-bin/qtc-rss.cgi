@@ -8,6 +8,22 @@ my $q = CGI::Simple->new;
 my @calls=$q->param("call"); 
 #@calls=("oe1gsu", "dm3da", "oe1src"); 
 
+sub telegram_item {
+	my $msg=shift; 
+	if ( $msg->type ne "telegram" ) { return; }
+	print '
+    <item>
+      <title>'.$q->escapeHTML($msg->telegram).'</title>
+      <description>from: '.$q->escapeHTML($msg->from).'  to: '.$q->escapeHTML($call).' '.$q->escapeHTML($msg->to).'</description>
+      <link>'.$callurl.'</link>
+      <author>'.$q->escapeHTML($msg->call).' ('.$q->escapeHTML($msg->call).')</author>
+      <guid isPermaLink="false">'.$q->escapeHTML($msg->filename).'</guid>
+      <pubDate>'.strftime($dateformat, gmtime($msg->telegram_date)).'</pubDate>
+    </item>
+';
+}
+
+
 my $type=$q->param("type"); 
 if ( ! $type ) { $type="new"; }
 if ( $type !~ /^new|all|sent$/ ) { die "unknown type"; }
@@ -43,24 +59,22 @@ print'  <channel>
     <pubDate>'.strftime($dateformat, gmtime(time)).'</pubDate>
 ';
 print '<atom:link href="'.$q->escapeHTML($q->url(-full=>1, -query=>1)).'" rel="self" type="application/rss+xml" />';
-foreach my $call (@calls) {
-$call=$qry->allowed_letters_for_call($call); 
-$callurl=$url."?call=".$q->url_encode($call);
 
-	foreach my $msg ($qry->list_telegrams($call, $type)) {
-		print '
-    <item>
-      <title>'.$q->escapeHTML($msg->telegram).'</title>
-      <description>from: '.$q->escapeHTML($msg->from).'  to: '.$q->escapeHTML($call).' '.$q->escapeHTML($msg->to).'</description>
-      <link>'.$callurl.'</link>
-      <author>'.$q->escapeHTML($msg->call).' ('.$q->escapeHTML($msg->call).')</author>
-      <guid isPermaLink="false">'.$q->escapeHTML($msg->filename).'</guid>
-      <pubDate>'.strftime($dateformat, gmtime($msg->telegram_date)).'</pubDate>
-    </item>
-';
-
+if ( $#calls == -1 ) { 
+	foreach my $msg ($qry->latest_changes(40)) { 
+		telegram_item($msg); 
+	} 
+} else {
+	foreach my $call (@calls) {
+	$call=$qry->allowed_letters_for_call($call); 
+	$callurl=$url."?call=".$q->url_encode($call);
+	
+		foreach my $msg ($qry->list_telegrams($call, $type)) {
+			telegram_item($msg); 
+		}
 	}
 }
+
 print '  </channel>
 ';
 
