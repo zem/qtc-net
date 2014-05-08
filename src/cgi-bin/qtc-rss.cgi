@@ -8,22 +8,6 @@ my $q = CGI::Simple->new;
 my @calls=$q->param("call"); 
 #@calls=("oe1gsu", "dm3da", "oe1src"); 
 
-sub telegram_item {
-	my $msg=shift; 
-	if ( $msg->type ne "telegram" ) { return; }
-	print '
-    <item>
-      <title>'.$q->escapeHTML($msg->telegram).'</title>
-      <description>from: '.$q->escapeHTML($msg->from).'  to: '.$q->escapeHTML($call).' '.$q->escapeHTML($msg->to).'</description>
-      <link>'.$callurl.'</link>
-      <author>'.$q->escapeHTML($msg->call).' ('.$q->escapeHTML($msg->call).')</author>
-      <guid isPermaLink="false">'.$q->escapeHTML($msg->filename).'</guid>
-      <pubDate>'.strftime($dateformat, gmtime($msg->telegram_date)).'</pubDate>
-    </item>
-';
-}
-
-
 my $type=$q->param("type"); 
 if ( ! $type ) { $type="new"; }
 if ( $type !~ /^new|all|sent$/ ) { die "unknown type"; }
@@ -45,6 +29,27 @@ if ( ! $path ) { $path=$ENV{HOME}."/.qtc"; }
 $qry=qtc::query->new(
 	path=>$path,
 );
+
+####################################################################################
+sub telegram_item {
+	my $msg=shift; 
+	if ( $msg->type ne "telegram" ) { return; }
+	my $call=$qry->allowed_letters_for_call($msg->to); 
+	my $callurl=$url."?call=".$q->url_encode($call);
+	
+	print '
+    <item>
+      <title>'.$q->escapeHTML($msg->telegram).'</title>
+      <description>from: '.$q->escapeHTML($msg->from).'  to: '.$q->escapeHTML($call).' '.$q->escapeHTML($msg->to).'</description>
+      <link>'.$callurl.'</link>
+      <author>'.$q->escapeHTML($msg->call).' ('.$q->escapeHTML($msg->call).')</author>
+      <guid isPermaLink="false">'.$q->escapeHTML($msg->filename).'</guid>
+      <pubDate>'.strftime($dateformat, gmtime($msg->telegram_date)).'</pubDate>
+    </item>
+';
+}
+#########################################################################################
+
 
 print '<?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
