@@ -150,7 +150,7 @@ sub keyring {
 
 	# we may have a public key here that we should handle at generation
 	if ( $msg->type eq "pubkey" ) {
-		#print STDERR "adding ".$msg->checksum." to keys\n"; 
+		#print STDERR $obj->ts_str." adding ".$msg->checksum." to keys\n"; 
 		push @keys, $msg; 
 	}
 	
@@ -163,7 +163,7 @@ sub keyring {
 			keys=>\@keys, 
 		);
 	}
-	#print STDERR " i am returning the ring now\n"; 
+	#print STDERR $obj->ts_str." i am returning the ring now\n"; 
 	return $obj->{keyring}->{$call};
 }
 
@@ -278,7 +278,7 @@ sub process_in {
 	foreach my $file ($obj->scan_dir($obj->{root}."/in", '.*\.qtc')){
 		if (( ! -e $obj->{root}."/out/".$file ) and ( ! -e $obj->{root}."/bad/".$file )) { 
 			$cnt++;
-			print STDERR "processing file $file\n"; 
+			print STDERR $obj->ts_str." processing file $file\n"; 
 			eval { 
 				$msg=qtc::msg->new(
 					filename=>$file, 
@@ -288,7 +288,7 @@ sub process_in {
 			};
 			if ( $@ ) { 
 				# an error occured
-				print STDERR $@; 
+				print STDERR $obj->ts_str." ".$@; 
 				link($obj->{root}."/in/".$file,  $obj->{root}."/bad/".$file) or die "yes really this link fail leads to death\n"; 
 			}
 		}
@@ -320,13 +320,16 @@ sub process_in_loop {
 		if ( $#files != $num ) {
 			$num=$#files; 
 			# something changed, we have to process
-			while ($obj->process_in()) { print STDERR "There may be more files, try another time\n" }
+			while ($obj->process_in()) { print STDERR $obj->ts_str." There may be more files, try another time\n" }
 		}
 		eval {
 			local $SIG{HUP}=sub { die "hup rcvd"; };
 			sleep 60;
 		}; 
-		if ( $@ ) { die $@ unless $@ =~ /^hup rcvd/; } 
+		if ( $@ ) { 
+			die $@ unless $@ =~ /^hup rcvd/;
+			print STDERR $obj->ts_str." Got a hup signal, will ware up immidiately\n"; 
+		} 
 	}
 }
 
@@ -685,7 +688,7 @@ sub remove_msg {
 	my $msg=shift; 
 	if ( $msg->type eq "telegram" ) { 
 		$obj->remove_telegram($msg); 
-		print STDERR "returning remove telegram\n";
+		print STDERR $obj->ts_str." returning remove telegram\n";
 		return; 
 	}
 	if ( $msg->type eq "qsp" ) { 
@@ -708,7 +711,7 @@ sub remove_msg {
 		$obj->remove_trust($msg); 
 		return; 
 	}
-	print STDERR $msg->type."is an unknown message type \n"; 
+	print STDERR $obj->ts_str." ".$msg->type."is an unknown message type \n"; 
 }
 
 #------------------------------------------------------------------------------------
@@ -819,9 +822,9 @@ sub import_operator {
 	my $oldop=$obj->query->operator($msg->call); 
 	if ( $oldop ) { 
 		if ( $oldop->record_date >= $msg->record_date ) { 
-			die "there is an old operator message newer than this one skip this\n"; 
+			die $obj->ts_str." there is an old operator message newer than this one skip this\n"; 
 		}
-		print STDERR "I first need to remove the old operator message ".$oldop->checksum."\n"; 
+		print STDERR $obj->ts_str." I first need to remove the old operator message ".$oldop->checksum."\n"; 
 		$obj->remove_operator($oldop); 
 	}
 	
@@ -847,13 +850,13 @@ sub import_operator {
 	# we need to go through each list $list is holding the listname
 	foreach my $list ($msg->set_of_lists) {
 		my $abs_link=$obj->{root}."/lists/".$obj->call2fname($list)."/".$msg->escaped_call;
-		print STDERR "list operations we need to link $abs_link\n"; 
+		print STDERR $obj->ts_str." list operations we need to link $abs_link\n"; 
 		if ( ! -e $abs_link ) {
-			print STDERR "the link does not exist so ensure_path\n"; 
+			print STDERR $obj->ts_str." the link does not exist so ensure_path\n"; 
 			$obj->ensure_path($obj->{root}."/lists/".$obj->call2fname($list)); 
-			print STDERR "path ".$obj->{root}."/lists/".$obj->call2fname($list)." ensured\n"; 
+			print STDERR $obj->ts_str." path ".$obj->{root}."/lists/".$obj->call2fname($list)." ensured\n"; 
 			symlink("../../call/".$msg->escaped_call, $abs_link) or die "4 failed to link to list \n"; 
-			print STDERR "linked "."../../call/".$msg->escaped_call." to ".$abs_link."\n"; 
+			print STDERR $obj->ts_str." linked "."../../call/".$msg->escaped_call." to ".$abs_link."\n"; 
 		}
 	}
 	

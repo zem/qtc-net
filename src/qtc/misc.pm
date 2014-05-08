@@ -28,6 +28,7 @@ code base.
 #-----------------------------------------------------------------------------------
 package qtc::misc; 
 use File::Basename; 
+use POSIX qw(strftime); 
 
 #------------------------------------------------------------------------------------
 =pod
@@ -279,7 +280,7 @@ sub allowed_letters_for_telegram {
 
 =head2 allowed_letters_for_call()
 
-my $callsign_text=$obj->allowed_letters_for_call($text); 
+ my $callsign_text=$obj->allowed_letters_for_call($text); 
 
 this does a lower case convertion and strips away any character that is not 
 allowed for callsigns. The new callsign text if any is then returned. 
@@ -299,6 +300,23 @@ sub allowed_letters_for_call {
 		if ($x=~/([a-z]|[0-9]|\/)/) { $t.=$x; } 
 	} 
 	return $t; 
+}
+
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 ts_str()
+
+ my $timestamp_string=$obj->ts_str(); 
+
+This method returns an ISO Timestamp as readable text in UTC. 
+Mainly for debugging output etc in the processor. 
+
+=cut
+#------------------------------------------------------------------------------------
+sub ts_str {
+	my $o=shift; 
+	return strftime("%Y-%m-%d %H:%M:%S UTC", gmtime(time));
 }
 
 1; 
