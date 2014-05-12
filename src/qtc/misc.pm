@@ -263,7 +263,14 @@ sub allowed_letters_for_telegram {
 	my $telegram=shift; 
 	
 	$telegram=lc($telegram); 
-	$telegram=~s/\t/\ /g; 
+	$telegram=~s/\t/\ /g;
+	# this set of regexes is to convert native language umlaute to something transferable
+	# if the length becomes longer than 300 it will stripped later
+	# right now only german umlaute are translated that way, but ther can be others. 
+	$telegram=~s/ä/ae/g;
+	$telegram=~s/ö/oe/g;
+	$telegram=~s/ü/ue/g;
+	$telegram=~s/ß/sz/g;
 	# There should be a working regex to stip any character not allowed from the call 
 	# I did not find one... 
 	my $t;
