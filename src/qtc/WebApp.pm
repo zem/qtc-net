@@ -1144,7 +1144,13 @@ sub mode_aliases_and_lists {
 	my @lists=$o->q->param("lists"); 
 
 	# get aliases and lists from this operator 
-	if ( ( $#aliases==-1 ) and ( $#lists==-1 ) ) { 
+	if ( 
+			( $#aliases==-1 ) and ( $#lists==-1 ) 
+			# we have to trust that save_changes deliveres us a complete 
+			# set of aliases, otherwise it would not be possible to delete the 
+			# last alias
+			and ( $o->q->param("save_changes") ne "really") 
+	) { 
 		my $op=$o->qtc_query->operator($o->q->param("publisher_call")); 
 		if ( $op ) {
 			@aliases=$op->set_of_aliases; 
