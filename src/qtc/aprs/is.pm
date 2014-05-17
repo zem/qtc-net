@@ -19,39 +19,66 @@ sub new {
 	
 	$obj->{sel} = IO::Select->new($obj->sock);	
 
+	if ( ! $obj->{filter} ) { $obj->{filter}="m/100 t/m"; }
+
 	return $obj; 
 }
 
 sub sock { return shift->{sock}; }
 sub sel { return shift->{sel}; }
 
+sub eventloop {
+	my $obj=shift; 
+
+	while (1) {
+		my @ready=$obj->sel->can_read(30);
+		# we only have one socket 
+		foreach my $sock ( @ready ) {
+			# max characters about 120 bytes
+			my $buf=''; 
+			$sock->recv($buf, 120);# or die "Cant read from socket $sock\n"; 
+			#print STDERR $buf; 
+			my $line=$obj->fetch_line($buf); 
+			if ( $line ) { $obj->process_line($line); }
+		}
+	}
+}
+
 sub fetch_line {
    my $obj=shift; 
-   my $sock=shift; 
-	# buffer mit recv() oder read lesen.... 
-   my $buf=$obj->{'buffer'}; 
+   my $buf=shift; 
+	# buffer wurre vorher mit recv oder read gelesen  
+   $obj->{buffer}.=$buf; 
+   $buf=$obj->{buffer}; 
 
-   my $index=index($buf, "\n"); 
+   my $index=index($buf, $crlf); 
 
    if ( $index==-1 ) { return; }
 
-   $obj->{'buffer'}=substr($buf, $index+1); 
+   $obj->{'buffer'}=substr($buf, $index+2); 
    
-   my $ret=substr($buf, 0, $index+1);
-   chomp($ret); 
+   my $ret=substr($buf, 0, $index);
    return $ret; 
 }
 
-sub set_filter {
+sub new_filter {
 	my $obj=shift; 
-	my $filterstr=shift; 
+	$obj->{filter}=shift;
+	$obj->send_filter; 
+}
 
+sub send_filter {
+	my $obj=shift; 
+	
+	print STDERR "Sent: "."filter ".$obj->{filter}."$crlf";
+	$obj->sock->send("filter ".$obj->{filter}."$crlf") or die "Cant send filter\n";
 }
 
 sub log_in {
 	my $obj=shift; 
 
-	$obj->sock->send("user ".$obj->{gatecall}." pass ".$obj->{passcode}." vers QTCNet_to_APRS_IS 0.0.1$crlf") or die "Cant send login data\n";
+	print STDERR "Sent: "."user ".$obj->{user}." pass ".$obj->{pass}." vers QTCNet_to_APRS_IS 0.0.1$crlf";
+	$obj->sock->send("user ".$obj->{user}." pass ".$obj->{pass}." vers QTCNet_to_APRS_IS 0.0.1$crlf") or die "Cant send login data\n";
 }
 
 sub process_line {
@@ -61,26 +88,26 @@ sub process_line {
 	if ( ! $obj->{login_verified} ) {
 		if ( $line =~ /^\# logresp .+ .+, .+ .+$/ ) {
 			# logresp logincall verifystatus, server servercall
-			print STDERR "Loginstatus $line"; 
-			my ( $hash, $logresp, $logincall, $verifystatus, $server, $servercall)=split(/(\s|,)+/, $line); 
+			print STDERR "RCVD Loginstatus: $line\n"; 
+			my ( $hash, $n1, $logresp, $n2,  $logincall, $n3, $verifystatus, $n4,  $server,  $n5, $servercall)=split(/(\s|,)+/, $line); 
 			if ( $verifystatus eq "verified" ) { 
 				$obj->{login_verified}=1;
-				$obj->set_filter; # TODO I will surely forget to adjust this finction call here 
+				$obj->send_filter; # TODO I will surely forget to adjust this function call here 
 			} else { 
-				die "Login was not verified $line"; 
+				die "Login was not verified $verifystatus -- $hash - $logresp - $logincall - $verifystatus\n"; 
 			}
 			return; 
 		}
 		if ( $line =~ /^\#\s+.+\s+.+$/ ) {
-			print STDERR "Server Identification $line"; 
+			print STDERR "RCVD Server Identification: $line\n"; 
 			$obj->log_in; 
 			return; 
 		}
 	}
 
-
-	print STDERR "Unknown line $line"; 
+	print STDERR "RCVD Unknown line: $line\n"; 
 }
+
 
 
 1; 
