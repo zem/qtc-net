@@ -4,6 +4,7 @@ use qtc::misc;
 @ISA=("qtc::misc");
 use IO::Socket;
 use IO::Select;
+use qtc::aprs::packet; 
 
 # we use this object global variable to be sure to use crlf on all plattforms
 our $crlf=pack("H*", "0D0A"); 
@@ -19,7 +20,8 @@ sub new {
 	
 	$obj->{sel} = IO::Select->new($obj->sock);	
 
-	if ( ! $obj->{filter} ) { $obj->{filter}="m/100 t/m"; }
+	#if ( ! $obj->{filter} ) { $obj->{filter}="r/4820.90N/1637.00E/1000 t/m"; }
+	if ( ! $obj->{filter} ) { $obj->{filter}="t/m"; }
 
 	return $obj; 
 }
@@ -75,8 +77,8 @@ sub new_filter {
 sub send_filter {
 	my $obj=shift; 
 	
-	print STDERR "Sent: "."filter ".$obj->{filter}."$crlf";
-	$obj->sock->send("filter ".$obj->{filter}."$crlf") or die "Cant send filter\n";
+	print STDERR "Sent: "."#filter ".$obj->{filter}."$crlf";
+	$obj->sock->send("#filter ".$obj->{filter}."$crlf") or die "Cant send filter\n";
 }
 
 sub log_in {
@@ -115,7 +117,14 @@ sub process_line {
 		return; 
 	}
 
-	print STDERR "RCVD Unknown line: $line\n"; 
+	eval {
+		my $pkg=qtc::aprs::packet->new(pkg=>$line); 	
+		$pkg->dump; 
+	};
+	if ( $@ ) {
+		print STDERR "Parsing failed: $@\n"; 
+		print STDERR "RCVD Unknown line: $line\n"; 
+	}
 }
 
 
