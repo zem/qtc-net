@@ -55,8 +55,8 @@ sub parse_pkg {
 
 	$idxfrom=index($pkg, ">");
 	$idxpath=index($pkg, ":");
-	if ( ! $idxfrom ) { die "This package does not seem to have a sender\n"; }
-	if ( ! $idxpath ) { die "This package does not seem to have a path\n"; }
+	if ( $idxfrom == -1 ) { die "This package does not seem to have a sender\n"; }
+	if ( $idxpath == -1 ) { die "This package does not seem to have a path\n"; }
 
 	my $from=substr($pkg, 0, $idxfrom); 
 	#print STDERR "Packet from ".$from."\n"; 
@@ -79,7 +79,7 @@ sub parse_msg_payload {
 	my $obj=shift; 
 	my $buf=$obj->{payload}; 
 	$idxto=index($buf, ":");
-	if ( ! $idxto ) { die "That message should have a to call nothing there\n"; }
+	if ( $idxto == -1 ) { die "That message should have a to call nothing there\n"; }
 	
 	my $to=substr($buf, 0, $idxto); 
 	$to=~s/\s+$//g; 
@@ -97,7 +97,7 @@ sub parse_msg_payload {
 		$obj->{msg}=$msg; 
 	} else {
 		my $idxchk=index($msg, "{");
-		if ( ! $idxchk ) { 
+		if ( $idxchk == -1 ) { 
 			# message has no acknowledge 
 			return; 
 		}
