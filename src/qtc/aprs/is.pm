@@ -35,8 +35,13 @@ sub eventloop {
 		# we only have one socket 
 		foreach my $sock ( @ready ) {
 			# max characters about 120 bytes
-			my $buf=''; 
-			$sock->recv($buf, 120);# or die "Cant read from socket $sock\n"; 
+			my $buf='';
+			if ( ! $sock->connected() ){ 
+				 die "Socket $sock not connected connection terminated\n"; 
+			}
+			if ( ! defined($sock->recv($buf, 120))) { 
+				 die "Can't read from $sock\n"; 
+			}
 			#print STDERR $buf; 
 			my $line=$obj->fetch_line($buf); 
 			if ( $line ) { $obj->process_line($line); }
@@ -103,6 +108,11 @@ sub process_line {
 			$obj->log_in; 
 			return; 
 		}
+	}
+
+	if ( $line =~ /^\#.+/ ) {
+		print STDERR "RCVD Server Info: $line\n"; 
+		return; 
 	}
 
 	print STDERR "RCVD Unknown line: $line\n"; 
