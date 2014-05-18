@@ -24,6 +24,8 @@ sub new {
    	path=>$obj->{path},
 	); 
 
+	if ( ! $obj->{user} ) { $obj->{user}=$obj->call_qtc2aprs($obj->publish->{call}); }
+
 	$obj->{sock} = IO::Socket::INET->new(
 		PeerAddr=>$obj->{PeerAddr},
 		Proto    => 'tcp',
@@ -43,6 +45,8 @@ sub new {
 
 sub sock { return shift->{sock}; }
 sub sel { return shift->{sel}; }
+sub query { return shift->{query}; }
+sub publish { return shift->{publish}; }
 
 sub eventloop {
 	my $obj=shift; 
@@ -149,14 +153,81 @@ sub process_line {
 	} elsif ( $pkg->type eq "ack" ) { 
 		print STDERR "Ack:\n\tfrom: ".$pkg->from."\tto: ".$pkg->to."\n\tacked msg: ".$pkg->msg."\n";
 		print STDERR "Oh and path is: ".join(",", @{$pkg->path})."\n\n"; 
+		$obj->process_ack($pkg); 
 	} else {
 		print STDERR "Seen call: ".$pkg->from."\n"; 
-		$obj->look_fer_telegram($pkg->from); 
+		$obj->look_for_telegrams($pkg->from); 
 	}
 }
 
 
+sub look_for_telegrams {
+	my $obj=shift; 
+	my $call=shift; 
+	$call=$obj->call_aprs2qtc($call); 
+	
+	my @telegrams=$obj->query->list_telegrams($call); 
+	delete $obj->{telegrams}->{$call};
+	foreach my $telegram (@telegrams) {
+		$obj->deliver_telegram_to_call($call, $telegram); 
+	}
+}
 
+our $msg_length=67; 
+sub deliver_telegram_to_call {
+	my $obj=shift; 
+	my $call=shift;
+	my $telegram=shift;
+	
+	$obj->{telegrams}->{$call}->{$telegram->checksum}=$telegram;
+
+	my $chk=$telegram->checksum; 
+	my $text=$telegram->telegram;
+	
+	my $terismore=1; 
+	while ($therismore) {
+		my $part=substr($text, 0, 64);
+		if ( $part =~ /^ack/ ) { $part=".".$part; }
+		$text=substr($text, 64);
+		my $ack=$telegram->hr_refnum($chk); 
+		$chk=substr($chk, 8);
+		my $aprs=qtc::aprs::package->new(
+			from=>$obj->call_qtc2aprs($telegram->from),
+			to=>$obj->call_qtc2aprs($telegram->to),
+			call=>$obj->{user},
+			type=>":",
+			msg=>$part,
+			ack=>$ack,
+		);
+		print STDERR "I am going to sent ".$aprs->generate_msg."\n"; 
+		$obj->sock->send($aprs->generate_msg.$crlf); 
+		
+		# sorry for this complex structure it ist 
+		#
+		# TO - FROM - CHECKSUM - ACK
+		#
+		$obj->{sent}->{$aprs->to}->{$aprs->from}->{$telegram->checksum}->{$aprs->ack}=$aprs; 
+	}
+}
+
+sub process_ack {	
+	my $obj=shift; 
+	my $aprs=shift;
+ 	
+	if ( ! $obj->{sent}->{$aprs->from}->{$aprs->to} ) { return; }
+	
+	foreach my $chk ( keys %{$obj->{sent}->{$aprs->from}->{$aprs->to}} ) {
+		delete $obj->{sent}->{$aprs->from}->{$aprs->to}->{$chk}->{$aprs->ack};
+		my @anz=keys %{$obj->{sent}->{$aprs->from}->{$aprs->to}->{$chk}};
+		if ( $#anz == -1  ) { 
+			print STDERR "oh the package $chk is done send qsp\n"; 
+			$obj->publish->qsp(
+				to=>$obj->call_aprs2qtc($aprs->from), 
+				msg=>$obj->{telegrams}->{$aprs->from}->{$chk} 
+			); 
+		}
+	}
+}
 
 sub call_qtc2aprs {
 	my $obj=shift; 
@@ -173,8 +244,6 @@ sub call_aprs2qtc {
 	$call=~s/-/\/\//g; 
 	return $call; 
 }
-
-
 
 
 1; 
