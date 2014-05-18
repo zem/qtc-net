@@ -138,6 +138,8 @@ sub generate_msg {
 	my $obj=shift; 
 	if ( ( $obj->type eq ":" ) and ( $obj->ack ) ) {
 		return $obj->from.">".join(",", @{$obj->path})."::".$obj->to.":".$obj->msg."{".$obj->ack."}"; 
+	} elsif ( $obj->type eq ":" ) {
+		return $obj->from.">".join(",", @{$obj->path})."::".$obj->to.":".$obj->msg; 
 	}
 }
 

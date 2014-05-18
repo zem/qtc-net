@@ -150,6 +150,9 @@ sub process_line {
 		print STDERR "Message:\n\tfrom: ".$pkg->from."\n\tto: ".$pkg->to."\n\tack: ".$pkg->ack."\n\ttext: ".$pkg->msg."\n";
 		print STDERR "I Would send back: ".$pkg->create_ack."\n"; 
 		print STDERR "Oh and path is: ".join(",", @{$pkg->path})."\n\n"; 
+		$obj->aprs_msg_to_qtc($pkg); 
+	} elsif ( ( $pkg->type eq ":" ) and ( $pkg->to eq "APQTC1" )) {
+		$obj->process_apgtc1($pkg);   
 	} elsif ( $pkg->type eq "ack" ) { 
 		print STDERR "Ack:\n\tfrom: ".$pkg->from."\tto: ".$pkg->to."\n\tacked msg: ".$pkg->msg."\n";
 		print STDERR "Oh and path is: ".join(",", @{$pkg->path})."\n\n"; 
@@ -160,6 +163,52 @@ sub process_line {
 	}
 }
 
+sub deliver_telegrams {
+	my $obj=shift; 
+	my $t=time; 
+	foreach my $id (keys %{$obj->{spool}}){
+		if ( ($t-$obj->{spool}->{$id}->telegram_date) >= 60 ) {
+			$obj->publish->publish_telegram($obj->{spool}->{$id});
+			print STDERR "Sending ".$obj->{spoolack}->{$id}->create_ack."\n"; 
+			$obj->sock->send($obj->{spoolack}->{$id}->create_ack);
+			delete $obj->{spool}->{$id};
+			delete $obj->{spoolack}->{$id};
+		}
+	}
+}
+
+sub process_apqtc1 {
+	my $obj=shift;
+	my $aprs=shift; 
+	my ($id, $chk) = split(" ", $aprs->msg);
+	if ( 
+		$obj->chksum_is_lt(
+			$obj->{spool}->{$id}->checksum, 
+			$chk
+		)
+	) {
+		# if our checksum is lower than the received this means we drop our delivery
+		# maybe as a feature for later versions we could check if the received telegram 
+		# really exists. 
+		delete $obj->{spool}->{$id};
+		delete $obj->{spoolack}->{$id};
+	}	
+}
+
+sub chksum_is_lt {
+	my $obj=shift;
+	my $chk1=shift; 
+	my $chk2=shift; 
+	
+	while ( $chk1 ) {
+		my $t1=unpack("I>*", pack("H*", substr($chk1, 0, 2)); 
+		my $t2=unpack("I>*", pack("H*", substr($chk2, 0, 2)); 
+		if ( $t1 > $t2 ) { return; }
+		$chk1=substr($chk1, 2); 
+		$chk2=substr($chk2, 2); 
+	}
+	return 1; 
+}
 
 sub look_for_telegrams {
 	my $obj=shift; 
@@ -167,7 +216,7 @@ sub look_for_telegrams {
 	$call=$obj->call_aprs2qtc($call); 
 	
 	my @telegrams=$obj->query->list_telegrams($call); 
-	delete $obj->{telegrams}->{$call};
+	$obj->{telegrams}->{$call}={};
 	foreach my $telegram (@telegrams) {
 		$obj->deliver_telegram_to_call($call, $telegram); 
 	}
@@ -213,9 +262,20 @@ sub deliver_telegram_to_call {
 sub process_ack {	
 	my $obj=shift; 
 	my $aprs=shift;
- 	
-	if ( ! $obj->{sent}->{$aprs->from}->{$aprs->to} ) { return; }
 	
+	# 1st delete acked messages from spool 	
+	my $id=$aprs->to."_".$aprs->from."_".$aprs->msg; 
+	if ( $obj->{spool}->{$id} ) { 
+		delete $obj->{spool}->{$id}; 
+		delete $obj->{spoolack}->{$id}; 
+	}
+ 	
+	# 2nd return if we dont wait for any ack
+	if ( ! $obj->{sent}->{$aprs->from}->{$aprs->to} ) { 
+		return; 
+	}
+	
+	# 3rd resolve the acks for aprs messaged we sent 
 	foreach my $chk ( keys %{$obj->{sent}->{$aprs->from}->{$aprs->to}} ) {
 		delete $obj->{sent}->{$aprs->from}->{$aprs->to}->{$chk}->{$aprs->ack};
 		my @anz=keys %{$obj->{sent}->{$aprs->from}->{$aprs->to}->{$chk}};
@@ -245,5 +305,37 @@ sub call_aprs2qtc {
 	return $call; 
 }
 
+sub aprs_msg_to_qtc {
+	my $obj=shift; 
+	my $aprs=shift; 
+	
+	# check if the callsign is active and has an operator
+	my $call=$obj->call_aprs2qtc($aprs->to);
+
+	if ( ! $obj->query->operator($call) ) { 
+		print STDERR "This operator does not have an operator message, we cant continue"; 
+		return; 
+	}
+	
+	my $telegram=$obj->create_telegram(
+		to=>$obj->allowed_letters_for_call($call), 
+		from=>$obj->allowed_letters_for_call($obj->call_aprs2qtc($aprs->from)),
+		telegram=>$obj->allowed_letters_for_telegram($aprs->msg),
+	);
+
+	my $id=$aprs->from."_".$aprs->to."_".$aprs->ack; 
+
+	$obj->{spool}->{$id}=$telegram; 
+	$obj->{spoolack}->{$id}=$aprs; 
+	
+	my $gateinfo=qtc::aprs::packet->new(
+		from=>$obj->{user}, 
+		to=>"APQTC1",
+		call=>$obj->{user},
+		type=>":",
+		msg=>"$id ".$telegram->checksum,
+	); 
+	$obj->sock->send($gateinfo->generate_msg); 
+}
 
 1; 

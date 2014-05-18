@@ -163,6 +163,29 @@ parameters:
 sub telegram {
 	my $obj=shift; 
 	my %args=(@_); 
+	$obj->publish_telegram(
+		$obj->create_telegram(%args)
+	); 
+}
+
+#-------------------------------------------------------
+=pod
+
+=head2 create_telegram(parameter=>"value", ...)
+
+split of telegram() method into steps 
+creates a telegram and returns it. 
+
+parameters: 
+ to=>$to_call,
+ from=>$from_call,
+ telegram=>$telegram_text,
+
+=cut
+#-------------------------------------------------------
+sub create_telegram {
+	my $obj=shift; 
+	my %args=(@_); 
 	my $msg=qtc::msg->new(
 		type=>"telegram",
 		call=>$obj->{call},
@@ -173,9 +196,31 @@ sub telegram {
 	);
 	$obj->sig->sign($msg); 
 
+	return $msg; 
+}
+
+#-------------------------------------------------------
+=pod
+
+=head2 publish_telegram($msg)
+
+split up of the telegram() method in steps 
+publishes the telegram
+
+parameters: 
+ $msg   a qtc::msg::object,
+
+=cut
+#-------------------------------------------------------
+sub publish_telegram {
+	my $obj=shift; 
+	my $msg=shift; 
+
 	$msg->to_filesystem($obj->{path}."/in");
 	$obj->wakeup_processor; 
 }
+
+
 
 #-------------------------------------------------------
 =pod
