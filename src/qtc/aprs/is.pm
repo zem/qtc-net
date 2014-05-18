@@ -5,6 +5,8 @@ use qtc::misc;
 use IO::Socket;
 use IO::Select;
 use qtc::aprs::packet; 
+use qtc::query; 
+use qtc::publish; 
 
 # we use this object global variable to be sure to use crlf on all plattforms
 our $crlf=pack("H*", "0D0A"); 
@@ -20,8 +22,10 @@ sub new {
 	
 	$obj->{sel} = IO::Select->new($obj->sock);	
 
-	#if ( ! $obj->{filter} ) { $obj->{filter}="r/4820.90N/1637.00E/1000 t/m"; }
-	if ( ! $obj->{filter} ) { $obj->{filter}="t/m"; }
+	#if ( ! $obj->{filter} ) { $obj->{filter}="r/48.2090N/16.3700E/500 t/m"; }
+	if ( ! $obj->{filter} ) { $obj->{filter}="r/48.2090/16.3700/500 t/m"; }
+	#if ( ! $obj->{filter} ) { $obj->{filter}="r/48.2090/16.3700/30000 t/m"; }
+	#if ( ! $obj->{filter} ) { $obj->{filter}="t/m"; }
 
 	return $obj; 
 }
@@ -117,16 +121,27 @@ sub process_line {
 		return; 
 	}
 
+	my $pkg; 
 	eval {
-		my $pkg=qtc::aprs::packet->new(pkg=>$line); 	
-		$pkg->dump; 
+		$pkg=qtc::aprs::packet->new(pkg=>$line, call=>$obj->{user}); 	
+		#$pkg->dump; 
 	};
 	if ( $@ ) {
 		print STDERR "Parsing failed: $@\n"; 
 		print STDERR "RCVD Unknown line: $line\n"; 
+		return; 
 	}
+	if (( $pkg->type eq ":" ) and ( $pkg->ack ))  {
+		print STDERR "Message:\n\tfrom: ".$pkg->from."\n\tto: ".$pkg->to."\n\tack: ".$pkg->ack."\n\ttext: ".$pkg->msg."\n";
+		print STDERR "I Would send back: ".$pkg->create_ack."\n"; 
+		print STDERR "Oh and path is: ".join(",", @{$pkg->path})."\n\n"; 
+	} elsif ( $pkg->type eq "ack" ) { 
+		print STDERR "Ack:\n\tfrom: ".$pkg->from."\tto: ".$pkg->to."\n\tacked msg: ".$pkg->msg."\n";
+		print STDERR "Oh and path is: ".join(",", @{$pkg->path})."\n\n"; 
+	} else {
+		print STDERR "Seen call: ".$pkg->from."\n"; 
+	}
+	
 }
-
-
 
 1; 

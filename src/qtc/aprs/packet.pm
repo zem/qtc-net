@@ -8,7 +8,10 @@ sub new {
 	my $class=shift; 
 	my $obj=$class->SUPER::new(@_); 
 
-	if ( ! $obj->{path} ) { $obj->{path}=["APX200", "WIDE2-2"]; }
+	if ( ! $obj->{call} ) { die "I need a call to be able to create a reply path\n"; }
+	
+	if ( ! $obj->{reply_path} ) { $obj->{reply_path}=[$obj->call, "APQTC1", "WIDE-2"]; }
+	if ( ! $obj->{path} ) { $obj->{path}=[$obj->call, "APQTC1", "WIDE2-2"]; }
 
 	if ( $obj->{pkg} ) { $obj->parse_pkg; } 
 	
@@ -60,6 +63,7 @@ sub parse_pkg {
 
 	my $from=substr($pkg, 0, $idxfrom); 
 	#print STDERR "Packet from ".$from."\n"; 
+	$obj->{from}=$from;
 	my @path=split(",", substr($pkg, $idxfrom+1, $idxpath-$idxfrom-1)); 
 	$obj->{path}=\@path;
 	#print STDERR "via path ".join("   ", @path)."\n"; 
@@ -84,7 +88,7 @@ sub parse_msg_payload {
 	my $to=substr($buf, 0, $idxto); 
 	$to=~s/\s+$//g; 
 	$obj->{to}=$to;
-	print STDERR "Found to: $to to $idxto\n"; 
+	#print STDERR "Found to: $to to $idxto\n"; 
 
 	my $msg=substr($buf, $idxto+1); 
 
@@ -102,6 +106,7 @@ sub parse_msg_payload {
 			return; 
 		}
 		my $ack=substr($msg, $idxchk+1); 
+		$ack =~ s/\}.*$//g; 
 		$msg=substr($msg, 0, $idxchk); 
 		$obj->{ack}=$ack; 
 		$obj->{msg}=$msg; 
@@ -111,6 +116,29 @@ sub parse_msg_payload {
 sub dump {
 	my $obj=shift; 
 	print STDERR Dumper($obj); 
+}
+
+our $AUTOLOAD; 
+sub AUTOLOAD {
+	my $obj=shift; 
+	my $dat=shift; 
+	my $method=$AUTOLOAD =~ s/.*:://r; 
+	if ( $dat ) { $obj->{$method}=$dat; }
+	return $obj->{$method};
+}
+
+sub create_ack {
+	my $obj=shift; 
+	if ( ( $obj->type eq ":" ) and ( $obj->ack ) ) {
+		return $obj->to.">".join(",", @{$obj->reply_path})."::".$obj->from.":ack{".$obj->ack."}"; 
+	}
+}
+
+sub generate_msg {
+	my $obj=shift; 
+	if ( ( $obj->type eq ":" ) and ( $obj->ack ) ) {
+		return $obj->from.">".join(",", @{$obj->path})."::".$obj->to.":".$obj->msg."{".$obj->ack."}"; 
+	}
 }
 
 1;
