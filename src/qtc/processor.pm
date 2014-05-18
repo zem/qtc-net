@@ -596,6 +596,8 @@ sub import_pubkey {
 	my $msg=shift; 
 	$obj->verify_signature($msg);	
 	
+	print STDERR "Message Signature Check is done\n"; 
+	
 	# check if there are any revokes for this key
 	my @revokes=$obj->scan_dir(
 		$obj->{root}."/call/".$msg->escaped_call."/revoke",
@@ -611,6 +613,8 @@ sub import_pubkey {
 		}
 	}
 	
+	print STDERR "check for revokes of this key passed\n"; 
+
 	#this block removes old keys with the same signature from the repo
 	my @oldversions=$obj->scan_dir(
 		$obj->{root}."/call/".$msg->escaped_call."/pubkey",
@@ -619,7 +623,7 @@ sub import_pubkey {
 	foreach my $oldversion (@oldversions) {
 		my $oldmsg=qtc::msg->new(
 			path=>$obj->{root}."/call/".$msg->escaped_call."/pubkey",
-			filename=>$oldmsg,
+			filename=>$oldversion,
 		);
 		if (
 			( $msg->key_id eq $oldmsg->key_id ) 
@@ -634,8 +638,12 @@ sub import_pubkey {
 		}
 	}
 	
+	print STDERR "older keyversions done\n"; 
+
 	$msg->link_to_path($obj->{root}."/call/".$msg->escaped_call."/pubkey");
 	$msg->link_to_path($obj->{root}."/out");
+
+	print STDERR "key linked to target \n"; 
 
 	# keyring cache must be cleared now 
 	$obj->keyring_clear($msg->call); 
