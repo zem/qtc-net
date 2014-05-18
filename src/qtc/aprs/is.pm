@@ -15,6 +15,15 @@ sub new {
 	my $class=shift; 
 	my $obj=$class->SUPER::new(@_); 
 
+	$obj->{publish}=qtc::publish->new(
+   	path=>$obj->{path},
+   	privpath=>$obj->{privpath},
+	); 
+	
+	$obj->{query}=qtc::query->new(
+   	path=>$obj->{path},
+	); 
+
 	$obj->{sock} = IO::Socket::INET->new(
 		PeerAddr=>$obj->{PeerAddr},
 		Proto    => 'tcp',
@@ -26,6 +35,8 @@ sub new {
 	if ( ! $obj->{filter} ) { $obj->{filter}="r/48.2090/16.3700/500 t/m"; }
 	#if ( ! $obj->{filter} ) { $obj->{filter}="r/48.2090/16.3700/30000 t/m"; }
 	#if ( ! $obj->{filter} ) { $obj->{filter}="t/m"; }
+
+
 
 	return $obj; 
 }
@@ -140,8 +151,30 @@ sub process_line {
 		print STDERR "Oh and path is: ".join(",", @{$pkg->path})."\n\n"; 
 	} else {
 		print STDERR "Seen call: ".$pkg->from."\n"; 
+		$obj->look_fer_telegram($pkg->from); 
 	}
-	
 }
+
+
+
+
+sub call_qtc2aprs {
+	my $obj=shift; 
+	my $call=shift; 
+	$call=uc($call); 
+	$call=~s/\/\//-/g; 
+	return $call; 
+}
+
+sub call_aprs2qtc {
+	my $obj=shift; 
+	my $call=shift; 
+	$call=lc($call); 
+	$call=~s/-/\/\//g; 
+	return $call; 
+}
+
+
+
 
 1; 
