@@ -275,7 +275,7 @@ sub process_in {
 	$obj->ensure_path($obj->{root}."/in"); 
 
 	my $cnt=0; 
-	foreach my $file ($obj->scan_dir($obj->{root}."/in", '.*\.qtc')){
+	foreach my $file ($obj->scan_dir($obj->{root}."/in", '.*\.qtc$')){
 		if (( ! -e $obj->{root}."/out/".$file ) and ( ! -e $obj->{root}."/bad/".$file )) { 
 			$cnt++;
 			print STDERR $obj->ts_str." processing file $file\n"; 
