@@ -342,8 +342,9 @@ sub aprs_msg_to_qtc {
 	
 	# check if the callsign is active and has an operator
 	my $call=$obj->call_aprs2qtc($aprs->to);
+	my $from=$obj->call_aprs2qtc($aprs->from);
 
-	if ( ! $obj->query->operator($call) ) { 
+	if ( ! $obj->query->operator($from) ) { 
 		print STDERR "This operator does not have an operator message, we cant continue\n"; 
 		return; 
 	}
