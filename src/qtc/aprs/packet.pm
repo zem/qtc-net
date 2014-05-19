@@ -10,8 +10,8 @@ sub new {
 
 	if ( ! $obj->{call} ) { die "I need a call to be able to create a reply path\n"; }
 	
-	if ( ! $obj->{reply_path} ) { $obj->{reply_path}=[$obj->call, "APQTC1", "WIDE-2"]; }
-	if ( ! $obj->{path} ) { $obj->{path}=[$obj->call, "APQTC1", "WIDE2-2"]; }
+	if ( ! $obj->{reply_path} ) { $obj->{reply_path}=["APQTC1", "WIDE-2"]; }
+	if ( ! $obj->{path} ) { $obj->{path}=["APQTC1", "WIDE2-2"]; }
 
 	if ( $obj->{pkg} ) { $obj->parse_pkg; } 
 	
@@ -96,7 +96,7 @@ sub parse_msg_payload {
 	
 	if (substr($msg, 0, 3) eq 'ack' ) {
 		$msg =~ s/^ack\{*//g; 
-		$msg =~ s/\}.*$//g; 
+		#$msg =~ s/\}.*$//g; 
 		$obj->{type}="ack"; 
 		$obj->{msg}=$msg; 
 	} else {
@@ -106,7 +106,7 @@ sub parse_msg_payload {
 			return; 
 		}
 		my $ack=substr($msg, $idxchk+1); 
-		$ack =~ s/\}.*$//g; 
+		#$ack =~ s/\}.*$//g; 
 		$msg=substr($msg, 0, $idxchk); 
 		$obj->{ack}=$ack; 
 		$obj->{msg}=$msg; 
@@ -130,16 +130,23 @@ sub AUTOLOAD {
 sub create_ack {
 	my $obj=shift; 
 	if ( ( $obj->type eq ":" ) and ( $obj->ack ) ) {
-		return $obj->to.">".join(",", @{$obj->reply_path})."::".$obj->from.":ack{".$obj->ack."}"; 
+		return $obj->to.">".join(",", @{$obj->reply_path})."::".$obj->fillcall($obj->from).":ack".$obj->ack.""; 
 	}
+}
+
+sub fillcall {
+	my $obj=shift;
+	my $call=shift;  
+	while ( length($call)<9 ) { $call.=" "; }
+	return $call; 
 }
 
 sub generate_msg {
 	my $obj=shift; 
 	if ( ( $obj->type eq ":" ) and ( $obj->ack ) ) {
-		return $obj->from.">".join(",", @{$obj->path})."::".$obj->to.":".$obj->msg."{".$obj->ack."}"; 
+		return $obj->from.">".join(",", @{$obj->path})."::".$obj->fillcall($obj->to).":".$obj->msg."{".$obj->ack.""; 
 	} elsif ( $obj->type eq ":" ) {
-		return $obj->from.">".join(",", @{$obj->path})."::".$obj->to.":".$obj->msg; 
+		return $obj->from.">".join(",", @{$obj->path})."::".$obj->fillcall($obj->to).":".$obj->msg; 
 	}
 }
 

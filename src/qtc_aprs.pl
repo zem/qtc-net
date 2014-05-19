@@ -4,8 +4,8 @@ use qtc::aprs::is;
 
 my $path=$ENV{QTC_ROOT}; 
 if ( ! $path ) { $path=$ENV{HOME}."/.qtc"; }
-my $user="NOCALL"; 
-my $pass="1337"; 
+my $user; # nocall
+my $pass; # 1337
 my $peer="euro.aprs2.net:14580";
 my $filter="r/48.2090/16.3700/500 t/m";
 
@@ -50,7 +50,7 @@ my $is=qtc::aprs::is->new(
 	user=>$user,
 	pass=>$pass,
 	filter=>$filter,
-	path=>$path;
+	path=>$path,
 ); 
 
 $is->eventloop; 
