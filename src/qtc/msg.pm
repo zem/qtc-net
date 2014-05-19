@@ -699,7 +699,7 @@ sub to_filesystem {
 	open(WRITE, "> ".$path."/.".$tmpfile) or die "cant open $path/$filename\n"; 
 	print WRITE pack("H*", $obj->as_hex) or die "Can't write data to disk\n"; 
 	close(WRITE); 
-	link($path."/.".$tmpfile, $path."/".$filename) or die "Can't link to path\n"; 
+	link($path."/.".$tmpfile, $path."/".$filename) or die "Can't link to path ".$path."/".$filename."\n"; 
 	unlink($path."/.".$tmpfile) or die "Can't unlink tmpfile, this should never happen\n"; 
 }
 
