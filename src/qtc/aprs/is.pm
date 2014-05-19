@@ -150,7 +150,7 @@ sub process_line {
 	if ( ( $pkg->type eq ":" ) and ( $pkg->to eq "APQTCCHK" )) {
 		print STDERR "APQTCCHK:\n\tfrom: ".$pkg->from."\n\tto: ".$pkg->to."\n\ttext: ".$pkg->msg."\n";
 		$obj->process_apqtcchk($pkg);   
-	} elsif (( $pkg->type eq ":" ) and ( $pkg->ack ))  {
+	} elsif (( $pkg->type eq ":" ) and ( $pkg->ack )) {
 		print STDERR "Message:\n\tfrom: ".$pkg->from."\n\tto: ".$pkg->to."\n\tack: ".$pkg->ack."\n\ttext: ".$pkg->msg."\n";
 		print STDERR "I Would send back: ".$pkg->create_ack."\n"; 
 		print STDERR "Oh and path is: ".join(",", @{$pkg->path})."\n\n"; 

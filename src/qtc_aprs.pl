@@ -45,6 +45,8 @@ while ($_=shift(@ARGV)) {
 	}
 }
 
+while(1){
+eval {
 my $is=qtc::aprs::is->new(
 	PeerAddr=>$peer,
 	user=>$user,
@@ -54,3 +56,9 @@ my $is=qtc::aprs::is->new(
 ); 
 
 $is->eventloop; 
+}; 
+if ( $@ ) { print STDERR $@; } 
+sleep 10; 
+print STDERR "-----------------------------------------------------------------------\n"
+print STDERR "reconnecting\n"
+}
