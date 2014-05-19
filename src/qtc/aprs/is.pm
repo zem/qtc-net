@@ -152,9 +152,9 @@ sub process_line {
 		print STDERR "I Would send back: ".$pkg->create_ack."\n"; 
 		print STDERR "Oh and path is: ".join(",", @{$pkg->path})."\n\n"; 
 		$obj->aprs_msg_to_qtc($pkg); 
-	} elsif ( ( $pkg->type eq ":" ) and ( $pkg->to eq "APQTC1" )) {
-		print STDERR "APQTC1:\n\tfrom: ".$pkg->from."\n\tto: ".$pkg->to."\n\ttext: ".$pkg->msg."\n";
-		$obj->process_apgtc1($pkg);   
+	} elsif ( ( $pkg->type eq ":" ) and ( $pkg->to eq "APQTCCHK" )) {
+		print STDERR "APQTCCHK:\n\tfrom: ".$pkg->from."\n\tto: ".$pkg->to."\n\ttext: ".$pkg->msg."\n";
+		$obj->process_apgtcchk($pkg);   
 	} elsif ( $pkg->type eq "ack" ) { 
 		print STDERR "Ack:\n\tfrom: ".$pkg->from."\tto: ".$pkg->to."\n\tacked msg: ".$pkg->msg."\n";
 		print STDERR "Oh and path is: ".join(",", @{$pkg->path})."\n\n"; 
@@ -180,7 +180,7 @@ sub deliver_telegrams {
 	}
 }
 
-sub process_apqtc1 {
+sub process_apqtcchk {
 	my $obj=shift;
 	my $aprs=shift; 
 	my ($id, $chk) = split(" ", $aprs->msg);
@@ -353,7 +353,7 @@ sub aprs_msg_to_qtc {
 	
 	my $gateinfo=qtc::aprs::packet->new(
 		from=>$obj->{user}, 
-		to=>"APQTC1",
+		to=>"APQTCCHK",
 		call=>$obj->{user},
 		type=>":",
 		msg=>"$id ".substr($telegram->checksum, 0, 32),
