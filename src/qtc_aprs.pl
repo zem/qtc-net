@@ -7,7 +7,7 @@ if ( ! $path ) { $path=$ENV{HOME}."/.qtc"; }
 my $user; # nocall
 my $pass; # 1337
 my $peer="euro.aprs2.net:14580";
-my $filter="r/48.2090/16.3700/500 t/m";
+my $filter="r/48.2090/16.3700/1000 t/m";
 
 while ($_=shift(@ARGV)) {
 	if ($_ eq  "-u") {
@@ -53,6 +53,7 @@ my $is=qtc::aprs::is->new(
 	pass=>$pass,
 	filter=>$filter,
 	path=>$path,
+	privpath=>$privpath,
 ); 
 
 $is->eventloop; 
