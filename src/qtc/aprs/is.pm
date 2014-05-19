@@ -147,14 +147,14 @@ sub process_line {
 		print STDERR "RCVD Unknown line: $line\n"; 
 		return; 
 	}
-	if (( $pkg->type eq ":" ) and ( $pkg->ack ))  {
+	if ( ( $pkg->type eq ":" ) and ( $pkg->to eq "APQTCCHK" )) {
+		print STDERR "APQTCCHK:\n\tfrom: ".$pkg->from."\n\tto: ".$pkg->to."\n\ttext: ".$pkg->msg."\n";
+		$obj->process_apqtcchk($pkg);   
+	} elsif (( $pkg->type eq ":" ) and ( $pkg->ack ))  {
 		print STDERR "Message:\n\tfrom: ".$pkg->from."\n\tto: ".$pkg->to."\n\tack: ".$pkg->ack."\n\ttext: ".$pkg->msg."\n";
 		print STDERR "I Would send back: ".$pkg->create_ack."\n"; 
 		print STDERR "Oh and path is: ".join(",", @{$pkg->path})."\n\n"; 
 		$obj->aprs_msg_to_qtc($pkg); 
-	} elsif ( ( $pkg->type eq ":" ) and ( $pkg->to eq "APQTCCHK" )) {
-		print STDERR "APQTCCHK:\n\tfrom: ".$pkg->from."\n\tto: ".$pkg->to."\n\ttext: ".$pkg->msg."\n";
-		$obj->process_apgtcchk($pkg);   
 	} elsif ( $pkg->type eq "ack" ) { 
 		print STDERR "Ack:\n\tfrom: ".$pkg->from."\tto: ".$pkg->to."\n\tacked msg: ".$pkg->msg."\n";
 		print STDERR "Oh and path is: ".join(",", @{$pkg->path})."\n\n"; 
@@ -184,6 +184,10 @@ sub process_apqtcchk {
 	my $obj=shift;
 	my $aprs=shift; 
 	my ($id, $chk) = split(" ", $aprs->msg);
+	if ( ! $obj->{spool}->{$id} ) { 
+		print STDERR "The referenced package $id is never seen by this daemon\n"; 
+		return; 
+	}
 	if ( 
 		$obj->chksum_is_lt(
 			substr($obj->{spool}->{$id}->checksum, 0, 32),  
@@ -336,20 +340,22 @@ sub aprs_msg_to_qtc {
 		return; 
 	}
 	
-	my $telegram=$obj->publish->create_telegram(
-		to=>$obj->allowed_letters_for_call($call), 
-		from=>$obj->allowed_letters_for_call($obj->call_aprs2qtc($aprs->from)),
-		telegram=>$obj->allowed_letters_for_telegram($aprs->msg),
-	);
-
 	my $id=$aprs->from."_".$aprs->to."_".$aprs->ack; 
 
-	if ( $obj->{spool}->{$id} ) { 
-		print STDERR "We have already seen message $id, skipping \n";
-		return; 
+	my $telegram; 
+
+	if ( ! $obj->{spool}->{$id} ) { 
+		$telegram=$obj->publish->create_telegram(
+			to=>$obj->allowed_letters_for_call($call), 
+			from=>$obj->allowed_letters_for_call($obj->call_aprs2qtc($aprs->from)),
+			telegram=>$obj->allowed_letters_for_telegram($aprs->msg),
+		);
+		$obj->{spool}->{$id}=$telegram; 
+		$obj->{spoolack}->{$id}=$aprs; 
+	} else { 
+		$telegram=$obj->{spool}->{$id}; 
+		print STDERR "We have already seen message $id, resend just chksum \n";
 	}
-	$obj->{spool}->{$id}=$telegram; 
-	$obj->{spoolack}->{$id}=$aprs; 
 	
 	my $gateinfo=qtc::aprs::packet->new(
 		from=>$obj->{user}, 
