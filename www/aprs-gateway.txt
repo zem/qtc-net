@@ -1,0 +1,25 @@
+The APRS Gateway trys to deliver messages from QTC-Net as soon as 
+the calls are seen in APRS. 
+
+On the other way round, it can pick up messages to any call as long 
+as the sender also has a qtc-net operator message published. (this means 
+he must have edited his aliases.) It will publisch those messages in qtc
+net and send the ack back to the APRS App. The QTC-Net and its gates are 
+now in full responsibility to deliver those messages, see last paragraph. 
+
+As some candy, the delivery is now possible even when the sender 
+already switched of his radio. 
+
+--------------------------------------------------------------
+to start up your own gateway: 
+
+$ ./qtc_aprs.pl -d /var/spool/qtc/messages \
+	-pd /var/spool/qtc/some_private_key_dir \
+	 -p 1337 2>> /var/spool/qtc/aprs.log
+
+-----------------------------------------------------------------
+
+Calls: The qtc net calls are translated to aprs calls by exchanging 
+// with - and the other way round. 
+
+
