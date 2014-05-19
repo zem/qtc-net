@@ -185,7 +185,7 @@ sub deliver_telegrams {
 sub process_apqtcchk {
 	my $obj=shift;
 	my $aprs=shift; 
-	my ($id, $chk) = split(" ", $aprs->msg);
+	my ($chk, $id) = split(" ", $aprs->msg);
 	if ( ! $obj->{spool}->{$id} ) { 
 		print STDERR "The referenced package $id is never seen by this daemon\n"; 
 		return; 
@@ -372,8 +372,8 @@ sub aprs_msg_to_qtc {
 		to=>"APQTCCHK",
 		call=>$obj->{user},
 		type=>":",
-		msg=>"$id ".substr($telegram->checksum, 0, 32),
-		ack=>substr($telegram->checksum, 0, 2),
+		msg=>substr($telegram->checksum, 0, 32)." $id",
+		#ack=>substr($telegram->checksum, 0, 2),
 	); 
 	print STDERR "Sending ".$gateinfo->generate_msg." to APRS IS\n"; 
 	$obj->sock->send($gateinfo->generate_msg.$crlf); 
