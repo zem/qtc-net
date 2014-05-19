@@ -169,13 +169,15 @@ sub deliver_telegrams {
 	my $obj=shift; 
 	my $t=time; 
 	foreach my $id (keys %{$obj->{spool}}){
-		if ( ($t-$obj->{spool}->{$id}->telegram_date) >= 60 ) {
+		if ( ($t-$obj->{spool}->{$id}->telegram_date) >= $obj->{spooltimeout}->{$id} ) {
 			print STDERR "publishing ".$obj->{spool}->{$id}->filename."\n"; 
 			$obj->publish->publish_telegram($obj->{spool}->{$id});
 			print STDERR "Sending ".$obj->{spoolack}->{$id}->create_ack."\n"; 
 			$obj->sock->send($obj->{spoolack}->{$id}->create_ack.$crlf);
 			delete $obj->{spool}->{$id};
 			delete $obj->{spoolack}->{$id};
+			delete $obj->{spooltimeout}->{$id};
+			delete $obj->{spool_others}->{$id};
 		}
 	}
 }
@@ -188,6 +190,11 @@ sub process_apqtcchk {
 		print STDERR "The referenced package $id is never seen by this daemon\n"; 
 		return; 
 	}
+	if ( $obj->{spool_others}->{$id}->{$chk} ) {
+		print STDERR "we already calculated this message for this spool\n"; 
+		return; 
+	}
+	$obj->{spool_others}->{$id}->{$chk}=1; 
 	if ( 
 		$obj->chksum_is_lt(
 			substr($obj->{spool}->{$id}->checksum, 0, 32),  
@@ -197,8 +204,9 @@ sub process_apqtcchk {
 		# if our checksum is lower than the received this means we drop our delivery
 		# maybe as a feature for later versions we could check if the received telegram 
 		# really exists. 
-		delete $obj->{spool}->{$id};
-		delete $obj->{spoolack}->{$id};
+		#delete $obj->{spool}->{$id};
+		#delete $obj->{spoolack}->{$id};
+		$obj->{spooltimeout}->{$id}=($obj->{spooltimeout}->{$id})+60;
 	}	
 }
 
@@ -352,6 +360,7 @@ sub aprs_msg_to_qtc {
 		);
 		$obj->{spool}->{$id}=$telegram; 
 		$obj->{spoolack}->{$id}=$aprs; 
+		$obj->{spooltimeout}->{$id}=60; 
 	} else { 
 		$telegram=$obj->{spool}->{$id}; 
 		print STDERR "We have already seen message $id, resend just chksum \n";
