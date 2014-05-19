@@ -66,6 +66,7 @@ sub parse_pkg {
 	$obj->{from}=$from;
 	my @path=split(",", substr($pkg, $idxfrom+1, $idxpath-$idxfrom-1)); 
 	$obj->{path}=\@path;
+	foreach my $p (@path) { $obj->{path_hash}->{$p}=1; }
 	#print STDERR "via path ".join("   ", @path)."\n"; 
 	my $type=substr($pkg, $idxpath+1, 1);
 	$obj->{type}=$type; 
