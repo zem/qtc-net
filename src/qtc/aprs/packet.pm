@@ -3,6 +3,7 @@ package qtc::aprs::packet;
 use qtc::misc; 
 @ISA=("qtc::misc");
 use Data::Dumper; 
+use POSIX qw(strftime); 
 
 sub new {
 	my $class=shift; 
@@ -146,6 +147,8 @@ sub generate_msg {
 	my $obj=shift; 
 	if ( ( $obj->type eq ":" ) and ( $obj->ack ) ) {
 		return $obj->from.">".join(",", @{$obj->path})."::".$obj->fillcall($obj->to).":".$obj->msg."{".$obj->ack.""; 
+	} elsif ( $obj->type eq ">" ) {
+		return $obj->from.">".join(",", @{$obj->path}).":>".strftime("%d%H%Mz", gmtime(time)).$obj->msg; 
 	} elsif ( $obj->type eq ":" ) {
 		return $obj->from.">".join(",", @{$obj->path})."::".$obj->fillcall($obj->to).":".$obj->msg; 
 	}

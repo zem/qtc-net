@@ -7,7 +7,8 @@ if ( ! $path ) { $path=$ENV{HOME}."/.qtc"; }
 my $user; # nocall
 my $pass; # 1337
 my $peer="euro.aprs2.net:14580";
-my $filter="r/48.2090/16.3700/1000 t/m";
+my $filter="r/48.2090/16.3700/500 t/sm";
+my $debug=0; 
 
 while ($_=shift(@ARGV)) {
 	if ($_ eq  "-u") {
@@ -43,6 +44,11 @@ while ($_=shift(@ARGV)) {
 		$daemon=0;
 		next; 
 	}
+	# deamon mode is coming, sure 
+	if ($_ eq  "--debug") {
+		$debug=1;
+		next; 
+	}
 }
 
 while(1){
@@ -54,6 +60,7 @@ my $is=qtc::aprs::is->new(
 	filter=>$filter,
 	path=>$path,
 	privpath=>$privpath,
+	debug=>$debug,
 ); 
 
 $is->eventloop; 

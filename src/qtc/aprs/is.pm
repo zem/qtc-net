@@ -34,7 +34,7 @@ sub new {
 	$obj->{sel} = IO::Select->new($obj->sock);	
 
 	#if ( ! $obj->{filter} ) { $obj->{filter}="r/48.2090N/16.3700E/500 t/m"; }
-	if ( ! $obj->{filter} ) { $obj->{filter}="r/48.2090/16.3700/500 t/m"; }
+	if ( ! $obj->{filter} ) { $obj->{filter}="r/48.2090/16.3700/500 t/sm"; }
 	#if ( ! $obj->{filter} ) { $obj->{filter}="r/48.2090/16.3700/30000 t/m"; }
 	#if ( ! $obj->{filter} ) { $obj->{filter}="t/m"; }
 
@@ -67,6 +67,11 @@ sub eventloop {
 			my $line=$obj->fetch_line($buf); 
 			if ( $line ) { $obj->process_line($line); }
 			$obj->deliver_telegrams; 
+			foreach my $id (keys %{$obj->{acked_msgs}}) {
+				if ( $obj->{acked_msgs}->{$id} < time-3600 ) {
+					delete $obj->{acked_msgs}->{$id};
+				}
+			}
 		}
 	}
 }
@@ -112,6 +117,9 @@ sub process_line {
 	my $obj=shift; 
 	my $line=shift; 
 
+	if ( $obj->{debug} ) {
+		print STDERR $line."\n"; 
+	}
 	if ( ! $obj->{login_verified} ) {
 		if ( $line =~ /^\# logresp .+ .+, .+ .+$/ ) {
 			# logresp logincall verifystatus, server servercall
@@ -152,8 +160,8 @@ sub process_line {
 		$obj->process_apqtcchk($pkg);   
 	} elsif (( $pkg->type eq ":" ) and ( $pkg->ack )) {
 		print STDERR "Message:\n\tfrom: ".$pkg->from."\n\tto: ".$pkg->to."\n\tack: ".$pkg->ack."\n\ttext: ".$pkg->msg."\n";
-		print STDERR "I Would send back: ".$pkg->create_ack."\n"; 
-		print STDERR "Oh and path is: ".join(",", @{$pkg->path})."\n\n"; 
+		#print STDERR "I Would send back: ".$pkg->create_ack."\n"; 
+		#print STDERR "Oh and path is: ".join(",", @{$pkg->path})."\n\n"; 
 		$obj->aprs_msg_to_qtc($pkg); 
 	} elsif ( $pkg->type eq "ack" ) { 
 		print STDERR "Ack:\n\tfrom: ".$pkg->from."\tto: ".$pkg->to."\n\tacked msg: ".$pkg->msg."\n";
@@ -185,7 +193,9 @@ sub deliver_telegrams {
 sub process_apqtcchk {
 	my $obj=shift;
 	my $aprs=shift; 
-	my ($chk, $id) = split(" ", $aprs->msg);
+	my $msg=$aprs->msg; 
+	#$msg=~s/^\d\d\d\d\d\d\d\dz//g
+	my ($id, $chk) = split(" ", $msg);
 	if ( ! $obj->{spool}->{$id} ) { 
 		print STDERR "The referenced package $id is never seen by this daemon\n"; 
 		return; 
@@ -288,10 +298,13 @@ sub process_ack {
 	my $aprs=shift;
 	
 	# 1st delete acked messages from spool 	
+	# hope that we will never see another one agn. 
 	my $id=$aprs->to."_".$aprs->from."_".$aprs->msg; 
 	if ( $obj->{spool}->{$id} ) { 
 		delete $obj->{spool}->{$id}; 
 		delete $obj->{spoolack}->{$id}; 
+		delete $obj->{spooltimeout}->{$id};
+		$obj->{acked_msgs}->{$id}=time; 
 	}
  	
 	# 2nd return if we dont wait for any ack
@@ -300,7 +313,7 @@ sub process_ack {
 		return; 
 	}
 	
-	# 3rd resolve the acks for aprs messaged we sent 
+	# 3rd resolve the acks for aprs messages that we sent to a station 
 	foreach my $chk ( keys %{$obj->{sent}->{$aprs->from}->{$aprs->to}} ) {
 		delete $obj->{sent}->{$aprs->from}->{$aprs->to}->{$chk}->{$aprs->msg};
 		print STDERR "Message deleting ".$aprs->from." ".$aprs->to." ".$aprs->msg." $chk\n";
@@ -351,6 +364,13 @@ sub aprs_msg_to_qtc {
 	
 	my $id=$aprs->from."_".$aprs->to."_".$aprs->ack; 
 
+	if ( $obj->{acked_msgs}->{$id} ) {
+		# we already published that telegram in qtc send back ack and forget about it 
+		print STDERR "Sending ".$aprs->create_ack."\n"; 
+		$obj->sock->send($aprs->create_ack.$crlf);
+		return; 
+	}
+
 	my $telegram; 
 
 	if ( ! $obj->{spool}->{$id} ) { 
@@ -372,7 +392,7 @@ sub aprs_msg_to_qtc {
 		to=>"APQTCCHK",
 		call=>$obj->{user},
 		type=>":",
-		msg=>substr($telegram->checksum, 0, 32)." $id",
+		msg=>"$id ".substr($telegram->checksum, 0, 32),
 		#ack=>substr($telegram->checksum, 0, 2),
 	); 
 	print STDERR "Sending ".$gateinfo->generate_msg." to APRS IS\n"; 
