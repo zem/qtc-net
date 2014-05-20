@@ -366,7 +366,7 @@ sub aprs_msg_to_qtc {
 
 	if ( $obj->{acked_msgs}->{$id} ) {
 		# we already published that telegram in qtc send back ack and forget about it 
-		print STDERR "Sending ".$aprs->create_ack."\n"; 
+		print STDERR "Message already acked Resending ".$aprs->create_ack."\n"; 
 		$obj->sock->send($aprs->create_ack.$crlf);
 		return; 
 	}
