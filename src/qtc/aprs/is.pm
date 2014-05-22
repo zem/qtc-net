@@ -163,6 +163,7 @@ sub process_line {
 		#print STDERR "I Would send back: ".$pkg->create_ack."\n"; 
 		#print STDERR "Oh and path is: ".join(",", @{$pkg->path})."\n\n"; 
 		$obj->aprs_msg_to_qtc($pkg); 
+		$obj->look_for_telegrams($pkg->from); 
 	} elsif ( $pkg->type eq "ack" ) { 
 		print STDERR "Ack:\n\tfrom: ".$pkg->from."\tto: ".$pkg->to."\n\tacked msg: ".$pkg->msg."\n";
 		print STDERR "Oh and path is: ".join(",", @{$pkg->path})."\n\n"; 
