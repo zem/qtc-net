@@ -108,7 +108,7 @@ sub parse_msg_payload {
 			return; 
 		}
 		my $ack=substr($msg, $idxchk+1); 
-		#$ack =~ s/\}.*$//g; 
+		$ack =~ s/\s+$//g; 
 		$msg=substr($msg, 0, $idxchk); 
 		$obj->{ack}=$ack; 
 		$obj->{msg}=$msg; 
