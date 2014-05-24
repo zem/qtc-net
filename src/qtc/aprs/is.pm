@@ -170,7 +170,9 @@ sub process_line {
 		$obj->process_ack($pkg); 
 	} else {
 		#print STDERR "Seen call: ".$pkg->from."\n"; 
-		$obj->look_for_telegrams($pkg->from); 
+		if ( $obj->look_for_telegrams($pkg->from) ) {
+			print STDERR "message was: $line \n"; 
+		} 
 	}
 }
 
@@ -241,12 +243,16 @@ sub look_for_telegrams {
 	my $call=shift; 
 	$call=$obj->call_aprs2qtc($call); 
 	
+	my $ret=0; 
+	
 	my @telegrams=$obj->query->list_telegrams($call); 
 	$obj->{telegrams}->{$call}={};
 	foreach my $telegram (@telegrams) {
 		print STDERR "Found Telegrams for $call\n"; 
 		$obj->deliver_telegram_to_call($call, $telegram); 
+		$ret=1;
 	}
+	return $ret; 
 }
 
 our $msg_length=67; 
