@@ -500,7 +500,7 @@ sub render_latest_changes {
 	
 	$r.='<h3>Latest Changes:</h3>';
 
-	foreach my $msg ($o->qtc_query->latest_changes(20) ) {
+	foreach my $msg ($o->qtc_query->latest_changes(40) ) {
 		if ( $msg->type eq 'telegram' ) {
 			$r.='<p><b>'.$msg->call.'</b> published a telegram:<table align="center" width="70%"><tr><td>';
 			$r.=$o->format_telegram_in_html($msg);
