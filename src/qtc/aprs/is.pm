@@ -33,6 +33,8 @@ sub new {
 	
 	$obj->{sel} = IO::Select->new($obj->sock);	
 
+	$obj->{server_info_timeout}=1800; 
+
 	#if ( ! $obj->{filter} ) { $obj->{filter}="r/48.2090N/16.3700E/500 t/m"; }
 	if ( ! $obj->{filter} ) { $obj->{filter}="r/48.2090/16.3700/500 t/sm"; }
 	#if ( ! $obj->{filter} ) { $obj->{filter}="r/48.2090/16.3700/30000 t/m"; }
@@ -50,6 +52,8 @@ sub publish { return shift->{publish}; }
 
 sub eventloop {
 	my $obj=shift; 
+	
+	$obj->{last_server_info}=time; 
 
 	while (1) {
 		my @ready=$obj->sel->can_read(30);
@@ -59,6 +63,11 @@ sub eventloop {
 			my $buf='';
 			if ( ! $sock->connected() ){ 
 				 die "Socket $sock not connected connection terminated\n"; 
+			}
+			if ( $obj->{server_info_timeout} ) {
+				if ( $obj->{last_server_info} < time-$obj->{server_info_timeout} ) {
+					die "Server info timeout! ".($obj->{last_server_info})." we will close the connection here\n"; 
+				}
 			}
 			if ( ! defined($sock->recv($buf, 120))) { 
 				 die "Can't read from $sock\n"; 
@@ -142,6 +151,7 @@ sub process_line {
 
 	if ( $line =~ /^\#.+/ ) {
 		print STDERR "RCVD Server Info: $line\n"; 
+		$obj->{last_server_info}=time; 
 		return; 
 	}
 
