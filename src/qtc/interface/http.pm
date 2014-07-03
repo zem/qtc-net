@@ -62,6 +62,16 @@ sub publish {
 	if ( ! $res->is_success ) { die "File Upload not succeeded\n"; }
 }
 
+sub sync_upload {
+	my $obj=shift; 
+	my $local_path=shift;  # the qtc path (/out /call/FOO/telegrams/new) goes in here as parameter
+	my $remote_path=shift;  # the qtc path (/in /out /call/FOO/telegrams/new) goes in here as parameter
+	if ( $local_path ) { $local_path="/out"; }
+	if ( $remote_path ) { $remote_path="/in"; }
+
+	# todo: reuseable placement of directory list code here	
+}
+
 sub sync {
 	my $obj=shift; 
 	my $path=shift;  # the qtc path (/out /call/FOO/telegrams/new) goes in here as parameter
