@@ -3,14 +3,32 @@ use qtc::misc;
 use qtc::msg; 
 use CGI::Simple; 
 $CGI::Simple::DISABLE_UPLOADS = 0;
-use CGI::Simple::Standard; 
+use CGI::Simple::Standard;
+use IO::Scalar; 
 use Archive::Tar; 
 use File::Basename; 
 
 my $root=$ENV{QTC_ROOT}; 
 if ( ! $root ) { $root=$ENV{HOME}."/.qtc" }
 
-my $putdata; 
+
+sub publish_posted_msg {
+	my $data=shift;
+	my $filename; 
+	eval { 
+		my $msg; 
+		$data=unpack("H*", $data); 
+		$msg=qtc::msg->new(hex=>$data);
+		$msg->to_filesystem($root."/in"); 
+		$msg->{pidfile}=$root."/.qtc_processor.pid"; 
+		$msg->wakeup_processor;
+		$filename=$msg->filename; 
+	};
+	return $@, $filename; 
+}
+
+
+my $putdata;
 if ( $ENV{REQUEST_METHOD} eq 'PUT' ) {
 	while(<STDIN>){ 
 		$putdata.=$_; 
@@ -26,27 +44,53 @@ if (( ! $putdata ) and $q->param("POSTDATA") ) {
 		print "This would work but there is some bug when reading binary data either in CGI::Simple or even Perl\n"; 
 	#$putdata=$q->param("POSTDATA"); 
 }
-if ( $putdata ) { 
-	my $msg; 
-	eval { 
-		$putdata=unpack("H*", $putdata); 
-		$msg=qtc::msg->new(hex=>$putdata);
-		$msg->to_filesystem($root."/in"); 
-		$msg->{pidfile}=$root."/.qtc_processor.pid"; 
-		$msg->wakeup_processor; 
-	}; 
-	if ( $@ ) { 
+if ( $putdata ) {
+	my $err;
+	my @processed; 
+	my %mtype=(
+		"application/tar"=>1,
+		"application/x-tar"=>1,
+		"application/x-gtar"=>1,
+		"multipart/x-tar"=>1, 
+		"application/x-compress"=>1, 
+		"application/x-compressed"=>1,
+	); 
+	if ( $mtype{$ENV{CONTENT_TYPE}} ) {  # if we have got a tar archive
+		my $tarfh=IO::Scalar->new(\$putdata);
+		my $tar=Archive::Tar->new($tarfh);
+		foreach my $file ($tar->get_files) {
+			my ($ret, $filename)=publish_posted_msg($file->get_content);
+			if ( $ret ) { 
+				$err.="For File: $filename the followin error occured:\n"; 
+				$err.=$ret; 
+				$err.="-----------------------------------------\n";
+			} else {
+				push @processed, $file->name;
+			}
+		}	
+	} else {
+			my ($ret, $file)=publish_posted_msg($putdata);
+			if ( $ret ) { 
+				$err.=$ret; 
+			} else {
+				push @processed, $file;
+			}
+	}
+	if ( $err ) { 
 		print $q->header(
 			-type=>'text/plain',
 			-status=>400
 		);
-		print $@; 
+		print $err;
+		print "----------------------------------------------\n";
+		print "well processed files:\n"; 
+		print join("\n", @processed); 
 	} else { 
 		print $q->header(
 			-type=>'text/plain',
 			-status=>200
 		);
-		print $msg->filename; 
+		print join("\n", @processed); 
 		#print Dumper(\%ENV); 
 	}
 	exit; 
