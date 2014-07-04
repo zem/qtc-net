@@ -48,10 +48,12 @@ sub url { my $obj=shift; return $obj->{url}; }
 sub lwp { my $obj=shift; return $obj->{lwp}; }
 
 
+#TODO
 sub publish {
 	my $obj=shift; 
-	my $msg=shift; 
+	my @msgs=@_; 
 
+	if ( $#msgs > 1 ) { }
 	if ( ! $msg ) { die "I need a qtc::msg object here\n"; }
 
 	my $res=$obj->lwp->put($obj->url, 
@@ -62,6 +64,7 @@ sub publish {
 	if ( ! $res->is_success ) { die "File Upload not succeeded\n"; }
 }
 
+#TODO
 sub sync_upload {
 	my $obj=shift; 
 	my $local_path=shift;  # the qtc path (/out /call/FOO/telegrams/new) goes in here as parameter
@@ -69,7 +72,43 @@ sub sync_upload {
 	if ( $local_path ) { $local_path="/out"; }
 	if ( $remote_path ) { $remote_path="/in"; }
 
-	# todo: reuseable placement of directory list code here	
+	my $urlpath=$obj->url.$remote_path; 
+	my $tsfile;
+	my @args;
+
+	# TODO: This is duplicated here and in sync. 
+	# the timestamp of the last call is stored in a file so only files newer than 
+	# the TS may get listet but first, load the old info.... 
+	if ( $obj->{use_ts} ) {
+		my $ts=0; 
+		$tsfile=$obj->{ts_dir}."/".sha256_hex($local_path." ".$urlpath); 
+		
+		if ( -e $tsfile ) {
+			open(READ, "< $tsfile") or die "up I cant open $tsfile for reading \n"; 
+			while(<READ>){ $ts=$_; }
+			close READ; 
+		}
+		push @args, "ts=$ts"; 
+	}
+
+	my $res=$obj->lwp->get($urlpath."?".join("&", @args)); 
+
+	if ( ! $res->is_success ) { die "up http get to $urlpath failed\n"; }
+
+	my $newts=$res->filename; 
+
+	if ( $newts !~ /^\d+$/ ) {  die "up uups $newts should be numeric\n"; } 
+
+
+	# work here 
+	my $upload_count=$obj->process_dir_upload($local_path, $res->decoded_content, $urlpath, $ts); 
+	
+
+	if ( ( $newts ) and ( $obj->{use_ts} ))  { 
+		open(WRITE, "> $tsfile") or die "Cant open $tsfile to write back timestamp\n"; 
+		print WRITE $newts or die "Cant write into $tsfile\n"; 
+		close WRITE or die "Cant close $tsfile \n"; 
+	}
 }
 
 sub sync {
@@ -133,6 +172,52 @@ sub sync {
 
 sub message_count {
 	my $obj=shift; return $obj->{message_count}; 
+}
+
+sub process_dir_upload { 
+	my $obj=shift; 
+	my $local_path=shift;
+	my $dirdata=shift; 
+	my $urlpath=shift; 
+	my $ts=shift; 
+	if ( ! $dirdata ) { return; }
+	my %remote;
+	foreach my $file (split("\n", $dirdata)) { $remote{$file}=1; }; 
+
+	foreach my $file (qtc::misc->new()->scan_dir($obj->{path}."/out", '.*\.qtc')) { 
+		if ( ! $remote{$file} ) {
+			my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
+         	         $atime,$mtime,$ctime,$blksize,$blocks)
+            	          = stat($root.$path."/".$file);
+			if ( $mtime > $ts ) { 
+				
+			}
+		}
+		if ( ! -e $obj->{path}."/in/".$file ) { 
+			if ( $obj->{use_digest_lst} ) {
+				push @dig, $file; 
+			} else {
+				my $res=$obj->lwp->get($urlpath."/".$file); 
+				if ( ! $res->is_success ) { $die_later.="get $file failed\n"; next; }
+				my $path=$obj->{path}."/in";
+				$die_later.=$obj->write_content($path, $file, $res->decoded_content); 
+			} 
+		}
+	}
+	if ( ! $obj->{use_digest_lst} ) {
+		if ( $die_later ) { die $die_later; }
+		return $obj->{message_count}; 
+	}
+
+	my $res=$obj->lwp->post($urlpath, 
+		Content_Type => 'form-data',
+		Content => [ 
+			ts=>$ts,
+			digest => [undef, "digest.lst", 'Content-Type'=>"text/plain", Content=>join("\n", @dig) ] 
+		],
+	);
+	if ( ! $res->is_success ) { die "http get dir to $urlpath failed\n"; }
+	return $obj->process_tar($res->decoded_content); 
 }
 
 sub process_dir { 

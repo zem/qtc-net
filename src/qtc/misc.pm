@@ -168,7 +168,7 @@ sub scan_dir {
 #------------------------------------------------------------------------------------
 =pod
 
-=head2 scan_dir()
+=head2 scan_dir_ordered()
 
 my @basenames=$obj->scan_dir_ordered($dir, $regex); 
 

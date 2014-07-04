@@ -26,6 +26,12 @@ sub can_sync {
 	return $obj->{can_sync};
 }
 
+sub sync_upload {
+	my $obj=shift; 
+	my $path=shift;
+
+	die "I do not know how to syncronize upload with new messages through this interface\n"; 
+}
 sub sync {
 	my $obj=shift; 
 	my $path=shift;
