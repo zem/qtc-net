@@ -17,7 +17,10 @@ WriteMakefile(
 		'Authen::Captcha'=>0, 
 		'File::Copy'=>0, 
 	},
-	AUTHOR=>"Hans Freitag <oe1src\@oevsv.at>",
-	ABSTRACT=>"QTC Net is a short Telegram System for Amateur Radio."
-	#EXE_FILES=>
+	AUTHOR=>[
+		"Hans Freitag <oe1src\@oevsv.at>",
+	],
+	ABSTRACT=>"QTC Net is a short Telegram System for Amateur Radio.",
+	EXE_FILES=>[
+	],
 );
