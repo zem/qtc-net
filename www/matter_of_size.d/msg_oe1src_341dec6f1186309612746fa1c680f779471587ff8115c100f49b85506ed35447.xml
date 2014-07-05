@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<qtc>
+<version>1</version>
+<call>oe1src</call>
+<type>msg</type>
+<signature>393e58459dd89b1f5cd21afbd386c1f4f7bb0fbcca2e02280a001aed84f539f567d6adabcae4e4e1095689961b9da0f3b57aefd746d8dedc4cb199ba314b2cf98f9777019dc1d309b3bf5c73c204aebc21449877234dc4acd2ae1bfb7344f6b426bd0249d23bee9f00e4059683cef3d5c11b5c2dd7d2736481ecf82c9c5d815678662f6801461c620d7f1182c6236dfc54293c056462ec864cce83c5c2e4f598a57b20d794ae748b28cf5bdbd652c6dce76f845f3a356f5f8d0f4922ce45519b4c2fc15564534563f4b31465ebd4df40573dbcead7767f19ec16fd59c63dc730f194c7162bd0348f2d65cba2b5f40d8b92c1c94fe5056b39aaf47cb2a56684b0</signature>
+<signature_key_id>68a1a244b9832ae502aed7176c184dace6814b831a741cc9a721322973b38911</signature_key_id>
+<checksum>341dec6f1186309612746fa1c680f779471587ff8115c100f49b85506ed35447</checksum>
+<msg><from>oe1xgb</from><msg>hi, das ist noch ein test des qtc networks</msg><msg_date>1395872259</msg_date><to>oe1gis</to></msg>
+</qtc>
