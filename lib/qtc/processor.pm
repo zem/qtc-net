@@ -497,7 +497,7 @@ sub remove_telegram {
 
 =head3 msg_has_no_qsp($msg)
 
-alternative msg_has_no_qsp($msg)
+alternative msg_has_no_qsp($msg, $f_to)
 
 checks if a message is not yet delivered. It could happen in big networks that the 
 delivery notification was imported before the message was, in that case a message should 
@@ -518,6 +518,16 @@ sub msg_has_no_qsp {
 
 	if ( ! $f_to ) { 
 		$f_to=$obj->call2fname($msg->to);
+	}
+
+	# this block checks if the message was sent to self
+	my $to=$obj->fname2call($f_to);
+	if ( $to eq $msg->from ) { return 0; }
+	my $op=$obj->query->operator($to);
+	if ( $op ) {
+		foreach my $alias ($op->set_of_aliases) {
+			if ( $msg->from eq $alias ) { return 0; }
+		}
 	}
 	
 	$obj->ensure_path($obj->{root}."/call/".$f_to."/qsprcvd"); 
