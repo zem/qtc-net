@@ -1,9 +1,9 @@
 libcrypt-openssl-rsa-perl
 libcrypt-openssl-dsa-perl
 libdigest-sha-perl
-libcrypt-rijndael-perl
+#libcrypt-rijndael-perl
 libmime-base64-perl
-libwww-curl-perl
+lwp
 libcgi-simple-perl
 libcgi-application-perl
 libauthen-captcha-perl
