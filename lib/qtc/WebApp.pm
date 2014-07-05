@@ -283,7 +283,7 @@ sub h_misc_button {
 			$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>$p->{value}}));
 			$mode=$obj->q->param("mode", $mode);
 		$r.="</td>";
-	}
+	} else { $r.="<td> ".$p->{value}." </td>"; }
 	return $r; 
 }
 
