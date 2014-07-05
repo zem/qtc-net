@@ -1,2 +1,7 @@
 blib
-.+\.swp$
+*.swp
+MANIFEST
+MYMETA.*
+Makefile*
+www/pod
+pm_to_blib
