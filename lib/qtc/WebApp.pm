@@ -271,6 +271,22 @@ sub h_labled_input {
 	);
 }
 
+sub h_telegram_types_button {
+	my $obj=shift; 
+	my $p=shift; 
+	my $mode=$obj->q->param("type");
+	if ( ! $mode ) { $mode="show_telegrams"; } 
+	my $r; 
+	if ( $mode ne $p->{type} ) {
+		$r.="<td>";
+			$obj->q->param("type", $p->{type}); 
+			$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>$p->{value}}));
+			$mode=$obj->q->param("type", $mode);
+		$r.="</td>";
+	} else { $r.="<td> ".$p->{value}." </td>"; }
+	return $r; 
+}
+
 sub h_misc_button {
 	my $obj=shift; 
 	my $p=shift; 
@@ -376,6 +392,32 @@ sub area_user_pass {
 	return $r; 
 }
 
+# renders new all sent buttons for the telegram lists
+sub area_telegram_types_buttons {
+	my $obj=shift; 
+	my $r; 
+
+	$r.="<b>Show me: ";
+	$r.="<table><tr>";
+	$r.=$obj->h_telegram_types_button({
+		type=>"new",
+		value=>"new",
+	});
+	$r.=$obj->h_telegram_types_button({
+		type=>"all",
+		value=>"all",
+	});
+	$r.=$obj->h_telegram_types_button({
+		type=>"sent",
+		value=>"sent",
+	});
+	$r.="</tr></table>";
+	$r.="</b>";
+
+	return $r;
+}
+
+
 sub area_misc_buttons {
 	my $obj=shift; 
 	my $r; 
@@ -392,18 +434,16 @@ sub area_misc_buttons {
 				value=>"show telegrams",
 			}); 
 			if ( $obj->logged_in ) { 
-				if ( $mode ne "send_telegram" ) {
-					$r.=$obj->h_misc_button({
-						mode=>"send_telegram", 
-						value=>"send telegram",
-					}); 
-				}
+				$r.=$obj->h_misc_button({
+					mode=>"send_telegram", 
+					value=>"send telegram",
+				}); 
 				if ( $obj->q->param("call") ) {
 					$r.=$obj->h_misc_button({
 						mode=>"change_trust", 
 						value=>"change trust",
 					}); 
-				}
+				} 
 				$r.=$obj->h_misc_button({
 					mode=>"key_management", 
 					value=>"key management",
@@ -562,7 +602,6 @@ sub js_confirm {
 }
 
 
-
 ###############################################################
 # webapp modes 
 ##############################################################
@@ -602,6 +641,9 @@ as delivered in the qtc-net by him. </p>';
 	foreach $chk ($q->param("qsp")) { $qsp{$chk}=1; }
 
 	$r.="<h3>$type qtc telegrams for ".$q->param("call").":</h3>";
+	
+	$r.=$obj->area_telegram_types_buttons;
+
 	my @msgs=$obj->qtc_query->list_telegrams($q->param("call"), $type);
 	my @rows; 
 	foreach my $msg (@msgs) {  
@@ -636,23 +678,9 @@ as delivered in the qtc-net by him. </p>';
 			),
 		), 
 	)); 
-	$r.="<b>Show me: ";
-	$r.="<table><tr>";
-	$q->param("type", "new"); 
-	$r.="<td>".$obj->h_form({},
-		$obj->h_e("input", {type=>"submit", name=>"submit", value=>"new"}),
-	)."</td>"; 
-	$q->param("type", "all"); 
-	$r.="<td>".$obj->h_form({},
-		$obj->h_e("input", {type=>"submit", name=>"submit", value=>"all"}),
-	)."</td>"; 
-	$q->param("type", "sent"); 
-	$r.="<td>".$obj->h_form({},
-		$obj->h_e("input", {type=>"submit", name=>"submit", value=>"sent"}),
-	)."</td>"; 
-	$q->param("type", $type); 
-	$r.="</tr></table>";
-	$r.="</b>";
+
+	$r.=$obj->area_telegram_types_buttons;
+
 	return $r; 
 }
 
