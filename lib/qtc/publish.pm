@@ -348,10 +348,10 @@ publishes an operator  message
 
 parameters: 
  set_of_aliases=>[...],
- set_of_lists=>[...],
+ set_of_followings=>[...],
 
-This publishes an operator message. the sets are lists of callsigns or 
-bulletin lists, connected to that callsign. 
+This publishes an operator message. the sets are followings of callsigns or 
+bulletin calls that are followed by this callsign. 
 
 =cut
 #-------------------------------------------------------
@@ -364,7 +364,7 @@ sub operator {
 		type=>"operator",
 		record_date=>time,
 		set_of_aliases=>$args{set_of_aliases},
-		set_of_lists=>$args{set_of_lists},
+		set_of_followings=>$args{set_of_followings},
 	); 
 	
 	$obj->sig->sign($qtc); 

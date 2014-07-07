@@ -452,15 +452,15 @@ sub import_telegram {
 	}
 	$msg->link_to_path($obj->{root}."/out");
 	
-	# mailing list handling 
-	my $listpath=$obj->{root}."/lists/".$obj->call2fname($msg->to);
-	foreach my $listmember ($obj->scan_dir($listpath, ".+")) {
-		if ( -l $listpath."/".$listmember ) { 
-			# if one of the listmembers has sent this message to the list, he does not need it. 
-			if ( $obj->call2fname($msg->to) eq $listmember ) { next; }
-			$msg->link_to_path($listpath."/".$listmember."/telegrams/all");
-			if ( $obj->msg_has_no_qsp($msg, $listmember) ) {
-				$msg->link_to_path($listpath."/".$listmember."/telegrams/new");
+	# mailing following handling 
+	my $followingpath=$obj->{root}."/followings/".$obj->call2fname($msg->to);
+	foreach my $followingmember ($obj->scan_dir($followingpath, ".+")) {
+		if ( -l $followingpath."/".$followingmember ) { 
+			# if one of the followingmembers has sent this message to the following, he does not need it. 
+			if ( $obj->call2fname($msg->to) eq $followingmember ) { next; }
+			$msg->link_to_path($followingpath."/".$followingmember."/telegrams/all");
+			if ( $obj->msg_has_no_qsp($msg, $followingmember) ) {
+				$msg->link_to_path($followingpath."/".$followingmember."/telegrams/new");
 			}
 		}
 	}
@@ -479,11 +479,11 @@ sub remove_telegram {
 	my $obj=shift; 
 	my $msg=shift; 
 	
-	my $listpath=$obj->{root}."/lists/".$obj->call2fname($msg->to);
-	foreach my $list ($obj->scan_dir($listpath, ".+")) {
-		if ( -l $listpath."/".$list ) { 
-			$msg->unlink_at_path($listpath."/".$list."/telegrams/all");
-			$msg->unlink_at_path($listpath."/".$list."/telegrams/new");
+	my $followingpath=$obj->{root}."/followings/".$obj->call2fname($msg->to);
+	foreach my $following ($obj->scan_dir($followingpath, ".+")) {
+		if ( -l $followingpath."/".$following ) { 
+			$msg->unlink_at_path($followingpath."/".$following."/telegrams/all");
+			$msg->unlink_at_path($followingpath."/".$following."/telegrams/new");
 		}
 	}
 	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/all");
@@ -504,7 +504,7 @@ delivery notification was imported before the message was, in that case a messag
 not me linked to new messages. 
 
 an optional filename_to parameter set the to for the case that the message was delivered 
-to a list. $f_to must be filesystem compliat (see call2fname() for that). If not set, 
+to a following. $f_to must be filesystem compliat (see call2fname() for that). If not set, 
 $obj->call2fname($msg->to) is used. 
 
 The method returns 0  if msg has a qsp and 1 on success if msg has no qsp.
@@ -553,7 +553,7 @@ sub msg_has_no_qsp {
 =head3 import_qsp($msg)
 
 This imports a qsp message to the filesystem structure. 
-It also removes the delivered telegram from the list of new telegrams
+It also removes the delivered telegram from the following of new telegrams
 
 =cut
 #------------------------------------------------------------------------------------
@@ -865,15 +865,15 @@ sub import_operator {
 		}
 	}
 
-	# we need to go through each list $list is holding the listname
-	foreach my $list ($msg->set_of_lists) {
-		my $abs_link=$obj->{root}."/lists/".$obj->call2fname($list)."/".$msg->escaped_call;
-		print STDERR $obj->ts_str." list operations we need to link $abs_link\n"; 
+	# we need to go through each following $following is holding the followingname
+	foreach my $following ($msg->set_of_followings) {
+		my $abs_link=$obj->{root}."/followings/".$obj->call2fname($following)."/".$msg->escaped_call;
+		print STDERR $obj->ts_str." following operations we need to link $abs_link\n"; 
 		if ( ! -e $abs_link ) {
 			print STDERR $obj->ts_str." the link does not exist so ensure_path\n"; 
-			$obj->ensure_path($obj->{root}."/lists/".$obj->call2fname($list)); 
-			print STDERR $obj->ts_str." path ".$obj->{root}."/lists/".$obj->call2fname($list)." ensured\n"; 
-			symlink("../../call/".$msg->escaped_call, $abs_link) or die "4 failed to link to list \n"; 
+			$obj->ensure_path($obj->{root}."/followings/".$obj->call2fname($following)); 
+			print STDERR $obj->ts_str." path ".$obj->{root}."/followings/".$obj->call2fname($following)." ensured\n"; 
+			symlink("../../call/".$msg->escaped_call, $abs_link) or die "4 failed to link to following \n"; 
 			print STDERR $obj->ts_str." linked "."../../call/".$msg->escaped_call." to ".$abs_link."\n"; 
 		}
 	}
@@ -895,7 +895,7 @@ sub remove_operator {
 	my $obj=shift; 
 	my $msg=shift; 
 	
-	# remove list entrys
+	# remove following entrys
 	foreach my $alias ($msg->set_of_aliases) {
 		my $f_alias=$obj->call2fname($alias); 
 		if ( -l $obj->{root}."/call/$f_alias" ) {
@@ -906,14 +906,14 @@ sub remove_operator {
 	}
 	
 	# remove alias entrys 
-	foreach my $list ($msg->set_of_lists) {
-		my $abs_link=$obj->{root}."/lists/".$obj->call2fname($list)."/".$msg->escaped_call;
+	foreach my $following ($msg->set_of_followings) {
+		my $abs_link=$obj->{root}."/followings/".$obj->call2fname($following)."/".$msg->escaped_call;
 		if ( -l $abs_link ) {
-			# the next foreach removes all messages that where sent via a list to this user
+			# the next foreach removes all messages that where sent via a following to this user
 			# this is because the message will not remove itself when the link is gone
 			foreach my $file ($obj->scan_dir($abs_link."/telegrams/all", "telegram.+.qtc")) {
 				my $telegram=qtc::msg->new(path=>$abs_link."/telegrams/all", filename=>$file); 
-				if ( $telegram->to eq $list) { 
+				if ( $telegram->to eq $following) { 
 					$obj->remove_msg($telegram); 
 				}
 			}

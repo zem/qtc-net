@@ -34,8 +34,8 @@ Filesystem Structure:
 			trust/      # all the trust levels of this user 
 		ALIAS -> CALL/ # alias directorys should be symlinked to have easy access on aliased calls.  
 
-	lists/
-		LISTNAME/      # one directory per list containing a link to the operators homedirectory	
+	followings/
+		FOLLOWINGNAME/      # one directory per following containing a link to the operators homedirectory	
 			LINK_TO_CALLDIR/
 	in/               # inbound messages are synced into this directory
 	bad/              # all messages that have errors to be checked
@@ -89,13 +89,13 @@ our %msg_types=(
 	qsp=>{
 		"qsp_date"=>$valid_date, 
 		"telegram_checksum"=>$valid_checksum,
-		"to"=>$valid_call,  #the to field is important for lists 
+		"to"=>$valid_call,  #the to field is important for followings 
 	}, 
-	# aliases and delivery lists 
+	# aliases and delivery followings 
 	operator=>{
 		"record_date"=>$valid_date, 
 		"set_of_aliases"=>[$valid_call], 
-		"set_of_lists"=>[$valid_call],
+		"set_of_followings"=>[$valid_call],
 	}, 
 	# keystorage a key has a valid date 
 	# you should publish a new key 

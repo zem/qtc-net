@@ -31,7 +31,7 @@ sub mode_show_telegrams {
 	my $q=$obj->query;
 	if ( ! $q->param("type") ) { $q->param("type", "new"); }
 	my $type=$q->param("type");
-	if ( $type !~ /^((all)|(new)|(sent))$/ ) { return "<error>unknown search type</error>"; }
+	if ( $type !~ /^((all)|(new)|(sent)|(timeline)|(timeline_new))$/ ) { return "<error>unknown search type</error>"; }
 	my $r; 
 
 	if ( ( $obj->logged_in ) and ( ! $q->param("call") ) ) {
@@ -121,8 +121,5 @@ sub mode_send_telegram {
 
 	return "<error>You should provide call from to and telegram + loogin credentials</error>";
 }
-
-
-
 
 1;

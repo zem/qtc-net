@@ -59,7 +59,7 @@ sub setup {
 		'send_telegram' => 'mode_send_telegram',
 		'change_password' => 'mode_change_password',
 		'change_trust' => 'mode_change_trust',
-		'aliases_and_lists' => 'mode_aliases_and_lists',
+		'aliases_and_followings' => 'mode_aliases_and_followings',
 		'latest_changes' => 'mode_latest_changes',
 	);
 	# CONFIGURE
@@ -404,7 +404,7 @@ sub area_user_pass {
 	return $r; 
 }
 
-# renders new all sent buttons for the telegram lists
+# renders new all sent buttons for the telegram followings
 sub area_telegram_types_buttons {
 	my $obj=shift; 
 	my $r; 
@@ -473,8 +473,8 @@ sub area_misc_buttons {
 					value=>"key management",
 				}); 
 				$r.=$obj->h_misc_button({
-					mode=>"aliases_and_lists", 
-					value=>"aliases and lists",
+					mode=>"aliases_and_followings", 
+					value=>"aliases and followings",
 				}); 
 				$r.=$obj->h_misc_button({
 					mode=>"change_password", 
@@ -589,7 +589,7 @@ sub render_latest_changes {
 			next; 
 		}
 		if ( $msg->type eq 'operator' ) {
-			$r.='<p><b>'.$msg->call.'</b> has updated his aliases and lists information</p>'; 
+			$r.='<p><b>'.$msg->call.'</b> has updated his aliases and followings information</p>'; 
 			next; 
 		}
 		$r.='<p><b>'.$msg->call.'</b> has send a '.$msg->type.' message</p>'; 
@@ -1184,7 +1184,7 @@ sub apply_deletion_array {
 	return sort(@ret); 
 }
 
-sub mode_aliases_and_lists {
+sub mode_aliases_and_followings {
 	my $o=shift; 
 
 	my $r;
@@ -1193,29 +1193,29 @@ sub mode_aliases_and_lists {
 	if ( ! $o->logged_in ) { return "<h4>ERROR Please log in first</h4>"; }
 
 	my @aliases=$o->q->param("aliases"); 
-	my @lists=$o->q->param("lists"); 
+	my @followings=$o->q->param("followings"); 
 
-	# get aliases and lists from this operator 
+	# get aliases and followings from this operator 
 	if ( 
-		( $#aliases==-1 ) and ( $#lists==-1 ) 
+		( $#aliases==-1 ) and ( $#followings==-1 ) 
 	) { 
 		my $op=$o->qtc_query->operator($o->q->param("publisher_call")); 
 		if ( $op ) {
 			@aliases=$op->set_of_aliases; 
-			@lists=$op->set_of_lists; 
+			@followings=$op->set_of_followings; 
 		}
 	}
 
 	push @aliases, $o->qtc_query->allowed_letters_for_call($o->q->param("add_alias")); 
-	push @lists, $o->qtc_query->allowed_letters_for_call($o->q->param("add_list")); 
+	push @followings, $o->qtc_query->allowed_letters_for_call($o->q->param("add_following")); 
 	@aliases=$o->apply_deletion_array(\@aliases, $o->q->param("delete_alias")); 
-	@lists=$o->apply_deletion_array(\@lists, $o->q->param("delete_list")); 
+	@followings=$o->apply_deletion_array(\@followings, $o->q->param("delete_following")); 
 
 	if ( $o->q->param("save_changes") eq "really" ) {
 		# send operator here 
 		$o->qtc_publish->operator(
 			set_of_aliases=>[@aliases],
-			set_of_lists=>[@lists],
+			set_of_followings=>[@followings],
 		); 
 		$o->q->param("mode", "show_telegrams"); 
 		return $o->mode_show_telegrams; 
@@ -1226,10 +1226,10 @@ sub mode_aliases_and_lists {
 	} else { 
 		$o->q->param("aliases", @aliases); 
 	}
-	if ( $#lists==-1 ) {
-		$o->q->delete("lists"); 
+	if ( $#followings==-1 ) {
+		$o->q->delete("followings"); 
 	} else { 
-		$o->q->param("lists", @lists);
+		$o->q->param("followings", @followings);
 	}
 	
 	$r.='<p>Don\'t forget to save your changes when you are done</p>';
@@ -1237,7 +1237,7 @@ sub mode_aliases_and_lists {
 	$r.="<h3>Aliases of ".$o->q->param("publisher_call").":</h3>";
 	
 	$o->{qtc}->{exports}->{aliases}=1; 
-	$o->{qtc}->{exports}->{lists}=1; 
+	$o->{qtc}->{exports}->{followings}=1; 
 
 	my $x; 
 	foreach my $alias (@aliases) {
@@ -1270,12 +1270,12 @@ sub mode_aliases_and_lists {
 	$r.="<h3>Lists of ".$o->q->param("publisher_call").":</h3>";
 	
 	$x='';
-	foreach my $list (@lists) {
+	foreach my $following (@followings) {
 		$x.=$o->h_labled_input({
-			label=>$list,
+			label=>$following,
 			type=>"checkbox",
-			name=>"delete_list",
-			value=>$list,
+			name=>"delete_following",
+			value=>$following,
 		}); 
 	}
 	$r.='<center>';
@@ -1287,11 +1287,11 @@ sub mode_aliases_and_lists {
 	); 
 	$r.=$o->h_tabled_form({}, 
 		$o->h_labled_input({
-			label=>"add list:", 
+			label=>"add following:", 
 			type=>"text", 
 			size=>10, 
 			maxlength=>20, 
-			name=>"add_list",
+			name=>"add_following",
 		}),
 		$o->h_submit_for_tbl({value=>"next"}), 
 	);
@@ -1305,7 +1305,7 @@ sub mode_aliases_and_lists {
 			type=>"submit", 
 			name=>"submit", 
 			value=>"SAVE CHANGES",
-			onClick=>$o->js_confirm("Send your changes to aliases and lists back into the Network?"), 
+			onClick=>$o->js_confirm("Send your changes to aliases and followings back into the Network?"), 
 		})
 	);
 	$r.='</center>';

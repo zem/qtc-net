@@ -124,7 +124,7 @@ our %data_types=(
 		data_type=>"string",
 		multiple_times=>1,
 	}, 
-	"set_of_lists"=>{
+	"set_of_followings"=>{
 		enum=>15,
 		data_type=>"string",
 		multiple_times=>1,

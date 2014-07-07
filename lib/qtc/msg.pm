@@ -171,13 +171,13 @@ our %msg_types=(
 	qsp=>{
 		"qsp_date"=>$valid_date, 
 		"telegram_checksum"=>$valid_checksum,
-		"to"=>$valid_call,  #the to field is important for lists 
+		"to"=>$valid_call,  #the to field is important for followings
 	}, 
-	# aliases and delivery lists 
+	# aliases and delivery followings 
 	operator=>{
 		"record_date"=>$valid_date, 
 		"set_of_aliases"=>[$valid_call], 
-		"set_of_lists"=>[$valid_call],
+		"set_of_followings"=>[$valid_call],
 	}, 
 	# keystorage a key has a valid date 
 	# you should publish a new key 
