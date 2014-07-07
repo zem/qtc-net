@@ -277,13 +277,19 @@ sub h_telegram_types_button {
 	my $mode=$obj->q->param("type");
 	if ( ! $mode ) { $mode="show_telegrams"; } 
 	my $r; 
-	if ( $mode ne $p->{type} ) {
-		$r.="<td>";
-			$obj->q->param("type", $p->{type}); 
-			$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>$p->{value}}));
-			$mode=$obj->q->param("type", $mode);
-		$r.="</td>";
-	} else { $r.="<td> ".$p->{value}." </td>"; }
+	my %opts=(
+		type=>"submit", 
+		name=>"submit", 
+		value=>$p->{value},	
+	);
+	if ( $mode eq $p->{type} ) {
+		$opts{disabled}="disabled"; 
+	}
+	$r.="<td>";
+		$obj->q->param("type", $p->{type}); 
+		$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>$p->{value}}));
+		$mode=$obj->q->param("type", $mode);
+	$r.="</td>";
 	return $r; 
 }
 
@@ -292,14 +298,20 @@ sub h_misc_button {
 	my $p=shift; 
 	my $mode=$obj->q->param("mode");
 	if ( ! $mode ) { $mode="show_telegrams"; } 
-	my $r; 
-	if ( $mode ne $p->{mode} ) {
-		$r.="<td>";
-			$obj->q->param("mode", $p->{mode}); 
-			$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>$p->{value}}));
-			$mode=$obj->q->param("mode", $mode);
-		$r.="</td>";
-	} else { $r.="<td> ".$p->{value}." </td>"; }
+	my $r;
+	my %opts=(
+		type=>"submit", 
+		name=>"submit", 
+		value=>$p->{value},	
+	);
+	if ( $mode eq $p->{mode} ) {
+		$opts{disabled}="disabled"; 
+	}
+	$r.="<td>";
+		$obj->q->param("mode", $p->{mode}); 
+		$r.=$obj->h_form({}, $obj->h_e("input", \%opts));
+		$mode=$obj->q->param("mode", $mode);
+	$r.="</td>";
 	return $r; 
 }
 
