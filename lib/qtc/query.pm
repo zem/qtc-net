@@ -182,6 +182,26 @@ sub operator {
 #-------------------------------------------------------
 =pod
 
+=head2 has_operator($call)
+
+Returns 1 if call has an operator message otherwise undef
+
+=cut
+#-------------------------------------------------------
+sub operator {
+	my $obj=shift; 
+	my $call=$obj->call2fname(shift); 
+	
+	foreach my $file ($obj->scan_dir($obj->{path}."/call/$call", 'operator_.+\.qtc')){
+		return 1; 
+	}
+
+	return; 
+}
+
+#-------------------------------------------------------
+=pod
+
 =head2 get_old_trust(call=>$call)
 
 This returns the trustlevel message that we previously 

@@ -462,10 +462,12 @@ sub area_misc_buttons {
 					value=>"send telegram",
 				}); 
 				if ( $obj->q->param("call") ) {
-					$r.=$obj->h_misc_button({
-						mode=>"change_trust", 
-						value=>"change trust",
-					}); 
+					if ( $obj->query->has_operator($obj->q->param("call"))) {
+						$r.=$obj->h_misc_button({
+							mode=>"change_trust", 
+							value=>"change trust",
+						}); 
+					} 
 				} 
 				$r.="</tr><tr>";
 				$r.=$obj->h_misc_button({
