@@ -188,7 +188,7 @@ Returns 1 if call has an operator message otherwise undef
 
 =cut
 #-------------------------------------------------------
-sub operator {
+sub has_operator {
 	my $obj=shift; 
 	my $call=$obj->call2fname(shift); 
 	
