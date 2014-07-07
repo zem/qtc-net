@@ -3,7 +3,7 @@
 TARGET=www/pod
 rm -r $TARGET
 mkdir $TARGET
-cd src
+cd lib
 find qtc -name "*.pm" | (
 	while read file
 	do
