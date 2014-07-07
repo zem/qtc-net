@@ -287,7 +287,7 @@ sub h_telegram_types_button {
 	}
 	$r.="<td>";
 		$obj->q->param("type", $p->{type}); 
-		$r.=$obj->h_form({}, $obj->h_e("input", {type=>"submit", name=>"submit", value=>$p->{value}}));
+		$r.=$obj->h_form({}, $obj->h_e("input", \%opts));
 		$mode=$obj->q->param("type", $mode);
 	$r.="</td>";
 	return $r; 
@@ -409,22 +409,33 @@ sub area_telegram_types_buttons {
 	my $obj=shift; 
 	my $r; 
 
-	$r.="<b>Show me: ";
-	$r.="<table><tr>";
-	$r.=$obj->h_telegram_types_button({
-		type=>"new",
-		value=>"new",
-	});
-	$r.=$obj->h_telegram_types_button({
-		type=>"all",
-		value=>"all",
-	});
-	$r.=$obj->h_telegram_types_button({
-		type=>"sent",
-		value=>"sent",
-	});
-	$r.="</tr></table>";
-	$r.="</b>";
+	#$r.="<b>Show me: </b>";
+	$r.='<table width="100%"><tr><td align="left">';
+		$r.="<table><tr>";
+		$r.=$obj->h_telegram_types_button({
+			type=>"new",
+			value=>"new",
+		});
+		$r.=$obj->h_telegram_types_button({
+			type=>"timeline_new",
+			value=>"timeline_new",
+		});
+		$r.=$obj->h_telegram_types_button({
+			type=>"timeline",
+			value=>"timeline",
+		});
+		$r.=$obj->h_telegram_types_button({
+			type=>"all",
+			value=>"all",
+		});
+		$r.=$obj->h_telegram_types_button({
+			type=>"sent",
+			value=>"sent",
+		});
+		$r.="</tr></table>";
+	$r.='</td><td align="right">';
+		# place sorting code here 
+	$r.="</td></tr></table>";
 
 	return $r;
 }
