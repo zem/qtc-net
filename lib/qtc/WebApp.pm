@@ -416,13 +416,13 @@ sub area_telegram_types_buttons {
 			type=>"new",
 			value=>"new",
 		});
-		$r.=$obj->h_telegram_types_button({
-			type=>"timeline_new",
-			value=>"timeline_new",
-		});
-		$r.=$obj->h_telegram_types_button({
-			type=>"timeline",
-			value=>"timeline",
+		#$r.=$obj->h_telegram_types_button({
+		#	type=>"timeline_new",
+		#	value=>"timeline_new",
+		#});
+		#$r.=$obj->h_telegram_types_button({
+		#	type=>"timeline",
+		#	value=>"timeline",
 		});
 		$r.=$obj->h_telegram_types_button({
 			type=>"all",
@@ -467,6 +467,7 @@ sub area_misc_buttons {
 						value=>"change trust",
 					}); 
 				} 
+				$r.="</tr><tr>";
 				$r.=$obj->h_misc_button({
 					mode=>"key_management", 
 					value=>"key management",
