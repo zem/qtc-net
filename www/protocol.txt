@@ -29,6 +29,8 @@ Filesystem Structure:
 			telegrams/
 				sent/ # telegrams sent by this call 
 				new/  # telegrams new for this call (no qsp yet) 
+				timeline_new/  # telegrams new for this call (no qsp yet) including the telegrams of followed callsigns 
+				timeline/  # all telegrams ever sent or received by this call including its followings
 				all/  # all telegrams this call ever received by this call
 			qsprcvd/    # all qsps this user got
 			trust/      # all the trust levels of this user 
