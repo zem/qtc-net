@@ -447,8 +447,11 @@ sub import_telegram {
 	
 	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/all");
 	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->from)."/telegrams/sent");
+	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/timeline");
+	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->from)."/telegrams/timeline");
 	if ( $obj->msg_has_no_qsp($msg) ) {
 		$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/new");
+		$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/timeline_new");
 	}
 	$msg->link_to_path($obj->{root}."/out");
 	
@@ -459,8 +462,10 @@ sub import_telegram {
 			# if one of the followingmembers has sent this message to the following, he does not need it. 
 			if ( $obj->call2fname($msg->to) eq $followingmember ) { next; }
 			$msg->link_to_path($followingpath."/".$followingmember."/telegrams/all");
+			$msg->link_to_path($followingpath."/".$followingmember."/telegrams/timeline");
 			if ( $obj->msg_has_no_qsp($msg, $followingmember) ) {
-				$msg->link_to_path($followingpath."/".$followingmember."/telegrams/new");
+				#$msg->link_to_path($followingpath."/".$followingmember."/telegrams/new");
+				$msg->link_to_path($followingpath."/".$followingmember."/telegrams/timeline_new");
 			}
 		}
 	}
@@ -483,11 +488,14 @@ sub remove_telegram {
 	foreach my $following ($obj->scan_dir($followingpath, ".+")) {
 		if ( -l $followingpath."/".$following ) { 
 			$msg->unlink_at_path($followingpath."/".$following."/telegrams/all");
-			$msg->unlink_at_path($followingpath."/".$following."/telegrams/new");
+			$msg->unlink_at_path($followingpath."/".$following."/telegrams/timeline");
+			$msg->unlink_at_path($followingpath."/".$following."/telegrams/timeline_new");
 		}
 	}
 	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/all");
 	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->from)."/telegrams/sent");
+	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->from)."/telegrams/timeline");
+	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/timeline");
 	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/new");
 	$msg->unlink_at_path($obj->{root}."/out");
 }
@@ -570,6 +578,14 @@ sub import_qsp {
 	);
 	foreach my $newmsg (@newmsgs) {
 		unlink($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/new/".$newmsg) or die "removing of transmitted message $newmsg failed"; 
+	}
+	# remove also telegrams from the timeline_new directory
+	@newmsgs=$obj->scan_dir(
+		$obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/timeline_new",
+		"telegram_([a-z]|[0-9]|-)+_".$msg->telegram_checksum.".qtc"
+	);
+	foreach my $newmsg (@newmsgs) {
+		unlink($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/timeline_new/".$newmsg) or die "removing of transmitted message $newmsg failed"; 
 	}
 	$msg->link_to_path($obj->{root}."/out");
 }
