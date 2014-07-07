@@ -93,8 +93,8 @@ sub list_telegrams {
 	my $type=shift; if ( ! $type ) { $type="new"; }
 	
 	my @msgs;
-	foreach my $file ($obj->scan_dir($obj->{path}."/call/$call/telegrams/$type", '.+\.qtc')){
-		push @msgs, qtc::msg->new(path=>$obj->{path}."/call/$call/telegrams/$type", filename=>$file); 
+	foreach my $file ($obj->scan_dir_ordered($obj->{path}."/call/$call/telegrams/$type", '.+\.qtc')){
+		unshift @msgs, qtc::msg->new(path=>$obj->{path}."/call/$call/telegrams/$type", filename=>$file); 
 	}
 
 	return @msgs; 

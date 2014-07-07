@@ -416,13 +416,13 @@ sub area_telegram_types_buttons {
 			type=>"new",
 			value=>"new",
 		});
-		#$r.=$obj->h_telegram_types_button({
-		#	type=>"timeline_new",
-		#	value=>"timeline_new",
-		#});
-		#$r.=$obj->h_telegram_types_button({
-		#	type=>"timeline",
-		#	value=>"timeline",
+		$r.=$obj->h_telegram_types_button({
+			type=>"timeline_new",
+			value=>"timeline_new",
+		});
+		$r.=$obj->h_telegram_types_button({
+			type=>"timeline",
+			value=>"timeline",
 		});
 		$r.=$obj->h_telegram_types_button({
 			type=>"all",
@@ -634,7 +634,7 @@ sub mode_show_telegrams {
 	my $q=$obj->query;
 	if ( ! $q->param("type") ) { $q->param("type", "new"); }
 	my $type=$q->param("type");
-	if ( $type !~ /^((all)|(new)|(sent))$/ ) { return "<h1>FAIL telegram type invalid</h1>"; }
+	if ( $type !~ /^((all)|(new)|(sent)|(timeline)|(timeline_new))$/ ) { return "<h1>FAIL telegram type invalid</h1>"; }
 	my $r; 
 
 	if ( ( $obj->logged_in ) and ( ! $q->param("call") ) ) {
