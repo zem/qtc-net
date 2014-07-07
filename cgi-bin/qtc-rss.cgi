@@ -10,7 +10,7 @@ my @calls=$q->param("call");
 
 my $type=$q->param("type"); 
 if ( ! $type ) { $type="new"; }
-if ( $type !~ /^new|all|sent$/ ) { die "unknown type"; }
+if ( $type !~ /^new|all|sent|timeline|timeline_new$/ ) { die "unknown type"; }
 
 my $dateformat="%a, %d %b %Y %T +0000";
 #my $dateformat="%Y-%m-%d %H:%M:%S UTC";
