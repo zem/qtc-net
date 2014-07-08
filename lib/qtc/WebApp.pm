@@ -87,6 +87,8 @@ sub setup {
 	$obj->{qtc}->{exports}->{type}=1;
 	$obj->{qtc}->{exports}->{publisher_call}=1;
 	$obj->{qtc}->{exports}->{publisher_password}=1;
+	$obj->{qtc}->{exports}->{list_max_items}=1;
+	$obj->{qtc}->{exports}->{list_offset}=1;
 	
 	# the login data is required very very early so we need to check this during setup!
 	my $publisher_call=$obj->q->param("publisher_call");
@@ -409,32 +411,80 @@ sub area_telegram_types_buttons {
 	my $obj=shift; 
 	my $r; 
 
+
+	# handle maxitems and offset 
+	my $maxitems=$obj->q->param("list_max_items");
+	if ( $maxitems !~ /^\d\d?\d?$/  ) { 
+		$maxitems=20; 
+		$obj->q->param("list_max_items", $maxitems);
+	}
+	my $offset=$obj->q->param("list_offset");
+	if ( $maxitems !~ /^\d+$/  ) { 
+		$offset=0; 
+		$obj->q->param("list_offset", $offset);
+	}
+	if ( $obj->q->param("newoffset") eq "<<" ) { 
+		$obj->q->param("list_offset", 0);
+		$obj->q->delete("newoffset");
+	}
+	if (( $obj->q->param("newoffset") eq "<" ) and ( $offset > 0 ) ) { 
+		$obj->q->param("list_offset", $obj->q->param("list_offset")-1);
+		$obj->q->delete("newoffset");
+	}
+	if ( $obj->q->param("newoffset") eq ">" ) { 
+		$obj->q->param("list_offset", $obj->q->param("list_offset")+1);
+		$obj->q->delete("newoffset");
+	}
+
+	# read call from parameters 
+	my $call=$obj->q->param("call");
+	$call=$obj->qtc_query->allowed_letters_for_call($call); 
+
 	#$r.="<b>Show me: </b>";
 	$r.='<table width="100%"><tr><td align="left">';
 		$r.="<table><tr>";
-		$r.=$obj->h_telegram_types_button({
-			type=>"new",
-			value=>"new",
-		});
-		$r.=$obj->h_telegram_types_button({
-			type=>"timeline_new",
-			value=>"timeline_new",
-		});
-		$r.=$obj->h_telegram_types_button({
-			type=>"timeline",
-			value=>"timeline",
-		});
-		$r.=$obj->h_telegram_types_button({
-			type=>"all",
-			value=>"all",
-		});
-		$r.=$obj->h_telegram_types_button({
-			type=>"sent",
-			value=>"sent",
-		});
+		delete $obj->{qtc}->{exports}->{list_offset};
+		foreach my $what ("new", "timeline_new", "timeline", "all", "sent") {
+			if ( ! defined $obj->{num_telegrams}->{$what} ) { 
+				$obj->{num_telegrams}->{$what}=$obj->qtc_query->num_telegrams($call, $what); 
+			}
+			$r.=$obj->h_telegram_types_button({
+				type=>"$what",
+				value=>"$what (".$obj->{num_telegrams}->{$what}.")"
+			});
+		}
+		$obj->{qtc}->{exports}->{list_offset}=1;
 		$r.="</tr></table>";
 	$r.='</td><td align="right">';
-		# place sorting code here 
+	delete $obj->{qtc}->{exports}->{list_max_items};
+	$r.=$obj->h_form({}, 
+		"<table><tr><td>",
+		$obj->h_e("input", {
+			type=>"submit",
+			name=>"newoffset",
+			value=>"<<"
+		}),"</td><td>",
+		$obj->h_e("input", {
+			type=>"submit",
+			name=>"newoffset",
+			value=>"<"
+		}),"</td><td>",
+		$obj->h_e("input", {
+			size=>2,
+			maxlength=>5,
+			type=>"text",
+			name=>"list_max_items",
+			value=>$maxitems
+		}),"</td><td>",
+		$obj->h_e("input", {
+			type=>"submit",
+			name=>"newoffset",
+			value=>">"
+		}),
+		"</td></tr></table>",
+	);
+	$obj->{qtc}->{exports}->{list_max_items}=1;
+
 	$r.="</td></tr></table>";
 
 	return $r;
@@ -670,7 +720,7 @@ as delivered in the qtc-net by him. </p>';
 	
 	$r.=$obj->area_telegram_types_buttons;
 
-	my @msgs=$obj->qtc_query->list_telegrams($q->param("call"), $type);
+	my @msgs=$obj->qtc_query->list_telegrams($q->param("call"), $type, $q->param("list_max_items"), $q->param("list_offset"));
 	my @rows; 
 	foreach my $msg (@msgs) {  
 		if ( ( $qsp{$msg->checksum} ) and ($obj->logged_in) and ($q->param("call")) ) {
@@ -689,7 +739,7 @@ as delivered in the qtc-net by him. </p>';
 	} 	
 
 	$r.=$obj->h_e("center",{}, $obj->h_form({}, 
-		$obj->h_table({width='70%'}, 
+		$obj->h_table({width=>'70%'}, 
 			@rows,
 			$obj->h_tr({},
 				$obj->h_td({}), 

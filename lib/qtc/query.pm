@@ -91,10 +91,17 @@ sub list_telegrams {
 	my $obj=shift; 
 	my $call=$obj->call2fname(shift); 
 	my $type=shift; if ( ! $type ) { $type="new"; }
+	my $anz=shift; 
+	my $offset=shift; if ( ! defined $offset ) { $offset=0; }
 	
+	my $cnt=$anz; 
+	my $offset=$anz*$offset; 
 	my @msgs;
 	foreach my $file ($obj->scan_dir_ordered($obj->{path}."/call/$call/telegrams/$type", '.+\.qtc')){
+		if ( $offset ) { $offset--; next; }
 		unshift @msgs, qtc::msg->new(path=>$obj->{path}."/call/$call/telegrams/$type", filename=>$file); 
+		if ($cnt) { $cnt--; }
+		if (($anz ) and ( ! $cnt)) { return @msgs; } 
 	}
 
 	return @msgs; 
