@@ -689,7 +689,7 @@ as delivered in the qtc-net by him. </p>';
 	} 	
 
 	$r.=$obj->h_e("center",{}, $obj->h_form({}, 
-		$obj->h_table({}, 
+		$obj->h_table({width='70%'}, 
 			@rows,
 			$obj->h_tr({},
 				$obj->h_td({}), 
