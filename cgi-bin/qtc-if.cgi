@@ -134,10 +134,14 @@ if ( -d $root.$path ) {
 		my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
                   $atime,$mtime,$ctime,$blksize,$blocks)
                       = stat($root.$path."/".$file);
-		if ( $mtime > $ts ) { 
-			push @ret, $file; 
+		if ( $mtime > $ts ) {
+			# this is to order the results by time. the map() right after that loop 
+			# is also needed for this
+			push @ret, sprintf("%011d", $mtime)."/".$file; 
 		}
 	}
+	@ret=map {basename($_)} sort(@ret); 
+	
 	if ( ! $q->param("digest") ) {
 		print $q->header(
 			-type=>'text/plain',
