@@ -48,23 +48,43 @@ sub url { my $obj=shift; return $obj->{url}; }
 sub lwp { my $obj=shift; return $obj->{lwp}; }
 
 
-#TODO
+sub publish_tar {
+	my $obj=shift; 
+	my @msgs=@_; 
+
+	my $tar=Archive::Tar->new(); 
+	foreach my $msg (@msgs) {
+		if ( ! $msg ) { die "I need a qtc::msg object here\n"; }
+		$tar->add_data($msg->filename, pack("H*", $msg->as_hex));
+	}
+
+	if ( $#msgs >= 0 ) {
+		my $res=$obj->lwp->put($obj->url, 
+			"Content-Type"=>"application/x-tar",
+			Content=>$tar->write,
+		); 
+
+		if ( ! $res->is_success ) { die "File Upload not succeeded\n"; }
+	}
+}
+
 sub publish {
 	my $obj=shift; 
 	my @msgs=@_; 
 
-	if ( $#msgs > 1 ) { }
-	if ( ! $msg ) { die "I need a qtc::msg object here\n"; }
+	foreach my $msg (@msgs) {
 
-	my $res=$obj->lwp->put($obj->url, 
-		"Content-Type"=>"application/octet-stream",
-		Content=>pack("H*", $msg->as_hex),
-	); 
+		if ( ! $msg ) { die "I need a qtc::msg object here\n"; }
 
-	if ( ! $res->is_success ) { die "File Upload not succeeded\n"; }
+		my $res=$obj->lwp->put($obj->url, 
+			"Content-Type"=>"application/octet-stream",
+			Content=>pack("H*", $msg->as_hex),
+		); 
+
+		if ( ! $res->is_success ) { die "File Upload not succeeded\n"; }
+	}
 }
 
-#TODO
 sub sync_upload {
 	my $obj=shift; 
 	my $local_path=shift;  # the qtc path (/out /call/FOO/telegrams/new) goes in here as parameter
@@ -184,40 +204,23 @@ sub process_dir_upload {
 	my %remote;
 	foreach my $file (split("\n", $dirdata)) { $remote{$file}=1; }; 
 
-	foreach my $file (qtc::misc->new()->scan_dir($obj->{path}."/out", '.*\.qtc')) { 
+	my @up; 
+	foreach my $file (qtc::misc->new()->scan_dir($obj->{path}."/".$local_path, '.*\.qtc')) { 
 		if ( ! $remote{$file} ) {
 			my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
          	         $atime,$mtime,$ctime,$blksize,$blocks)
             	          = stat($root.$path."/".$file);
 			if ( $mtime > $ts ) { 
-				
+				push @up, sprintf("%011d", $mtime)."/".$file; 
 			}
 		}
-		if ( ! -e $obj->{path}."/in/".$file ) { 
-			if ( $obj->{use_digest_lst} ) {
-				push @dig, $file; 
-			} else {
-				my $res=$obj->lwp->get($urlpath."/".$file); 
-				if ( ! $res->is_success ) { $die_later.="get $file failed\n"; next; }
-				my $path=$obj->{path}."/in";
-				$die_later.=$obj->write_content($path, $file, $res->decoded_content); 
-			} 
+		@up=map {basename($_)} sort(@up); 
+		
+		if ( ! $obj->{use_digest} ) {
+			$obj->publish(map { qtc::msg->new(path=>$obj->{path}."/".$local_path, file=>$_)} @up); 
+		} else {
+			$obj->publish_tar(map { qtc::msg->new(path=>$obj->{path}."/".$local_path, file=>$_)} @up); 
 		}
-	}
-	if ( ! $obj->{use_digest_lst} ) {
-		if ( $die_later ) { die $die_later; }
-		return $obj->{message_count}; 
-	}
-
-	my $res=$obj->lwp->post($urlpath, 
-		Content_Type => 'form-data',
-		Content => [ 
-			ts=>$ts,
-			digest => [undef, "digest.lst", 'Content-Type'=>"text/plain", Content=>join("\n", @dig) ] 
-		],
-	);
-	if ( ! $res->is_success ) { die "http get dir to $urlpath failed\n"; }
-	return $obj->process_tar($res->decoded_content); 
 }
 
 sub process_dir { 
