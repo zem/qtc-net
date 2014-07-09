@@ -1273,6 +1273,11 @@ sub mode_aliases_and_followings {
 			set_of_followings=>[@followings],
 		); 
 		$o->q->param("mode", "show_telegrams"); 
+		# we had the problem here that sometimes the processor may catch a telegram right under 
+		# the ass of the show_telegram method, so we try to look at the new telegrams to reduce that risk
+      # otherwise we could use a sleep here.
+		# the problem is an internal server error.....  
+		$o->q->param("type", "new");
 		return $o->mode_show_telegrams; 
 	}
 
