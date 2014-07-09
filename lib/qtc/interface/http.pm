@@ -267,7 +267,7 @@ sub process_tar {
 	my $obj=shift; 
 	my $tardata=shift; 
 	if ( ! $tardata ) { die "We got no Tar data back so we can stop now\n"; }
-	else { print "hey there is ".ref($tardata)."\n"; }
+	else { print "hey there is the ref to the tar i process -- ".ref($tardata)." -- \n"; }
 	my $tarfh=IO::Scalar->new(\$tardata); 
 	my $die_later=""; 
 	
