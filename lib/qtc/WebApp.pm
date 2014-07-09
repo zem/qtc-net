@@ -1157,7 +1157,10 @@ sub mode_change_trust {
 	if ( ! $o->q->param("call") ) { 
 		$r.="<h4>I need a call to set a trustlevel for</h4>";
 		return $r;  
-	}
+	} elsif (! $o->qtc_query->operator($o->q->param("call"))) { 
+		$r.="<h4>This call does not have an operator message we can trust</h4>";
+		return $r;  
+	} 
 	if (
 			( defined $o->q->param("trustlevel") )
 			and
