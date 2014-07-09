@@ -17,6 +17,7 @@ my $dateformat="%a, %d %b %Y %T +0000";
 
 my $anz=$q->param("anz"); 
 if (! $anz) { $anz=10; }
+if ( $anz !~ /^\d+$/ ) { $anz=10; }
 
 # return file 
 print $q->header(
@@ -84,5 +85,8 @@ if ( $#calls == -1 ) {
 	}
 }
 
-print '</table></small></body></html>';
+$q->param("anz", $anz+10); 
+print '</table>
+<center><a href="'.$q->url(-full=>1, -query=>1).'">...</a></center>
+</small></body></html>';
 
