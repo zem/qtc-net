@@ -221,6 +221,7 @@ sub process_dir_upload {
 		} else {
 			$obj->publish_tar(map { qtc::msg->new(path=>$obj->{path}."/".$local_path, file=>$_)} @up); 
 		}
+	}
 }
 
 sub process_dir { 
