@@ -64,6 +64,7 @@ print '<!DOCTYPE html
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 </head>
 <body>
+<small>
 <table width="100%">
 ';
 
@@ -83,5 +84,5 @@ if ( $#calls == -1 ) {
 	}
 }
 
-print '</table></body></html>';
+print '</table></small></body></html>';
 
