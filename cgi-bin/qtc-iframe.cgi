@@ -37,16 +37,16 @@ $qry=qtc::query->new(
 sub telegram_item {
 	my $msg=shift; 
 	if ( $msg->type ne "telegram" ) { return; }
-	my $fromcall=$qry->allowed_letters_for_call($msg->to); 
+	my $fromcall=$qry->allowed_letters_for_call($msg->from); 
 	my $tocall=$qry->allowed_letters_for_call($msg->to); 
 	my $fromcallurl=$url."?call=".$q->url_encode($fromcall);
 	my $tocallurl=$url."?call=".$q->url_encode($tocall);
 	
 	print '
     <tr>
-		<td><b>from:</b></td><td><a href="'.$fromcallurl.'">'.$q->escapeHTML($msg->from).'</td>
+		<td><b>from:</b></td><td><a href="'.$fromcallurl.'" target="_top">'.$q->escapeHTML($msg->from).'</td>
 	 </tr><tr>
-		<td><b>to:</b></td><td><a href="'.$tocallurl.'">'.$q->escapeHTML($msg->to).'</a></td>
+		<td><b>to:</b></td><td><a href="'.$tocallurl.'" target="_top">'.$q->escapeHTML($msg->to).'</a></td>
 	 </tr><tr>
 		<td colspan="2">'.$q->escapeHTML($msg->telegram).'<br/><br/></td>
 	</tr>
