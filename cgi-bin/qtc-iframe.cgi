@@ -48,7 +48,7 @@ sub telegram_item {
 	 </tr><tr>
 		<td><b>to:</b></td><td><a href="'.$tocallurl.'">'.$q->escapeHTML($msg->to).'</a></td>
 	 </tr><tr>
-		<td colspan="2">'.$q->escapeHTML($msg->telegram).'</a></td>
+		<td colspan="2">'.$q->escapeHTML($msg->telegram).'<br/></td>
 	</tr>
 ';
 }
