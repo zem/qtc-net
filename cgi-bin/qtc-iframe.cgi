@@ -39,8 +39,8 @@ sub telegram_item {
 	if ( $msg->type ne "telegram" ) { return; }
 	my $fromcall=$qry->allowed_letters_for_call($msg->from); 
 	my $tocall=$qry->allowed_letters_for_call($msg->to); 
-	my $fromcallurl=$url."?call=".$q->url_encode($fromcall);
-	my $tocallurl=$url."?call=".$q->url_encode($tocall);
+	my $fromcallurl=$url."?call=".$q->url_encode($fromcall)."&type=".$type;
+	my $tocallurl=$url."?call=".$q->url_encode($tocall)."&type=".$type;
 	
 	print '
     <tr>
