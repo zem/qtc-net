@@ -1327,7 +1327,7 @@ sub mode_aliases_and_followings {
 	);
 	$r.='</center>';
 
-	$r.="<h3>Lists of ".$o->q->param("publisher_call").":</h3>";
+	$r.="<h3>Calls that ".$o->q->param("publisher_call")." follows:</h3>";
 	
 	$x='';
 	foreach my $following (@followings) {
