@@ -17,6 +17,7 @@ my $dateformat="%a, %d %b %Y %T +0000";
 
 my $anz=$q->param("anz"); 
 if (! $anz) { $anz=10; }
+if ( $anz !~ /^\d+$/ ) { $anz=10; }
 
 # return file 
 print $q->header(
@@ -37,16 +38,16 @@ $qry=qtc::query->new(
 sub telegram_item {
 	my $msg=shift; 
 	if ( $msg->type ne "telegram" ) { return; }
-	my $fromcall=$qry->allowed_letters_for_call($msg->to); 
+	my $fromcall=$qry->allowed_letters_for_call($msg->from); 
 	my $tocall=$qry->allowed_letters_for_call($msg->to); 
-	my $fromcallurl=$url."?call=".$q->url_encode($fromcall);
-	my $tocallurl=$url."?call=".$q->url_encode($tocall);
+	my $fromcallurl=$url."?call=".$q->url_encode($fromcall)."&type=".$type;
+	my $tocallurl=$url."?call=".$q->url_encode($tocall)."&type=".$type;
 	
 	print '
     <tr>
-		<td><b>from:</b></td><td><a href="'.$fromcallurl.'">'.$q->escapeHTML($msg->from).'</td>
+		<td><b>from:</b></td><td><a href="'.$fromcallurl.'" target="_top">'.$q->escapeHTML($msg->from).'</td>
 	 </tr><tr>
-		<td><b>to:</b></td><td><a href="'.$tocallurl.'">'.$q->escapeHTML($msg->to).'</a></td>
+		<td><b>to:</b></td><td><a href="'.$tocallurl.'" target="_top">'.$q->escapeHTML($msg->to).'</a></td>
 	 </tr><tr>
 		<td colspan="2">'.$q->escapeHTML($msg->telegram).'<br/><br/></td>
 	</tr>
@@ -84,5 +85,8 @@ if ( $#calls == -1 ) {
 	}
 }
 
-print '</table></small></body></html>';
+$q->param("anz", $anz+10); 
+print '</table>
+<center><a href="'.$q->url(-full=>1, -query=>1).'">...</a></center>
+</small></body></html>';
 
