@@ -540,18 +540,20 @@ sub msg_has_no_qsp {
 		}
 	}
 	
-	$obj->ensure_path($obj->{root}."/call/".$f_to."/qsprcvd"); 
+	# ensure path should not be needed here
+	#$obj->ensure_path($obj->{root}."/call/".$f_to."/qsp/".$msg->checksum); 
 	my @files=$obj->scan_dir(
-		$obj->{root}."/call/".$f_to."/qsprcvd",
+		$obj->{root}."/call/".$f_to."/qsp/".$msg->checksum,
 		'qsp_([a-z]|[0-9]|-)+_([0-9]|[a-f])+\.qtc'
 	);
 	foreach my $file (@files) {
-		my $qsp=qtc::msg->new(
-			path=>$obj->{root}."/call/".$f_to."/qsprcvd",
-			filename=>$file,
-		); 
-		#print "Compare ".$qsp->telegram_checksum." and ".$msg->checksum."\n"; 
-		if ($qsp->telegram_checksum eq $msg->checksum) { return 0; }
+		#my $qsp=qtc::msg->new(
+		#	path=>$obj->{root}."/call/".$f_to."/qsp/".$msg->checksum,
+		#	filename=>$file,
+		#); 
+		##print "Compare ".$qsp->telegram_checksum." and ".$msg->checksum."\n"; 
+		#if ($qsp->telegram_checksum eq $msg->checksum) { return 0; }
+		return 0; # if there are any qsps there 
 	}
 	return 1; 
 }
@@ -573,7 +575,7 @@ sub import_qsp {
 	$obj->verify_signature($msg); 	
 
 	# TODO: not working, implementing lookup via sha256 hashes first
-	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/qsprcvd");
+	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/qsp/".$msg->telegram_checksum);
 	my @newmsgs=$obj->scan_dir(
 		$obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/new",
 		"telegram_([a-z]|[0-9]|-)+_".$msg->telegram_checksum.".qtc"
@@ -606,7 +608,7 @@ sub remove_qsp {
 	my $obj=shift; 
 	my $msg=shift; 
 	
-	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/qsprcvd");
+	$msg->unlink_at_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/qsp/".$msg->telegram_checksum);
 	$msg->unlink_at_path($obj->{root}."/out");
 }
 
@@ -903,7 +905,7 @@ sub import_operator {
 #------------------------------------------------------------------------------------
 =pod
 
-=head3 remove_operator$msg)
+=head3 remove_operator($msg)
 
 This removes an operator message from the filesystem structure
 
