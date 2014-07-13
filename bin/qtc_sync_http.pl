@@ -12,10 +12,14 @@ if ( $ARGV[0] eq "-d" ) {
 
 # url may be http://localhost/qtc_if.cgi
 foreach my $url (@ARGV) {
-	my $if=qtc::interface::http->new(path=>$path, url=>$url); 
-	print "Sync down\n"; 
+	my $if=qtc::interface::http->new(
+		path=>$path, 
+		url=>$url,
+		debug=>1, 
+	); 
+	$if->dprint("Sync down\n"); 
 	$if->sync("/out"); 
-	print "Sync up\n"; 
+	$if->dprint("Sync up\n"); 
 	$if->sync_upload("/out"); 
 }
 

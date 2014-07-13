@@ -47,7 +47,6 @@ sub new {
 sub url { my $obj=shift; return $obj->{url}; }
 sub lwp { my $obj=shift; return $obj->{lwp}; }
 
-
 sub publish_tar {
 	my $obj=shift; 
 	my @msgs=@_; 
@@ -147,32 +146,42 @@ sub sync {
 	# the timestamp of the last call is stored in a file so only files newer than 
 	# the TS may get listet but first, load the old info.... 
 	if ( $obj->{use_ts} ) {
+		$obj->dprint("We are using timestamps\n"); 
 		my $ts=0; 
 		$tsfile=$obj->{ts_dir}."/".sha256_hex($urlpath); 
 		
 		if ( -e $tsfile ) {
+			$obj->dprint("using time of last sync\n"); 
 			open(READ, "< $tsfile") or die "I cant open $tsfile for reading \n"; 
 			while(<READ>){ $ts=$_; }
 			close READ; 
 		}
+		$obj->dprint("I will syncronize all messages newer than $ts\n"); 
 		push @args, "ts=$ts"; 
 	}
 
 	if ( $obj->{use_digest} ) {
+		$obj->dprint("getting messages as digest $ts\n"); 
 		push @args, "digest=1"; 
 	}
 
+	
+	$obj->dprint("url: ".$urlpath."?".join("&", @args)."\n"); 
 	my $res=$obj->lwp->get($urlpath."?".join("&", @args)); 
 
 	if ( ! $res->is_success ) { die "http get to $urlpath failed\n"; }
 
 	my $newts=$res->filename; 
+	$obj->dprint("downloaded new ts: ".$newts."\n"); 
 
 	if ( $newts !~ /^\d+$/ ) {  die "uups $newts should be numeric\n"; } 
 	
 	if ( $obj->{use_digest} ) { 
+		$obj->dprint("because we get messages as digest we expect a tar archive here\n"); 
 		$obj->{message_count}=$obj->process_tar($res->decoded_content); 
 	} else {
+		$obj->dprint("we expect a message list as data here\n"); 
+		#$obj->dprint($res->decoded_content); 
 		$obj->{message_count}=$obj->process_dir($res->decoded_content, $urlpath, $ts); 
 	}
 	
@@ -233,12 +242,17 @@ sub process_dir {
 	my @dir=split("\n", $dirdata); 
 	my $die_later=""; 
 
+	$obj->dprint("parsing mesage list\n"); 
+
 	my @dig; 
 	foreach my $file (@dir) { 
 		if ( ! -e $obj->{path}."/in/".$file ) { 
+			$obj->dprint("$file is not known lokally "); 
 			if ( $obj->{use_digest_lst} ) {
+				$obj->dprint("put it into digest for later fetch\n"); 
 				push @dig, $file; 
 			} else {
+				$obj->dprint("try to download ".$urlpath."/".$file."\n"); 
 				my $res=$obj->lwp->get($urlpath."/".$file); 
 				if ( ! $res->is_success ) { $die_later.="get $file failed\n"; next; }
 				my $path=$obj->{path}."/in";
@@ -248,9 +262,17 @@ sub process_dir {
 	}
 	if ( ! $obj->{use_digest_lst} ) {
 		if ( $die_later ) { die $die_later; }
+		$obj->dprint("we are done with that directory\n"); 
 		return $obj->{message_count}; 
 	}
 
+	if ( $#dig < 0 ) { 
+		$obj->dprint("We have not found any new message on the server returning\n"); 
+		return $obj->{message_count}; 
+	}
+	
+	$obj->dprint("We are downloading a digest.lst from the server now \n"); 
+	$obj->dprint(join("\n", @dig)."\n"); 
 	my $res=$obj->lwp->post($urlpath, 
 		Content_Type => 'form-data',
 		Content => [ 

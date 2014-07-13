@@ -6,7 +6,13 @@ sub new {
 	my %parm=(@_); 
 	my $obj=bless \%parm, $class; 
 	if ( ! $obj->{path} ) { $obj->{path}=$ENV{HOME}."/.qtc"; }
+	if ( ! $obj->{debug} ) { $obj->{debug}=0; }
 	return $obj; 
+}
+
+sub dprint { 
+	my $obj=shift; 
+	if ( $obj->{debug} ) { print STDERR @_; }
 }
 
 sub can_publish { 
