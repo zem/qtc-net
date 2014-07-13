@@ -54,10 +54,12 @@ sub publish_tar {
 	my $tar=Archive::Tar->new(); 
 	foreach my $msg (@msgs) {
 		if ( ! $msg ) { die "I need a qtc::msg object here\n"; }
+		$obj->dprint("add ".$msg->filename." to tar  \n"); 
 		$tar->add_data($msg->filename, pack("H*", $msg->as_hex));
 	}
 
 	if ( $#msgs >= 0 ) {
+		$obj->dprint("put tar data  \n"); 
 		my $res=$obj->lwp->put($obj->url, 
 			"Content-Type"=>"application/x-tar",
 			Content=>$tar->write,
@@ -75,6 +77,8 @@ sub publish {
 
 		if ( ! $msg ) { die "I need a qtc::msg object here\n"; }
 
+		$obj->dprint("put ".$msg->filename."\n");
+ 
 		my $res=$obj->lwp->put($obj->url, 
 			"Content-Type"=>"application/octet-stream",
 			Content=>pack("H*", $msg->as_hex),
@@ -99,22 +103,27 @@ sub sync_upload {
 	# the timestamp of the last call is stored in a file so only files newer than 
 	# the TS may get listet but first, load the old info.... 
 	if ( $obj->{use_ts} ) {
+		$obj->dprint("We are using timestamps\n"); 
 		my $ts=0; 
 		$tsfile=$obj->{ts_dir}."/".sha256_hex($local_path." ".$urlpath); 
 		
 		if ( -e $tsfile ) {
+			$obj->dprint("using time of last sync\n"); 
 			open(READ, "< $tsfile") or die "up I cant open $tsfile for reading \n"; 
 			while(<READ>){ $ts=$_; }
 			close READ; 
 		}
+		$obj->dprint("I will syncronize all messages newer than $ts\n"); 
 		push @args, "ts=$ts"; 
 	}
 
+	$obj->dprint("url: ".$urlpath."?".join("&", @args)."\n"); 
 	my $res=$obj->lwp->get($urlpath."?".join("&", @args)); 
 
 	if ( ! $res->is_success ) { die "up http get to $urlpath failed\n"; }
 
 	my $newts=$res->filename; 
+	$obj->dprint("downloaded new ts: ".$newts."\n"); 
 
 	if ( $newts !~ /^\d+$/ ) {  die "up uups $newts should be numeric\n"; } 
 
@@ -213,6 +222,8 @@ sub process_dir_upload {
 	my %remote;
 	foreach my $file (split("\n", $dirdata)) { $remote{$file}=1; }; 
 
+	$obj->dprint("finding out which file needs to be uloaded\n"); 
+	
 	my @up; 
 	foreach my $file (qtc::misc->new()->scan_dir($obj->{path}."/".$local_path, '.*\.qtc')) { 
 		if ( ! $remote{$file} ) {
@@ -220,14 +231,17 @@ sub process_dir_upload {
          	         $atime,$mtime,$ctime,$blksize,$blocks)
             	          = stat($root.$path."/".$file);
 			if ( $mtime > $ts ) { 
+				$obj->dprint("add ".sprintf("%011d", $mtime)."/".$file."\n"); 
 				push @up, sprintf("%011d", $mtime)."/".$file; 
 			}
 		}
 		@up=map {basename($_)} sort(@up); 
 		
 		if ( ! $obj->{use_digest} ) {
+			$obj->dprint("calling publish for ".($#up+1)." files \n"); 
 			$obj->publish(map { qtc::msg->new(path=>$obj->{path}."/".$local_path, file=>$_)} @up); 
 		} else {
+			$obj->dprint("calling publish tar for ".($#up+1)." files \n"); 
 			$obj->publish_tar(map { qtc::msg->new(path=>$obj->{path}."/".$local_path, file=>$_)} @up); 
 		}
 	}
@@ -289,13 +303,14 @@ sub process_tar {
 	my $obj=shift; 
 	my $tardata=shift; 
 	if ( ! $tardata ) { die "We got no Tar data back so we can stop now\n"; }
-	else { print "hey there is the ref to the tar i process -- ".ref($tardata)." -- \n"; }
+	else { $obj->dprint("got tar data and it is not empty \n"); }
 	my $tarfh=IO::Scalar->new(\$tardata); 
 	my $die_later=""; 
 	
 	my $tar=Archive::Tar->new($tarfh); 
 	foreach my $file ($tar->get_files) { 
 		my $path=$obj->{path}."/in";
+		$obj->dprint("Writing content ".$file->name."\n"); 
 		$die_later.=$obj->write_content($path, $file->name, $file->get_content); 
 	}	
 	if ( $die_later ) { die $die_later; }
