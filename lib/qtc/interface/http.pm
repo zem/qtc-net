@@ -4,6 +4,8 @@ use Digest::SHA qw(sha256_hex);
 use LWP::UserAgent; 
 use IO::Scalar; 
 use Archive::Tar; 
+use File::Basename; 
+use Data::Dumper; 
 use qtc::msg;
 use qtc::misc;
 use qtc::interface;
@@ -73,6 +75,8 @@ sub publish {
 	my $obj=shift; 
 	my @msgs=@_; 
 
+#	print STDERR Dumper(\@msgs); 
+
 	foreach my $msg (@msgs) {
 
 		if ( ! $msg ) { die "I need a qtc::msg object here\n"; }
@@ -92,8 +96,8 @@ sub sync_upload {
 	my $obj=shift; 
 	my $local_path=shift;  # the qtc path (/out /call/FOO/telegrams/new) goes in here as parameter
 	my $remote_path=shift;  # the qtc path (/in /out /call/FOO/telegrams/new) goes in here as parameter
-	if ( $local_path ) { $local_path="/out"; }
-	if ( $remote_path ) { $remote_path="/in"; }
+	if ( ! $local_path ) { $local_path="/out"; }
+	if ( ! $remote_path ) { $remote_path="/in"; }
 
 	my $urlpath=$obj->url.$remote_path; 
 	my $tsfile;
@@ -225,25 +229,32 @@ sub process_dir_upload {
 	$obj->dprint("finding out which file needs to be uloaded\n"); 
 	
 	my @up; 
-	foreach my $file (qtc::misc->new()->scan_dir($obj->{path}."/".$local_path, '.*\.qtc')) { 
+	foreach my $file (qtc::misc->new()->scan_dir($obj->{path}.$local_path, '.*\.qtc')) { 
 		if ( ! $remote{$file} ) {
+			$obj->dprint("$file is not on the remote side\n"); 
 			my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
          	         $atime,$mtime,$ctime,$blksize,$blocks)
-            	          = stat($root.$path."/".$file);
+            	          = stat($obj->{path}.$local_path."/".$file);
 			if ( $mtime > $ts ) { 
 				$obj->dprint("add ".sprintf("%011d", $mtime)."/".$file."\n"); 
 				push @up, sprintf("%011d", $mtime)."/".$file; 
+			} else {
+				$obj->dprint("skipping file it is to old $mtime < $ts \n"); 
 			}
 		}
-		@up=map {basename($_)} sort(@up); 
-		
-		if ( ! $obj->{use_digest} ) {
-			$obj->dprint("calling publish for ".($#up+1)." files \n"); 
-			$obj->publish(map { qtc::msg->new(path=>$obj->{path}."/".$local_path, file=>$_)} @up); 
-		} else {
-			$obj->dprint("calling publish tar for ".($#up+1)." files \n"); 
-			$obj->publish_tar(map { qtc::msg->new(path=>$obj->{path}."/".$local_path, file=>$_)} @up); 
-		}
+	}
+	@up=map {    
+		qtc::msg->new(
+			path=>$obj->{path}.$local_path, 
+			filename=>basename($_),
+		);	
+	} sort(@up); 
+	if ( ! $obj->{use_digest} ) {
+		$obj->dprint("calling publish for ".($#up+1)." files \n"); 
+		$obj->publish(@up); 
+	} else {
+		$obj->dprint("calling publish tar for ".($#up+1)." files \n"); 
+		$obj->publish_tar(@up); 
 	}
 }
 

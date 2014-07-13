@@ -20,6 +20,7 @@ foreach my $url (@ARGV) {
 	$if->dprint("Sync down\n"); 
 	$if->sync("/out"); 
 	$if->dprint("Sync up\n"); 
+	$if->{use_digest}=1; 
 	$if->sync_upload("/out"); 
 }
 
