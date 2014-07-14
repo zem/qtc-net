@@ -3,6 +3,7 @@ use qtc::misc;
 use qtc::msg; 
 use CGI::Simple; 
 $CGI::Simple::DISABLE_UPLOADS = 0;
+$CGI::Simple::POST_MAX = 409600;
 use CGI::Simple::Standard;
 use IO::Scalar; 
 use Archive::Tar; 

@@ -106,9 +106,9 @@ sub sync_upload {
 	# TODO: This is duplicated here and in sync. 
 	# the timestamp of the last call is stored in a file so only files newer than 
 	# the TS may get listet but first, load the old info.... 
+	my $ts=0; 
 	if ( $obj->{use_ts} ) {
 		$obj->dprint("We are using timestamps\n"); 
-		my $ts=0; 
 		$tsfile=$obj->{ts_dir}."/".sha256_hex($local_path." ".$urlpath); 
 		
 		if ( -e $tsfile ) {
@@ -235,7 +235,8 @@ sub process_dir_upload {
 			my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
          	         $atime,$mtime,$ctime,$blksize,$blocks)
             	          = stat($obj->{path}.$local_path."/".$file);
-			if ( $mtime > $ts ) { 
+			if ( $mtime >= $ts ) { 
+				$obj->dprint("skipping file is not to old $mtime >= $ts \n"); 
 				$obj->dprint("add ".sprintf("%011d", $mtime)."/".$file."\n"); 
 				push @up, sprintf("%011d", $mtime)."/".$file; 
 			} else {
