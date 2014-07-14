@@ -118,7 +118,7 @@ sub sync_upload {
 			while(<READ>){ ($ts, $local_ts)=split(" ", $_); }
 			close READ; 
 		}
-		$obj->dprint("I will syncronize all messages newer than $ts\n"); 
+		$obj->dprint("I will syncronize all messages newer than $ts remote and $local_ts local\n"); 
 		push @args, "ts=$ts"; 
 	}
 
@@ -225,7 +225,6 @@ sub process_dir_upload {
 	my $dirdata=shift; 
 	my $urlpath=shift; 
 	my $ts=shift; 
-	if ( ! $dirdata ) { return; }
 	my %remote;
 	foreach my $file (split("\n", $dirdata)) { $remote{$file}=1; }; 
 
@@ -234,16 +233,16 @@ sub process_dir_upload {
 	my @up; 
 	foreach my $file (qtc::misc->new()->scan_dir($obj->{path}.$local_path, '.*\.qtc')) { 
 		if ( ! $remote{$file} ) {
-			$obj->dprint("$file is not on the remote side\n"); 
+			#$obj->dprint("$file is not on the remote side\n"); 
 			my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
          	         $atime,$mtime,$ctime,$blksize,$blocks)
             	          = stat($obj->{path}.$local_path."/".$file);
 			if ( $mtime >= $ts ) { 
-				$obj->dprint("skipping file is not to old $mtime >= $ts \n"); 
+				$obj->dprint("file is not to old $mtime >= $ts \n"); 
 				$obj->dprint("add ".sprintf("%011d", $mtime)."/".$file."\n"); 
 				push @up, sprintf("%011d", $mtime)."/".$file; 
 			} else {
-				$obj->dprint("skipping file it is to old $mtime < $ts \n"); 
+				#$obj->dprint("skipping file it is to old $mtime < $ts \n"); 
 			}
 		}
 	}
