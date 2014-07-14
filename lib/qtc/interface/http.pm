@@ -107,6 +107,7 @@ sub sync_upload {
 	# the timestamp of the last call is stored in a file so only files newer than 
 	# the TS may get listet but first, load the old info.... 
 	my $ts=0; 
+	my $local_ts=0; 
 	if ( $obj->{use_ts} ) {
 		$obj->dprint("We are using timestamps\n"); 
 		$tsfile=$obj->{ts_dir}."/".sha256_hex($local_path." ".$urlpath); 
@@ -114,7 +115,7 @@ sub sync_upload {
 		if ( -e $tsfile ) {
 			$obj->dprint("using time of last sync\n"); 
 			open(READ, "< $tsfile") or die "up I cant open $tsfile for reading \n"; 
-			while(<READ>){ $ts=$_; }
+			while(<READ>){ ($ts, $local_ts)=split(" ", $_); }
 			close READ; 
 		}
 		$obj->dprint("I will syncronize all messages newer than $ts\n"); 
@@ -133,12 +134,14 @@ sub sync_upload {
 
 
 	# work here 
-	my $upload_count=$obj->process_dir_upload($local_path, $res->decoded_content, $urlpath, $ts); 
+	my $new_local_ts=time;
+	my $upload_count=$obj->process_dir_upload($local_path, $res->decoded_content, $urlpath, $local_ts); 
+	$obj->dprint("uploaded ".$upload_count." qtc messages\n"); 
 	
 
 	if ( ( $newts ) and ( $obj->{use_ts} ))  { 
 		open(WRITE, "> $tsfile") or die "Cant open $tsfile to write back timestamp\n"; 
-		print WRITE $newts or die "Cant write into $tsfile\n"; 
+		print WRITE "$newts $new_local_ts"; or die "Cant write into $tsfile\n"; 
 		close WRITE or die "Cant close $tsfile \n"; 
 	}
 }
