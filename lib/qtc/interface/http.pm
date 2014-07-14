@@ -141,7 +141,7 @@ sub sync_upload {
 
 	if ( ( $newts ) and ( $obj->{use_ts} ))  { 
 		open(WRITE, "> $tsfile") or die "Cant open $tsfile to write back timestamp\n"; 
-		print WRITE "$newts $new_local_ts"; or die "Cant write into $tsfile\n"; 
+		print WRITE "$newts $new_local_ts" or die "Cant write into $tsfile\n"; 
 		close WRITE or die "Cant close $tsfile \n"; 
 	}
 }
