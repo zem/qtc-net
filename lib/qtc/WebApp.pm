@@ -1056,19 +1056,20 @@ sub mode_send_telegram {
 		} 
 	}
 
-	if ( $obj->q->param("reply") ) {
-		my $reply=$obj->q->param("reply"): 
+	if ( $o->q->param("reply") ) {
+		my $reply=$o->q->param("reply"); 
 		if (
 			( $reply =~ /^([a-f]|[0-9])+$/ ) 
 				and 
 			( length($reply) == 64 ) 
 		) { # ok this looks really like a checksum 
-			my $reply=$obj->qtc_query->telegram_by_checksum($reply); 
+			my $reply=$o->qtc_query->telegram_by_checksum($reply); 
 			if ( $reply ) {
-				$r.="<h4>Original Message: </h4><br/>";
+				$r.="<h4>original Message: </h4>";
 				$r.="<center><table width=\"90\%\"><tr><td>"; 
-				$r.=$obj->format_telegram_in_html($msg);
-				$r.="</td></tr></table></center>"; 
+				$r.=$o->format_telegram_in_html($reply);
+				$r.="</td></tr></table></center><br/><br/><h4>Reply:</h4>"; 
+				if ( ! $o->q->param("to") ) { $o->q->param("to", $reply->from); }
 			}
 		}
 	}
