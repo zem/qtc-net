@@ -701,6 +701,16 @@ sub mode_show_telegrams {
 		#$r.="<h3>You may search for telegrams to other calls in the upper left, I display the telegrams to YOUR publisher call until then</h3>"; 
 	}
 
+	#we have to check if we have a reply to set bevore we are doing any navigation bar stuff
+	# we will escape to sent send telegram then 
+	foreach my $reply (grep {/^reply_to_([0-9]|[a-f])+$/} $obj->q->param()) {
+		$reply=~s/^reply_to_//g; 
+		$obj->q->param("mode", "send_telegram"); 
+		$obj->q->param("reply", $reply); 
+		return $obj->mode_send_telegram; 
+	}
+
+
 	$r.=$obj->area_navigation; 
 
 	if ( ! $q->param("call") ) { 
@@ -739,6 +749,13 @@ as delivered in the qtc-net by him. </p>';
 		} 
 		push @rows, $obj->h_tr({},
 			$obj->h_td({}, $obj->format_telegram_in_html($msg)),
+			$obj->filter_login_required(
+			$obj->h_td({}, $obj->h_e("input", {
+				type=>"submit", 
+				name=>"reply_to_".$msg->checksum, 
+				value=>"reply",
+			})),
+			),
 			$obj->filter_qsp_makes_sense(
 			$obj->filter_login_required(
 				$obj->h_td({}, $obj->h_e("input", {type=>"checkbox", name=>"qsp", value=>$msg->checksum})),
@@ -751,12 +768,15 @@ as delivered in the qtc-net by him. </p>';
 		$obj->h_table({width=>'70%'}, 
 			$obj->h_tr({},
 				$obj->h_td({}), 
+				$obj->filter_login_required(
+				$obj->h_td({}),
+				),
 				$obj->filter_qsp_makes_sense(
 				$obj->filter_login_required(
 					$obj->h_td({}, $obj->h_e("input", {
 						type=>"submit", 
 						name=>"submit", 
-						value=>"QSP",
+						value=>"QSP sel.",
 						onClick=>$obj->js_confirm("Have you really forwarded the checked messages to $call?"),
 					})),
 				), 
@@ -765,12 +785,15 @@ as delivered in the qtc-net by him. </p>';
 			@rows,
 			$obj->h_tr({},
 				$obj->h_td({}), 
+				$obj->filter_login_required(
+				$obj->h_td({}),
+				),
 				$obj->filter_qsp_makes_sense(
 				$obj->filter_login_required(
 					$obj->h_td({}, $obj->h_e("input", {
 						type=>"submit", 
 						name=>"submit", 
-						value=>"QSP",
+						value=>"QSP sel.",
 						onClick=>$obj->js_confirm("Have you really forwarded the checked messages to $call?"),
 					})),
 				), 
