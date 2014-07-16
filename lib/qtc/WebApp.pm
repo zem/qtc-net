@@ -131,6 +131,13 @@ sub get_priv_dir {
 	return $obj->{qtc}->{priv_dir}; 
 }
 
+sub filter_qsp_makes_sense {
+	my $obj=shift;
+	my $type=$obj->q->param("type"); 
+	if ( $type !~ /^(new|timeline_new)$/ ) { return; }
+	return @_; 
+}
+
 sub filter_login_required {
 	my $obj=shift; 
 	if ( ! $obj->logged_in ) { return; }
@@ -732,8 +739,10 @@ as delivered in the qtc-net by him. </p>';
 		} 
 		push @rows, $obj->h_tr({},
 			$obj->h_td({}, $obj->format_telegram_in_html($msg)),
+			$obj->filter_qsp_makes_sense(
 			$obj->filter_login_required(
 				$obj->h_td({}, $obj->h_e("input", {type=>"checkbox", name=>"qsp", value=>$msg->checksum})),
+			), 
 			), 
 		); 
 	} 	
@@ -743,6 +752,7 @@ as delivered in the qtc-net by him. </p>';
 			@rows,
 			$obj->h_tr({},
 				$obj->h_td({}), 
+				$obj->filter_qsp_makes_sense(
 				$obj->filter_login_required(
 					$obj->h_td({}, $obj->h_e("input", {
 						type=>"submit", 
@@ -750,6 +760,7 @@ as delivered in the qtc-net by him. </p>';
 						value=>"QSP",
 						onClick=>$obj->js_confirm("Have you really forwarded the checked messages to $call?"),
 					})),
+				), 
 				), 
 			),
 		), 
