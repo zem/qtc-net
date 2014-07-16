@@ -79,6 +79,29 @@ sub latest_changes {
 #-------------------------------------------------------
 =pod
 
+=head2 telegram_by_checksum($chksum)
+
+Returns one specific telegram that matches the given checksum. 
+or undef if the telegram is not there. it will die if the message 
+cant be read. 
+
+=cut
+#-------------------------------------------------------
+sub telegram_by_checksum { 
+	my $obj=shift; 
+	my $chksum=shift; 
+	
+	my @msgs;
+	foreach my $file ($obj->scan_dir($obj->{path}."/out", 'telegram_.+_'.$chksum.'\.qtc')){
+		return qtc::msg->new(path=>$obj->{path}."/out", filename=>$file); 
+	}
+
+	return; 
+}
+
+#-------------------------------------------------------
+=pod
+
 =head2 list_telegrams($call, $type)
 
 Returns telegrams for $call where type can be one of 

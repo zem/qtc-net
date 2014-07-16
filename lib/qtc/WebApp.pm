@@ -749,6 +749,19 @@ as delivered in the qtc-net by him. </p>';
 
 	$r.=$obj->h_e("center",{}, $obj->h_form({}, 
 		$obj->h_table({width=>'70%'}, 
+			$obj->h_tr({},
+				$obj->h_td({}), 
+				$obj->filter_qsp_makes_sense(
+				$obj->filter_login_required(
+					$obj->h_td({}, $obj->h_e("input", {
+						type=>"submit", 
+						name=>"submit", 
+						value=>"QSP",
+						onClick=>$obj->js_confirm("Have you really forwarded the checked messages to $call?"),
+					})),
+				), 
+				), 
+			),
 			@rows,
 			$obj->h_tr({},
 				$obj->h_td({}), 
@@ -1041,6 +1054,23 @@ sub mode_send_telegram {
 			$o->q->param("mode", "show_telegrams"); 
 			return $o->mode_show_telegrams; 
 		} 
+	}
+
+	if ( $obj->q->param("reply") ) {
+		my $reply=$obj->q->param("reply"): 
+		if (
+			( $reply =~ /^([a-f]|[0-9])+$/ ) 
+				and 
+			( length($reply) == 64 ) 
+		) { # ok this looks really like a checksum 
+			my $reply=$obj->qtc_query->telegram_by_checksum($reply); 
+			if ( $reply ) {
+				$r.="<h4>Original Message: </h4><br/>";
+				$r.="<center><table width=\"90\%\"><tr><td>"; 
+				$r.=$obj->format_telegram_in_html($msg);
+				$r.="</td></tr></table></center>"; 
+			}
+		}
 	}
 
 	delete $o->{qtc}->{exports}->{call}; 
