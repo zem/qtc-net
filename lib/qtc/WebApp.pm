@@ -34,6 +34,7 @@ sub cgiapp_postrun {
 	my $cgi = $obj->query(); 
 	my $out=$cgi->start_html(
 		-title=>"ALPHA QTC Network Web Access ALPHA",
+		-script=>$obj->js_post_function, 
 	); 
 
 	$out.=$obj->h_e("center", {}, $obj->h_h1({}, '<a href="'.$obj->{qtc}->{home_page}.'">(ALPHA) QTC Net Web Access (ALPHA)</a>')); 
@@ -193,6 +194,23 @@ sub h_tabled_form {
 			@r
 		),
 	); 
+}
+
+sub h_call_lnk {
+	my $obj=shift; 
+	my $p=shift;
+	my @content=@_; 
+	if ( $#content < 0 ) { push @content, $p->{call}; } 
+
+	delete $obj->{qtc}->{exports}->{call}; 
+	delete $obj->{qtc}->{exports}->{mode}; 
+	my $r='<a href="javascript:void(0);" onClick="'.$obj->js_post_exec(mode=>"show_telegrams", call=>$p->{call}).'">';
+	$r.=join("", @content); 
+	$r.="</a>";
+	$obj->{qtc}->{exports}->{call}=1; 
+	$obj->{qtc}->{exports}->{mode}=1; 
+
+	return $r; 
 }
 
 sub h_form {
@@ -664,11 +682,11 @@ sub format_telegram_in_html {
 	$r.=$o->h_table({}, 
 		$o->h_tr({}, 
 			$o->h_td({}, "<b>number:</b> ".$msg->hr_refnum),
-			$o->h_td({colspan=>2}, "<b>publisher:</b> ".$msg->call),
+			$o->h_td({colspan=>2}, "<b>publisher:</b> ".$o->h_call_lnk({call=>$msg->call})),
 		),
 		$o->h_tr({}, 
-			$o->h_td({}, "<b>from:</b> ".$msg->from),
-			$o->h_td({}, "<b>to:</b> ".$msg->to),
+			$o->h_td({}, "<b>from:</b> ".$o->h_call_lnk({call=>$msg->from})),
+			$o->h_td({}, "<b>to:</b> ".$o->h_call_lnk({call=>$msg->to})),
 			$o->h_td({}, "<b>date:</b> ".strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($msg->telegram_date))),
 		),
 		$o->h_tr({}, 
@@ -682,6 +700,56 @@ sub js_confirm {
 	my $obj=shift; 
 	my $text=shift; 
 	return "if(confirm('".$text."')) this.form.submit(); else return false;";
+}
+
+sub js_post_exec {
+	my $obj=shift; 
+	my %parm=@_;
+	my $r="post('".$obj->q->escapeHTML($obj->q->url(-full=>1))."',{";
+	foreach my $p (keys %{$obj->{qtc}->{exports}}) {
+		foreach my $val ( $obj->q->param($p) ) {
+			$val=~s/\'//g;
+			$r.=$obj->q->escapeHTML($p).": '".$obj->q->escapeHTML($val)."', ";
+		} 
+	}
+	foreach my $p (keys %parm) {
+		$parm{$p}=~s/\'//g; 	
+		$r.=$obj->q->escapeHTML($p).": '".$obj->q->escapeHTML($parm{$p})."', ";
+	}
+	chop($r); # remove " " 
+	chop($r); # remove ","
+	$r.="});";
+	return $r; 
+}
+
+sub js_post_function {
+	my $obj=shift; 
+	return '
+function post(path, params, method) {
+method = method || "post"; // Set method to post by default if not specified.
+
+// The rest of this code assumes you are not using a library.
+// It can be made less wordy if you use one.
+var form = document.createElement("form");
+form.setAttribute("method", method);
+form.setAttribute("action", path);
+
+for(var key in params) {
+    if(params.hasOwnProperty(key)) {
+        var hiddenField = document.createElement("input");
+        hiddenField.setAttribute("type", "hidden");
+        hiddenField.setAttribute("name", key);
+        hiddenField.setAttribute("value", params[key]);
+
+        form.appendChild(hiddenField);
+     }
+}
+
+document.body.appendChild(form);
+form.submit();
+
+}
+';
 }
 
 
