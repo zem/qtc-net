@@ -166,7 +166,7 @@ our %msg_types=(
 		"from"=>$valid_call, 
 		"to"=>$valid_call, 
 		"telegram"=>$valid_telegram,
-		"set_of_qsp_timeouts"=>[$valid_number], 
+		"set_of_qsp_timeouts"=>[$valid_integer], 
 	}, 
 	# this is the qsp info where data is stored
 	qsp=>{
@@ -335,8 +335,8 @@ sub drop_checksum {
 sub checksum_period {
 	my $obj=shift; 
 	my $chk_period=shift; 
-	$valid_integer->($chk_period); 
 	if (  $chk_period ) { 
+		$valid_integer->($chk_period); 
 		$obj->{checksum_period}=$chk_period; 
 	} else { 
 		$chk_period=$obj->{checksum_period}; 
@@ -366,10 +366,10 @@ sub checksum {
 		if ( $checksum ) { 
 			$obj->{checksum}=$checksum; 
 		} else {
-			$obj->{checksum}=sha256_hex($obj->signed_content_bin);
+			$obj->{checksum}=sha256_hex($obj->checksum_content_bin);
 		}
 	} 
-	if ($obj->{checksum}!=sha256_hex($obj->signed_content_bin)) {
+	if ($obj->{checksum}!=sha256_hex($obj->checksum_content_bin)) {
 		die "object checksum mismatch\n"; 
 	} 
 	return $obj->{checksum};
@@ -391,11 +391,11 @@ sub prev_checksum {
 		if ( $checksum ) { 
 			$obj->{prev_checksum}=$checksum; 
 		} else {
-			$obj->{prev_checksum}=sha256_hex($obj->signed_content_bin(-1));
+			$obj->{prev_checksum}=sha256_hex($obj->checksum_content_bin(-1));
 		}
 	} 
-	if ($obj->{prev_checksum}!=sha256_hex($obj->signed_content_bin(-1))) {
-		die "object checksum mismatch\n"; 
+	if ($obj->{prev_checksum}!=sha256_hex($obj->checksum_content_bin(-1))) {
+		die "object prev checksum mismatch\n"; 
 	} 
 	return $obj->{prev_checksum};
 }
@@ -417,13 +417,30 @@ sub next_checksum {
 		if ( $checksum ) { 
 			$obj->{next_checksum}=$checksum; 
 		} else {
-			$obj->{next_checksum}=sha256_hex($obj->signed_content_bin(1));
+			$obj->{next_checksum}=sha256_hex($obj->checksum_content_bin(1));
 		}
 	} 
-	if ($obj->{next_checksum}!=sha256_hex($obj->signed_content_bin(1))) {
-		die "object checksum mismatch\n"; 
+	if ($obj->{next_checksum}!=sha256_hex($obj->checksum_content_bin(1))) {
+		die "object next checksum mismatch\n"; 
 	} 
 	return $obj->{next_checksum};
+}
+
+sub signed_checksum {
+	my $obj=shift;
+	my $checksum=shift; 
+	$obj->is_object_valid; 
+	if ( ! $obj->{signed_checksum} ) {
+		if ( $checksum ) { 
+			$obj->{signed_checksum}=$checksum; 
+		} else {
+			$obj->{signed_checksum}=sha256_hex($obj->signed_content_bin);
+		}
+	} 
+	if ($obj->{signed_checksum}!=sha256_hex($obj->signed_content_bin)) {
+		die "object signed checksum mismatch\n"; 
+	} 
+	return $obj->{signed_checksum};
 }
 
 #------------------------------------------------------------------------------------
@@ -672,16 +689,16 @@ sub is_field_valid {
 This function returns the part of the qtc::msg that is going to be signed or 
 verified as big endian hex. 
 
-the signed content contains "type", "call" and the alphabetically sorted fields 
-of the message, packed together like they would be in the data file. 
+the signed content contains "type", the call, the "checksum_period" and the 
+alphabetically sorted fields of the message, packed together like they would 
+be in the data file. 
   
 =cut
 sub signed_content_hex {
 	my $obj=shift; 
 	$obj->is_object_valid;
-	my @fixed=("type"); 
+	my @fixed=("type", "call"); 
 	if ( $obj->checksum_period ) { push @fixed, "checksum_period"; }
-	else { push @fixed, "call"; }
 	return $obj->bin->gen_hex_payload(@fixed, sort keys %{$msg_types{$obj->{type}}});
 }
 
@@ -696,6 +713,61 @@ what is to be signed, just in case someone has the idea to read a qtc::msg with 
 sub signed_content_bin {
 	my $obj=shift; 
 	return pack("H*", $obj->signed_content_hex);
+}
+
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 checksum_content_hex($offset)
+
+This function returns the part of the qtc::msg that is going to be used for the checksum 
+or verified as big endian hex. 
+
+the checksum  content contains "type", than either call or checksum_period as well as 
+the alphabetically sorted fields of the message, packed together like if they would be 
+in the data file. 
+
+The checksum ceneration is a bit more complicated, due to the fact that there are rolling 
+signature areas depending on the time when a message is sent. this means that every timestamp 
+needs to be rounded up to one value. ( offset*(int(ts/offset)) ) The values must be restored 
+after the checksum is built. 
+  
+=cut
+sub checksum_content_hex {
+	my $obj=shift;
+	my $offset=shift;
+	if ( ! defined $offset ) { $offset=0; }
+	$obj->is_object_valid;
+	my %restore; 
+	my @fixed=("type"); 
+	if ( $obj->checksum_period ) { 
+		push @fixed, "checksum_period"; 
+		foreach my $field (keys %{$msg_types{$obj->{type}}}) {
+			if ( %{$msg_types{$obj->{type}}}{$field} eq $valid_date ){
+				$restore{$field}=$obj->{$field}; 
+				$obj->{$field}=$obj->checksum_period()*int($obj->{$field}/$obj->checksum_period())+($offset*$obj->checksum_period());
+			}
+		}
+	}
+	else { push @fixed, "call"; }
+	my $ret=$obj->bin->gen_hex_payload(@fixed, sort keys %{$msg_types{$obj->{type}}});
+	# restore the field values in the obj after signature calculation 
+	foreach my $field (keys %restore) { $obj->{$field}=$restore{$field}; }
+	return $ret; 
+}
+
+=pod
+
+=head2 checksum_content_bin($offset)
+
+like checksum_content_hex() but the return of this function is pure binary, this is really 
+what is to be used to build the checksum, just in case someone has the idea to read a 
+qtc::msg with C. 
+
+=cut
+sub checksum_content_bin {
+	my $obj=shift; 
+	return pack("H*", $obj->checksum_content_hex(@_));
 }
 
 =pod
