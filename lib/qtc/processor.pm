@@ -432,21 +432,6 @@ sub process {
 =cut
 #------------------------------------------------------------------------------------
 
-sub chksum_is_lt {
-	my $obj=shift;
-	my $chk1=shift; 
-	my $chk2=shift; 
-	
-	while ( $chk1 ) {
-		my $t1=unpack("I>*", pack("H*", substr($chk1, 0, 2))); 
-		my $t2=unpack("I>*", pack("H*", substr($chk2, 0, 2))); 
-		if ( $t1 > $t2 ) { return; }
-		$chk1=substr($chk1, 2); 
-		$chk2=substr($chk2, 2); 
-	}
-	return 1; 
-}
-
 
 #------------------------------------------------------------------------------------
 =pod
@@ -610,6 +595,32 @@ sub msg_has_no_qsp {
 	return 1; 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 checksum_is_lt($chk1, $chk2)
+
+compares two bigenatian hexadecimal numbers 
+returns 1 if $chk1 < $chk2 and undef otherwise, 
+
+=cut
+#------------------------------------------------------------------------------------
+sub chksum_is_lt {
+	my $obj=shift;
+	my $chk1=shift; 
+	my $chk2=shift; 
+	
+	while ( $chk1 ) {
+		my $t1=unpack("I>*", pack("H*", substr($chk1, 0, 2))); 
+		my $t2=unpack("I>*", pack("H*", substr($chk2, 0, 2))); 
+		if ( $t1 > $t2 ) { return; }
+		$chk1=substr($chk1, 2); 
+		$chk2=substr($chk2, 2); 
+	}
+	return 1; 
+}
+
+
 
 #------------------------------------------------------------------------------------
 =pod
@@ -625,6 +636,7 @@ sub import_qsp {
 	my $obj=shift; 
 	my $msg=shift; 
 	$obj->verify_signature($msg); 	
+	if ( $msg->checksum_period ) { die "I dont know how to deal with ".$msg->type." and checksum_period \n"; }
 
 	# TODO: not working, implementing lookup via sha256 hashes first
 	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/qsp/".$msg->telegram_checksum);
@@ -677,6 +689,7 @@ sub import_pubkey {
 	my $obj=shift; 
 	my $msg=shift; 
 	$obj->verify_signature($msg);	
+	if ( $msg->checksum_period ) { die "I dont know how to deal with ".$msg->type." and checksum_period \n"; }
 	
 	print STDERR "Message Signature Check is done\n"; 
 	
@@ -819,6 +832,7 @@ sub import_revoke {
 	my %keyhash; 
 	$keyhash{$msg->key_id}=$msg; 
 	$obj->verify_signature($msg,\%keyhash);	
+	if ( $msg->checksum_period ) { die "I dont know how to deal with ".$msg->type." and checksum_period \n"; }
 
 	my @qtcmsgs=$obj->scan_dir(
 		$obj->{root}."/out",
@@ -908,6 +922,7 @@ sub import_operator {
 	my $obj=shift; 
 	my $msg=shift; 
 	$obj->verify_signature($msg);	
+	if ( $msg->checksum_period ) { die "I dont know how to deal with ".$msg->type." and checksum_period \n"; }
 
 	my $oldop=$obj->query->operator($msg->call); 
 	if ( $oldop ) { 
@@ -1011,6 +1026,7 @@ sub import_trust {
 	my $obj=shift; 
 	my $msg=shift; 
 	$obj->verify_signature($msg);	
+	if ( $msg->checksum_period ) { die "I dont know how to deal with ".$msg->type." and checksum_period \n"; }
 
 	$msg->link_to_path($obj->{root}."/call/".$msg->escaped_call."/trust");
 
