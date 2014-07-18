@@ -122,12 +122,12 @@ our %data_types=(
 	"set_of_aliases"=>{
 		enum=>14,
 		data_type=>"string",
-		multiple_times=>1,
+		multiple_times=>0,
 	}, 
 	"set_of_followings"=>{
 		enum=>15,
 		data_type=>"string",
-		multiple_times=>1,
+		multiple_times=>0,
 	}, 
 	"key_type"=>{
 		enum=>16,
@@ -149,7 +149,7 @@ our %data_types=(
 	"set_of_key_ids"=>{
 		enum=>20,
 		data_type=>"binary",
-		multiple_times=>1,
+		multiple_times=>0,
 	},
 	"trust_date"=>{
 		enum=>21,
@@ -162,6 +162,11 @@ our %data_types=(
 	"checksum_period"=>{
 		enum=>23,
 		data_type=>"integer",
+	}, 
+	"qsp_timeout"=>{
+		enum=>24,
+		data_type=>"integer",
+		multiple_times=>2,
 	}, 
 );
 
@@ -547,8 +552,13 @@ sub parse {
 			$data=$data_types{$keyname}->{values}->[unpack("L>*",  pack("H*", $data))-1]; 
 		}
 		#print STDERR $keyname." ".$data."\n";
-		if ( $data_types{$keyname}->{multiple_times} ) { 
+		if ( defined $data_types{$keyname}->{multiple_times} ) { 
 			push @{$obj->msg->{$keyname}}, $data; 
+			if ( $data_types{$keyname}->{multiple_times} > 0 ) { 
+				if ( $#{$obj->msg->{$keyname}} > ($data_types{$keyname}->{multiple_times} - 1) ) { 
+					die "Max occurences of $keyname reached\n"; 
+				} 
+			} 
 		} else {
 			$obj->msg->{$keyname}=$data; 
 		}

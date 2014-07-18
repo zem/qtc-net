@@ -166,6 +166,7 @@ our %msg_types=(
 		"from"=>$valid_call, 
 		"to"=>$valid_call, 
 		"telegram"=>$valid_telegram,
+		"set_of_qsp_timeouts"=>[$valid_number], 
 	}, 
 	# this is the qsp info where data is stored
 	qsp=>{
@@ -678,8 +679,9 @@ of the message, packed together like they would be in the data file.
 sub signed_content_hex {
 	my $obj=shift; 
 	$obj->is_object_valid;
-	my @fixed=("type", "call"); 
+	my @fixed=("type"); 
 	if ( $obj->checksum_period ) { push @fixed, "checksum_period"; }
+	else { push @fixed, "call"; }
 	return $obj->bin->gen_hex_payload(@fixed, sort keys %{$msg_types{$obj->{type}}});
 }
 
