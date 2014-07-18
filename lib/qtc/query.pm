@@ -90,10 +90,11 @@ cant be read.
 sub telegram_by_checksum { 
 	my $obj=shift; 
 	my $chksum=shift; 
+	my $path=shift; if ( ! $subpath ) { $subpath="/out"; } 
 	
 	my @msgs;
-	foreach my $file ($obj->scan_dir($obj->{path}."/out", 'telegram_.+_'.$chksum.'\.qtc')){
-		return qtc::msg->new(path=>$obj->{path}."/out", filename=>$file); 
+	foreach my $file ($obj->scan_dir($obj->{path}.$subpath, 'telegram_.+_'.$chksum.'\.qtc')){
+		return qtc::msg->new(path=>$obj->{path}.$subpath, filename=>$file); 
 	}
 
 	return; 
