@@ -159,6 +159,10 @@ our %data_types=(
 		enum=>22,
 		data_type=>"integer",
 	}, 
+	"checksum_period"=>{
+		enum=>23,
+		data_type=>"integer",
+	}, 
 );
 
 

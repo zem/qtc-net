@@ -324,9 +324,25 @@ sub drop_checksum {
 	delete $obj->{signature};
 	delete $obj->{signature_key_id};
 	delete $obj->{checksum};
+	delete $obj->{next_checksum};
+	delete $obj->{prev_checksum};
 	return; 
 }
 #------------------------------------------------------------------------------------
+
+#TODO Doku
+sub checksum_period {
+	my $obj=shift; 
+	my $chk_period=shift; 
+	$valid_integer->($chk_period); 
+	if (  $chk_period ) { 
+		$obj->{checksum_period}=$chk_period; 
+	} else { 
+		$chk_period=$obj->{checksum_period}; 
+	}
+	if ( ! $chk_period ) { return 0; }
+	return $chk_period; 
+} 
 
 =pod
 
@@ -356,6 +372,57 @@ sub checksum {
 		die "object checksum mismatch\n"; 
 	} 
 	return $obj->{checksum};
+}
+
+=pod
+
+=head2 prev_checksum()
+
+TDB
+
+=cut
+#------------------------------------------------------------------------------------
+sub prev_checksum {
+	my $obj=shift;
+	my $checksum=shift; 
+	$obj->is_object_valid; 
+	if ( ! $obj->{prev_checksum} ) {
+		if ( $checksum ) { 
+			$obj->{prev_checksum}=$checksum; 
+		} else {
+			$obj->{prev_checksum}=sha256_hex($obj->signed_content_bin(-1));
+		}
+	} 
+	if ($obj->{prev_checksum}!=sha256_hex($obj->signed_content_bin(-1))) {
+		die "object checksum mismatch\n"; 
+	} 
+	return $obj->{prev_checksum};
+}
+
+
+=pod
+
+=head2 next_checksum()
+
+TDB
+
+=cut
+#------------------------------------------------------------------------------------
+sub next_checksum {
+	my $obj=shift;
+	my $checksum=shift; 
+	$obj->is_object_valid; 
+	if ( ! $obj->{next_checksum} ) {
+		if ( $checksum ) { 
+			$obj->{next_checksum}=$checksum; 
+		} else {
+			$obj->{next_checksum}=sha256_hex($obj->signed_content_bin(1));
+		}
+	} 
+	if ($obj->{next_checksum}!=sha256_hex($obj->signed_content_bin(1))) {
+		die "object checksum mismatch\n"; 
+	} 
+	return $obj->{next_checksum};
 }
 
 #------------------------------------------------------------------------------------
@@ -524,6 +591,7 @@ sub value {
 	if ( $method eq "version" ) { return $obj->version(@_); }
 	if ( $method eq "call" ) { return $obj->call(@_); }
 	if ( $method eq "checksum" ) { return $obj->checksum(@_); }
+	if ( $method eq "checksum_period" ) { return $obj->checksum_period(@_); }
 	if ( $method eq "signature" ) { return $obj->signature(@_); }
 	if ( $method eq "signature_key_id" ) { return $obj->signature_key_id(@_); }
 	# check if the field is valid
@@ -610,7 +678,9 @@ of the message, packed together like they would be in the data file.
 sub signed_content_hex {
 	my $obj=shift; 
 	$obj->is_object_valid;
-	return $obj->bin->gen_hex_payload("type", "call", sort keys %{$msg_types{$obj->{type}}});
+	my @fixed=("type", "call"); 
+	if ( $obj->checksum_period ) { push @fixed, "checksum_period"; }
+	return $obj->bin->gen_hex_payload(@fixed, sort keys %{$msg_types{$obj->{type}}});
 }
 
 =pod
@@ -638,12 +708,16 @@ otherwise.
 sub as_hex {
 	my $obj=shift; 
 	$obj->is_object_valid;
-	return $obj->bin->gen_hex_msg(
+	my @fixed=(
 		"version", 
 		"signature", 
 		"signature_key_id", 
 		"type", 
 		"call", 
+	); 
+	if ( $obj->checksum_period ) { push @fixed, "checksum_period"; }
+	return $obj->bin->gen_hex_msg(
+		@fixed,
 		sort keys %{$msg_types{$obj->{type}}}
 	);
 }
