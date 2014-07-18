@@ -163,7 +163,7 @@ our %data_types=(
 		enum=>23,
 		data_type=>"integer",
 	}, 
-	"qsp_timeout"=>{
+	"set_of_qsp_timeouts"=>{
 		enum=>24,
 		data_type=>"integer",
 		multiple_times=>2,
