@@ -213,7 +213,15 @@ sub sign {
 		$msg->signature(unpack("H*", $rsa->sign($msg->signed_content_bin)), $obj->{key_id}); 
 
 	} elsif ($obj->{privkey_type} eq "dsa") {
-		die "This is possible but not yet implemented \n"; 
+		my $dsa=Crypt::OpenSSL::DSA->read_priv_key_str($obj->{privkey}) or die "Can't read use private key\n"; 
+		$msg->signature(
+			unpack("H*", 
+				$dsa->sign(
+					pack("H*", substr(sha256_hex($msg->signed_content_bin), 0, 40))
+				)
+			), 
+			$obj->{key_id}
+		); 
 	}
 
 }
@@ -257,7 +265,14 @@ sub verify {
 		}
 		#print STDERR Dumper($pubkey); 
 	} elsif ($pubkey->key_type eq "dsa" ) {
-		die "dsa verification not yet implemented\n"; 
+
+		my $dsa=Crypt::OpenSSL::DSA->read_pub_key_str($obj->prepare_rsa_pubkey($pubkey->key)) or die "Can't read use private key\n"; 
+		my $valid=$dsa->verify(
+			pack("H*", substr(sha256_hex($msg->signed_content_bin), 0, 40)),
+			$signature,
+		);
+		if ( $valid ) { return 1; }
+
 	}
 	return 0; 
 }
