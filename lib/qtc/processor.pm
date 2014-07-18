@@ -432,6 +432,22 @@ sub process {
 =cut
 #------------------------------------------------------------------------------------
 
+sub chksum_is_lt {
+	my $obj=shift;
+	my $chk1=shift; 
+	my $chk2=shift; 
+	
+	while ( $chk1 ) {
+		my $t1=unpack("I>*", pack("H*", substr($chk1, 0, 2))); 
+		my $t2=unpack("I>*", pack("H*", substr($chk2, 0, 2))); 
+		if ( $t1 > $t2 ) { return; }
+		$chk1=substr($chk1, 2); 
+		$chk2=substr($chk2, 2); 
+	}
+	return 1; 
+}
+
+
 #------------------------------------------------------------------------------------
 =pod
 
@@ -446,6 +462,36 @@ sub import_telegram {
 	my $msg=shift; 
 
 	$obj->verify_signature($msg);
+
+
+	#############################
+	# this block calculates if a message with multiple checksums is to be propagated, oldest wins. 
+	if ( $msg->checksum_period ) { 
+		# if this message has a checksum period we need to find out if there already is a message
+		# the oldest message counts 
+		foreach my $chk ($msg->checksum, $msg->prev_checksum, $msg->next_checksum) {
+			my $other=$obj->query->telegram_by_checksum($chk); 
+			if ( ! $other ) { next; } 
+			if ( $other->telegram_date < $msg->telegram_date ) { 
+				$msg->link_to_path($obj->{root}."/bad");
+				return; 
+			}
+			if ( $other->telegram_date > $msg->telegram_date ) { 
+				$obj->remove_telegram($other); 
+				last; 
+			}
+			if ( $other->telegram_date == $msg->telegram_date ) {
+				# ok lets have a look at the checksum...
+				if ( $obj->checksum_is_t($other->signature_checksum, $msg->signature_checksum) ) {
+					$obj->remove_telegram($other); 
+					last; 
+				} else {
+					$msg->link_to_path($obj->{root}."/bad");
+					return; 
+				}
+			}	
+		}
+	}
 	
 	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/all");
 	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->from)."/telegrams/sent");

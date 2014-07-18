@@ -773,7 +773,7 @@ sub checksum_content_hex {
 	if ( $obj->checksum_period ) { 
 		push @fixed, "checksum_period"; 
 		foreach my $field (keys %{$msg_types{$obj->{type}}}) {
-			if ( %{$msg_types{$obj->{type}}}{$field} eq $valid_date ){
+			if ( ${$msg_types{$obj->{type}}}{$field} eq $valid_date ){
 				$restore{$field}=$obj->{$field}; 
 				$obj->{$field}=$obj->checksum_period()*int($obj->{$field}/$obj->checksum_period())+($offset*$obj->checksum_period());
 			}
