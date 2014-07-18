@@ -327,11 +327,26 @@ sub drop_checksum {
 	delete $obj->{checksum};
 	delete $obj->{next_checksum};
 	delete $obj->{prev_checksum};
+	delete $obj->{signature_checksum};
 	return; 
 }
 #------------------------------------------------------------------------------------
 
-#TODO Doku
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 checksum_period(time)
+
+configures how accurate the dates that are used to build the checksum are. 
+For example if two or more stations receive the same message they can build 
+messages with the same checksum. Those messages can rule each other out within 
+the net. 
+
+Processors should also check prev_checksum() and next_checksum() if a messge 
+with a checksum period arrives. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub checksum_period {
 	my $obj=shift; 
 	my $chk_period=shift; 
@@ -349,12 +364,15 @@ sub checksum_period {
 
 =head2 checksum()
 
-retures the checksum of the signed_content of the message.
+retures the checksum of the checksum_content of the message.
 if there is no checksum stored, it will create one. 
 be carefull, it will not create any checksum twice, instead 
 it will check the existing one and die if there is no match. 
 
 you may also set a checksum with the first parameter. 
+
+the dates inside of the checksum content may variate if 
+checksum_period is set.  
 
 =cut
 #------------------------------------------------------------------------------------
@@ -379,7 +397,9 @@ sub checksum {
 
 =head2 prev_checksum()
 
-TDB
+if checksum_period() is set this method returns the checksum of the 
+last period that this message would have had if it would have been 
+created earlier. 
 
 =cut
 #------------------------------------------------------------------------------------
@@ -405,7 +425,9 @@ sub prev_checksum {
 
 =head2 next_checksum()
 
-TDB
+if checksum_period() is set this method returns the checksum of the 
+next period that this message would have had if it would have been 
+created later. 
 
 =cut
 #------------------------------------------------------------------------------------
@@ -426,6 +448,14 @@ sub next_checksum {
 	return $obj->{next_checksum};
 }
 
+=pod
+
+=head2 next_checksum()
+
+This returns the checksum of all the data that is goung to be signed. 
+
+=cut
+#------------------------------------------------------------------------------------
 sub signed_checksum {
 	my $obj=shift;
 	my $checksum=shift; 
