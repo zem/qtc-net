@@ -188,6 +188,64 @@ sub rsa_keygen {
 	$pubkey->link_to_path($o->{path}."/in"); 		
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 dsa_keygen()
+
+Creates a new dsa private key. This is triggered from new() method.  
+
+=cut
+#------------------------------------------------------------------------------------
+sub dsa_keygen {
+	my $o=shift; 
+
+	my $dsa = Crypt::OpenSSL::RSA->generate_parameters(512);
+	$dsa->generate_key();
+	my $keystring=$rsa->get_public_key_string;
+	chomp($keystring); 
+	$keystring=~s/^(-----BEGIN DSA PUBLIC KEY-----)|(-----END DSA PUBLIC KEY-----)$//g;
+
+	my $keydata=decode_base64($keystring) or die "Cant decode keystring\n"; 
+	my $key_id=sha256_hex($keydata);
+
+	my $pubkey=qtc::msg->new(
+		type=>"pubkey",
+		call=>$o->{call},
+		key_date=>time,
+		key_type=>"dsa",
+		key_id=>$key_id,
+		key=>unpack("H*", $keydata),
+	); 
+
+	$pubkey->signature(unpack("H*", $rsa->sign($pubkey->signed_content_bin)), $key_id); 
+
+	my $path=$o->{privpath};
+
+	my @dir=$pubkey->scan_dir($path, '(rsa|dsa)_'.$call.'.*'); 
+	if ( $#dir >= 0 ) { die "there is already a key, it may be a bad idea to write a new one\n"; }
+	
+	if ( $o->{debug} ) { print STDERR "Writing Keys to $path\n"; }
+	
+	$pubkey->ensure_path($path); 
+	$pubkey->to_filesystem($path); 
+	
+	$o->{privkey_file}="$path/dsa_".$o->{call}."_".$key_id.".key";
+
+	open(WRITE, "> ".$o->{privkey_file}) or die "Can't write key to filesystem\n";
+	#if ( $obj->{aes} ) {
+	#	my $x=$rsa->get_private_key_string;
+	#	my $l=length($x);
+	#	
+	#	print WRITE $obj->{aes}->encrypt($rsa->get_private_key_string) or die "Can't write key to filesystem (write)\n"; 
+	#} else {
+		print WRITE $rsa->get_private_key_string or die "Can't write key to filesystem (write)\n"; 
+	#}
+	close WRITE or die "Can't write key to filesystem (close)\n";
+	
+	# activate this key in the system....
+	$pubkey->link_to_path($o->{path}."/in"); 		
+}
 
 
 #------------------------------------------------------------------------------------
