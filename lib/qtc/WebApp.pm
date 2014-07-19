@@ -37,7 +37,11 @@ sub cgiapp_postrun {
 		-script=>$obj->js_post_function, 
 	); 
 
-	$out.=$obj->h_e("center", {}, $obj->h_h1({}, '<a href="'.$obj->{qtc}->{home_page}.'">(ALPHA) QTC Net Web Access (ALPHA)</a>')); 
+	$out.=$obj->h_e("center", {}, 
+		$obj->h_h1({}, '<a href="'.$obj->{qtc}->{home_page}.'">(ALPHA) QTC Net Web Access (ALPHA)</a>'),
+		'<small>a microblogging (like twitter) and messaging system for ham radio</small>'
+		
+	); 
 	$out.=$obj->h_e("hr"); 
 	$out.=$$out_ref; 
 
