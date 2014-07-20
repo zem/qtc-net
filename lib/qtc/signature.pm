@@ -77,8 +77,7 @@ privkey_file=>$privkey_file, # path to your private key file
 
  dsa_keygen=>1, or rsa_keygen=>1, # if either rsa_keygen or dsa_keygen is set to 1 
                                  # a key will be automatically generated 
-											# during object creation, right now only rsa is 
-                                 # implemented
+											# during object creation.
 
 Returns: a qtc::signature object
 
@@ -105,6 +104,9 @@ sub new {
 	#
 	if ( $obj->{rsa_keygen} ) {
 		$obj->rsa_keygen; 
+	}
+	if ( $obj->{dsa_keygen} ) {
+		$obj->dsa_keygen; 
 	}
 
 	#if ( $obj->{password} ) {
@@ -199,14 +201,17 @@ Creates a new dsa private key. This is triggered from new() method.
 #------------------------------------------------------------------------------------
 sub dsa_keygen {
 	my $o=shift; 
+	
+	my $path=$o->{privpath};
 
-	my $dsa = Crypt::OpenSSL::RSA->generate_parameters(512);
+	my @dir=$pubkey->scan_dir($path, '(rsa|dsa)_'.$call.'.*'); 
+	if ( $#dir >= 0 ) { die "there is already a key, it may be a bad idea to write a new one\n"; }
+	
+	my $dsa = Crypt::OpenSSL::RSA->generate_parameters(512); # it is for hamradio use and just for 
+																# signatures and we can still extend if someone wants to do. 
 	$dsa->generate_key();
-	my $keystring=$rsa->get_public_key_string;
-	chomp($keystring); 
-	$keystring=~s/^(-----BEGIN DSA PUBLIC KEY-----)|(-----END DSA PUBLIC KEY-----)$//g;
 
-	my $keydata=decode_base64($keystring) or die "Cant decode keystring\n"; 
+	my $keydata=$dsa->get_pub_key or die "Cant decode keystring\n"; 
 	my $key_id=sha256_hex($keydata);
 
 	my $pubkey=qtc::msg->new(
@@ -218,12 +223,10 @@ sub dsa_keygen {
 		key=>unpack("H*", $keydata),
 	); 
 
-	$pubkey->signature(unpack("H*", $rsa->sign($pubkey->signed_content_bin)), $key_id); 
+	$pubkey->signature(unpack("H*", $dsa->sign(
+		pack("H*", substr(sha256_hex($pubkey->signed_content_bin), 0, 40))
+	)), $key_id); 
 
-	my $path=$o->{privpath};
-
-	my @dir=$pubkey->scan_dir($path, '(rsa|dsa)_'.$call.'.*'); 
-	if ( $#dir >= 0 ) { die "there is already a key, it may be a bad idea to write a new one\n"; }
 	
 	if ( $o->{debug} ) { print STDERR "Writing Keys to $path\n"; }
 	
@@ -232,16 +235,7 @@ sub dsa_keygen {
 	
 	$o->{privkey_file}="$path/dsa_".$o->{call}."_".$key_id.".key";
 
-	open(WRITE, "> ".$o->{privkey_file}) or die "Can't write key to filesystem\n";
-	#if ( $obj->{aes} ) {
-	#	my $x=$rsa->get_private_key_string;
-	#	my $l=length($x);
-	#	
-	#	print WRITE $obj->{aes}->encrypt($rsa->get_private_key_string) or die "Can't write key to filesystem (write)\n"; 
-	#} else {
-		print WRITE $rsa->get_private_key_string or die "Can't write key to filesystem (write)\n"; 
-	#}
-	close WRITE or die "Can't write key to filesystem (close)\n";
+	$dsa->write_priv_key($o->{privkey_file}) die "Can't write key to filesystem\n";
 	
 	# activate this key in the system....
 	$pubkey->link_to_path($o->{path}."/in"); 		
