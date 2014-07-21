@@ -235,7 +235,7 @@ sub dsa_keygen {
 	
 	$o->{privkey_file}="$path/dsa_".$o->{call}."_".$key_id.".key";
 
-	$dsa->write_priv_key($o->{privkey_file}) die "Can't write key to filesystem\n";
+	$dsa->write_priv_key($o->{privkey_file}) or die "Can't write key to filesystem\n";
 	
 	# activate this key in the system....
 	$pubkey->link_to_path($o->{path}."/in"); 		
