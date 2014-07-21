@@ -198,6 +198,7 @@ sub deliver_telegrams {
 	foreach my $id (keys %{$obj->{spool}}){
 		if ( ($t-$obj->{spool}->{$id}->telegram_date) >= $obj->{spooltimeout}->{$id} ) {
 			print STDERR "publishing ".$obj->{spool}->{$id}->filename."\n"; 
+			my $telegram=$obj->{spool}->{$id};
 			if (
 				( $obj->query->telegram_by_checksum($telegram->checksum) ) 
 				or ( $obj->query->telegram_by_checksum($telegram->prev_checksum) ) 
