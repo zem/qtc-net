@@ -54,7 +54,7 @@ use qtc::msg;
 use Crypt::OpenSSL::RSA;
 use Crypt::OpenSSL::DSA;
 use MIME::Base64;
-use Digest::SHA qw(sha256_hex); 
+use Digest::SHA qw(sha256_hex sha1_hex); 
 #use Crypt::Rijndael;
 
 #------------------------------------------------------------------------------------
@@ -207,7 +207,7 @@ sub dsa_keygen {
 	my @dir=$pubkey->scan_dir($path, '(rsa|dsa)_'.$call.'.*'); 
 	if ( $#dir >= 0 ) { die "there is already a key, it may be a bad idea to write a new one\n"; }
 	
-	my $dsa = Crypt::OpenSSL::RSA->generate_parameters(512); # it is for hamradio use and just for 
+	my $dsa = Crypt::OpenSSL::DSA->generate_parameters(512); # it is for hamradio use and just for 
 																# signatures and we can still extend if someone wants to do. 
 	$dsa->generate_key();
 
@@ -224,7 +224,7 @@ sub dsa_keygen {
 	); 
 
 	$pubkey->signature(unpack("H*", $dsa->sign(
-		pack("H*", substr(sha256_hex($pubkey->signed_content_bin), 0, 40))
+		pack("H*", substr(sha1_hex($pubkey->signed_content_bin), 0, 40))
 	)), $key_id); 
 
 	
@@ -269,7 +269,7 @@ sub sign {
 		$msg->signature(
 			unpack("H*", 
 				$dsa->sign(
-					pack("H*", substr(sha256_hex($msg->signed_content_bin), 0, 40))
+					pack("H*", substr(sha1_hex($msg->signed_content_bin), 0, 40))
 				)
 			), 
 			$obj->{key_id}
@@ -320,7 +320,7 @@ sub verify {
 
 		my $dsa=Crypt::OpenSSL::DSA->read_pub_key_str($obj->prepare_rsa_pubkey($pubkey->key)) or die "Can't read use private key\n"; 
 		my $valid=$dsa->verify(
-			pack("H*", substr(sha256_hex($msg->signed_content_bin), 0, 40)),
+			pack("H*", substr(sha1_hex($msg->signed_content_bin), 0, 40)),
 			$signature,
 		);
 		if ( $valid ) { return 1; }
