@@ -166,6 +166,7 @@ our %msg_types=(
 		"from"=>$valid_call, 
 		"to"=>$valid_call, 
 		"telegram"=>$valid_telegram,
+		"set_of_qsp_timeouts"=>[$valid_integer], 
 	}, 
 	# this is the qsp info where data is stored
 	qsp=>{
@@ -324,20 +325,54 @@ sub drop_checksum {
 	delete $obj->{signature};
 	delete $obj->{signature_key_id};
 	delete $obj->{checksum};
+	delete $obj->{next_checksum};
+	delete $obj->{prev_checksum};
+	delete $obj->{signature_checksum};
 	return; 
 }
 #------------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 checksum_period(time)
+
+configures how accurate the dates that are used to build the checksum are. 
+For example if two or more stations receive the same message they can build 
+messages with the same checksum. Those messages can rule each other out within 
+the net. 
+
+Processors should also check prev_checksum() and next_checksum() if a messge 
+with a checksum period arrives. 
+
+=cut
+#------------------------------------------------------------------------------------
+sub checksum_period {
+	my $obj=shift; 
+	my $chk_period=shift; 
+	if (  $chk_period ) { 
+		$valid_integer->($chk_period); 
+		$obj->{checksum_period}=$chk_period; 
+	} else { 
+		$chk_period=$obj->{checksum_period}; 
+	}
+	if ( ! $chk_period ) { return 0; }
+	return $chk_period; 
+} 
 
 =pod
 
 =head2 checksum()
 
-retures the checksum of the signed_content of the message.
+retures the checksum of the checksum_content of the message.
 if there is no checksum stored, it will create one. 
 be carefull, it will not create any checksum twice, instead 
 it will check the existing one and die if there is no match. 
 
 you may also set a checksum with the first parameter. 
+
+the dates inside of the checksum content may variate if 
+checksum_period is set.  
 
 =cut
 #------------------------------------------------------------------------------------
@@ -349,13 +384,93 @@ sub checksum {
 		if ( $checksum ) { 
 			$obj->{checksum}=$checksum; 
 		} else {
-			$obj->{checksum}=sha256_hex($obj->signed_content_bin);
+			$obj->{checksum}=sha256_hex($obj->checksum_content_bin);
 		}
 	} 
-	if ($obj->{checksum}!=sha256_hex($obj->signed_content_bin)) {
+	if ($obj->{checksum}!=sha256_hex($obj->checksum_content_bin)) {
 		die "object checksum mismatch\n"; 
 	} 
 	return $obj->{checksum};
+}
+
+=pod
+
+=head2 prev_checksum()
+
+if checksum_period() is set this method returns the checksum of the 
+last period that this message would have had if it would have been 
+created earlier. 
+
+=cut
+#------------------------------------------------------------------------------------
+sub prev_checksum {
+	my $obj=shift;
+	my $checksum=shift; 
+	$obj->is_object_valid; 
+	if ( ! $obj->{prev_checksum} ) {
+		if ( $checksum ) { 
+			$obj->{prev_checksum}=$checksum; 
+		} else {
+			$obj->{prev_checksum}=sha256_hex($obj->checksum_content_bin(-1));
+		}
+	} 
+	if ($obj->{prev_checksum}!=sha256_hex($obj->checksum_content_bin(-1))) {
+		die "object prev checksum mismatch\n"; 
+	} 
+	return $obj->{prev_checksum};
+}
+
+
+=pod
+
+=head2 next_checksum()
+
+if checksum_period() is set this method returns the checksum of the 
+next period that this message would have had if it would have been 
+created later. 
+
+=cut
+#------------------------------------------------------------------------------------
+sub next_checksum {
+	my $obj=shift;
+	my $checksum=shift; 
+	$obj->is_object_valid; 
+	if ( ! $obj->{next_checksum} ) {
+		if ( $checksum ) { 
+			$obj->{next_checksum}=$checksum; 
+		} else {
+			$obj->{next_checksum}=sha256_hex($obj->checksum_content_bin(1));
+		}
+	} 
+	if ($obj->{next_checksum}!=sha256_hex($obj->checksum_content_bin(1))) {
+		die "object next checksum mismatch\n"; 
+	} 
+	return $obj->{next_checksum};
+}
+
+=pod
+
+=head2 next_checksum()
+
+This returns the checksum of all the data that is goung to be signed. 
+
+=cut
+#------------------------------------------------------------------------------------
+sub signed_checksum {
+	my $obj=shift;
+	my $checksum=shift; 
+	$obj->is_object_valid; 
+	if ( ! $obj->{signed_checksum} ) {
+		if ( $checksum ) { 
+			$obj->{signed_checksum}=$checksum; 
+		} else {
+			$obj->{signed_checksum}=sha256_hex($obj->signed_content_bin);
+		}
+	} 
+	if ($obj->{signed_checksum}!=sha256_hex($obj->signed_content_bin)) {
+		die "object signed checksum mismatch\n"; 
+	} 
+	return $obj->{signed_checksum};
 }
 
 #------------------------------------------------------------------------------------
@@ -524,6 +639,7 @@ sub value {
 	if ( $method eq "version" ) { return $obj->version(@_); }
 	if ( $method eq "call" ) { return $obj->call(@_); }
 	if ( $method eq "checksum" ) { return $obj->checksum(@_); }
+	if ( $method eq "checksum_period" ) { return $obj->checksum_period(@_); }
 	if ( $method eq "signature" ) { return $obj->signature(@_); }
 	if ( $method eq "signature_key_id" ) { return $obj->signature_key_id(@_); }
 	# check if the field is valid
@@ -603,14 +719,17 @@ sub is_field_valid {
 This function returns the part of the qtc::msg that is going to be signed or 
 verified as big endian hex. 
 
-the signed content contains "type", "call" and the alphabetically sorted fields 
-of the message, packed together like they would be in the data file. 
+the signed content contains "type", the call, the "checksum_period" and the 
+alphabetically sorted fields of the message, packed together like they would 
+be in the data file. 
   
 =cut
 sub signed_content_hex {
 	my $obj=shift; 
 	$obj->is_object_valid;
-	return $obj->bin->gen_hex_payload("type", "call", sort keys %{$msg_types{$obj->{type}}});
+	my @fixed=("type", "call"); 
+	if ( $obj->checksum_period ) { push @fixed, "checksum_period"; }
+	return $obj->bin->gen_hex_payload(@fixed, sort keys %{$msg_types{$obj->{type}}});
 }
 
 =pod
@@ -626,6 +745,61 @@ sub signed_content_bin {
 	return pack("H*", $obj->signed_content_hex);
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 checksum_content_hex($offset)
+
+This function returns the part of the qtc::msg that is going to be used for the checksum 
+or verified as big endian hex. 
+
+the checksum  content contains "type", than either call or checksum_period as well as 
+the alphabetically sorted fields of the message, packed together like if they would be 
+in the data file. 
+
+The checksum ceneration is a bit more complicated, due to the fact that there are rolling 
+signature areas depending on the time when a message is sent. this means that every timestamp 
+needs to be rounded up to one value. ( offset*(int(ts/offset)) ) The values must be restored 
+after the checksum is built. 
+  
+=cut
+sub checksum_content_hex {
+	my $obj=shift;
+	my $offset=shift;
+	if ( ! defined $offset ) { $offset=0; }
+	$obj->is_object_valid;
+	my %restore; 
+	my @fixed=("type"); 
+	if ( $obj->checksum_period ) { 
+		push @fixed, "checksum_period"; 
+		foreach my $field (keys %{$msg_types{$obj->{type}}}) {
+			if ( ${$msg_types{$obj->{type}}}{$field} eq $valid_date ){
+				$restore{$field}=$obj->{$field}; 
+				$obj->{$field}=$obj->checksum_period()*int($obj->{$field}/$obj->checksum_period())+($offset*$obj->checksum_period());
+			}
+		}
+	}
+	else { push @fixed, "call"; }
+	my $ret=$obj->bin->gen_hex_payload(@fixed, sort keys %{$msg_types{$obj->{type}}});
+	# restore the field values in the obj after signature calculation 
+	foreach my $field (keys %restore) { $obj->{$field}=$restore{$field}; }
+	return $ret; 
+}
+
+=pod
+
+=head2 checksum_content_bin($offset)
+
+like checksum_content_hex() but the return of this function is pure binary, this is really 
+what is to be used to build the checksum, just in case someone has the idea to read a 
+qtc::msg with C. 
+
+=cut
+sub checksum_content_bin {
+	my $obj=shift; 
+	return pack("H*", $obj->checksum_content_hex(@_));
+}
+
 =pod
 
 =head2 as_hex()
@@ -638,12 +812,16 @@ otherwise.
 sub as_hex {
 	my $obj=shift; 
 	$obj->is_object_valid;
-	return $obj->bin->gen_hex_msg(
+	my @fixed=(
 		"version", 
 		"signature", 
 		"signature_key_id", 
 		"type", 
 		"call", 
+	); 
+	if ( $obj->checksum_period ) { push @fixed, "checksum_period"; }
+	return $obj->bin->gen_hex_msg(
+		@fixed,
 		sort keys %{$msg_types{$obj->{type}}}
 	);
 }

@@ -11,6 +11,7 @@ use qtc::publish;
 # we use this object global variable to be sure to use crlf on all plattforms
 our $crlf=pack("H*", "0D0A"); 
 
+# setup object
 sub new {
 	my $class=shift; 
 	my $obj=$class->SUPER::new(@_); 
@@ -50,6 +51,7 @@ sub sel { return shift->{sel}; }
 sub query { return shift->{query}; }
 sub publish { return shift->{publish}; }
 
+# the main eventloop for the daemon 
 sub eventloop {
 	my $obj=shift; 
 	
@@ -77,7 +79,7 @@ sub eventloop {
 			if ( $line ) { $obj->process_line($line); }
 			$obj->deliver_telegrams; 
 			foreach my $id (keys %{$obj->{acked_msgs}}) {
-				if ( $obj->{acked_msgs}->{$id} < time-3600 ) {
+				if ( $obj->{acked_msgs}->{$id} < time-100000 ) { # abt 1 day 
 					delete $obj->{acked_msgs}->{$id};
 				}
 			}
@@ -85,6 +87,7 @@ sub eventloop {
 	}
 }
 
+# read exactly one line from a socket if there 
 sub fetch_line {
    my $obj=shift; 
    my $buf=shift; 
@@ -102,12 +105,14 @@ sub fetch_line {
    return $ret; 
 }
 
+# set a new filter 
 sub new_filter {
 	my $obj=shift; 
 	$obj->{filter}=shift;
 	$obj->send_filter; 
 }
 
+# send a filter to the remote IS gateway 
 sub send_filter {
 	my $obj=shift; 
 	
@@ -115,6 +120,7 @@ sub send_filter {
 	$obj->sock->send("#filter ".$obj->{filter}."$crlf") or die "Cant send filter\n";
 }
 
+# log into the aprs is server 
 sub log_in {
 	my $obj=shift; 
 
@@ -122,6 +128,7 @@ sub log_in {
 	$obj->sock->send("user ".$obj->{user}." pass ".$obj->{pass}." vers QTCNet_to_APRS_IS 0.0.1$crlf") or die "Cant send login data\n";
 }
 
+# process a line fetched from the server
 sub process_line {
 	my $obj=shift; 
 	my $line=shift; 
@@ -165,10 +172,7 @@ sub process_line {
 		print STDERR "RCVD Unknown line: $line\n"; 
 		return; 
 	}
-	if ( ( $pkg->type eq ":" ) and ( $pkg->to eq "APQTCCHK" ) and ( $pkg->path_hash->{APQTC1} ) ) {
-		print STDERR "APQTCCHK:\n\tfrom: ".$pkg->from."\n\tto: ".$pkg->to."\n\ttext: ".$pkg->msg."\n";
-		$obj->process_apqtcchk($pkg);   
-	} elsif (( $pkg->type eq ":" ) and ( $pkg->ack ) and ( ! $pkg->path_hash->{APQTC1} ) ) {
+	if (( $pkg->type eq ":" ) and ( $pkg->ack ) and ( ! $pkg->path_hash->{APQTC1} ) ) {
 		print STDERR "Message:\n\tfrom: ".$pkg->from."\n\tto: ".$pkg->to."\n\tack: ".$pkg->ack."\n\ttext: ".$pkg->msg."\n";
 		#print STDERR "I Would send back: ".$pkg->create_ack."\n"; 
 		#print STDERR "Oh and path is: ".join(",", @{$pkg->path})."\n\n"; 
@@ -178,6 +182,7 @@ sub process_line {
 		print STDERR "Ack:\n\tfrom: ".$pkg->from."\tto: ".$pkg->to."\n\tacked msg: ".$pkg->msg."\n";
 		print STDERR "Oh and path is: ".join(",", @{$pkg->path})."\n\n"; 
 		$obj->process_ack($pkg); 
+		$obj->look_for_telegrams($pkg->from); 
 	} else {
 		#print STDERR "Seen call: ".$pkg->from."\n"; 
 		if ( $obj->look_for_telegrams($pkg->from) ) {
@@ -186,15 +191,27 @@ sub process_line {
 	}
 }
 
+# publishes a telegram in qtc and sends the Acknowledge back to aprs 
 sub deliver_telegrams {
 	my $obj=shift; 
 	my $t=time; 
 	foreach my $id (keys %{$obj->{spool}}){
 		if ( ($t-$obj->{spool}->{$id}->telegram_date) >= $obj->{spooltimeout}->{$id} ) {
 			print STDERR "publishing ".$obj->{spool}->{$id}->filename."\n"; 
-			$obj->publish->publish_telegram($obj->{spool}->{$id});
+			if (
+				( $obj->query->telegram_by_checksum($telegram->checksum) ) 
+				or ( $obj->query->telegram_by_checksum($telegram->prev_checksum) ) 
+				or ( $obj->query->telegram_by_checksum($telegram->next_checksum) )
+			) {
+				# I will not publish just ack, telegram is already there in the net
+				print STDERR "Not publishing telegram ".$telegram->filename.", checksum already there\n"; 
+			} else {
+				print STDERR "Publishing telegram ".$telegram->filename."\n"; 
+				$obj->publish->publish_telegram($obj->{spool}->{$id});
+			}
 			print STDERR "Sending ".$obj->{spoolack}->{$id}->create_ack."\n"; 
 			$obj->sock->send($obj->{spoolack}->{$id}->create_ack.$crlf);
+			$obj->{acked_msgs}->{$id}=time; 
 			delete $obj->{spool}->{$id};
 			delete $obj->{spoolack}->{$id};
 			delete $obj->{spooltimeout}->{$id};
@@ -203,51 +220,7 @@ sub deliver_telegrams {
 	}
 }
 
-sub process_apqtcchk {
-	my $obj=shift;
-	my $aprs=shift; 
-	my $msg=$aprs->msg; 
-	#$msg=~s/^\d\d\d\d\d\d\d\dz//g
-	my ($id, $chk) = split(" ", $msg);
-	if ( ! $obj->{spool}->{$id} ) { 
-		print STDERR "The referenced package $id is never seen by this daemon\n"; 
-		return; 
-	}
-	if ( $obj->{spool_others}->{$id}->{$chk} ) {
-		print STDERR "we already calculated this message for this spool\n"; 
-		return; 
-	}
-	$obj->{spool_others}->{$id}->{$chk}=1; 
-	if ( 
-		$obj->chksum_is_lt(
-			substr($obj->{spool}->{$id}->checksum, 0, 32),  
-			$chk
-		)
-	) {
-		# if our checksum is lower than the received this means we drop our delivery
-		# maybe as a feature for later versions we could check if the received telegram 
-		# really exists. 
-		#delete $obj->{spool}->{$id};
-		#delete $obj->{spoolack}->{$id};
-		$obj->{spooltimeout}->{$id}=($obj->{spooltimeout}->{$id})+60;
-	}	
-}
-
-sub chksum_is_lt {
-	my $obj=shift;
-	my $chk1=shift; 
-	my $chk2=shift; 
-	
-	while ( $chk1 ) {
-		my $t1=unpack("I>*", pack("H*", substr($chk1, 0, 2))); 
-		my $t2=unpack("I>*", pack("H*", substr($chk2, 0, 2))); 
-		if ( $t1 > $t2 ) { return; }
-		$chk1=substr($chk1, 2); 
-		$chk2=substr($chk2, 2); 
-	}
-	return 1; 
-}
-
+# looks if there are new telegrams available for $call
 sub look_for_telegrams {
 	my $obj=shift; 
 	my $call=shift; 
@@ -265,6 +238,7 @@ sub look_for_telegrams {
 	return $ret; 
 }
 
+# deliver a specific telegram to a call if seen 
 our $msg_length=67; 
 sub deliver_telegram_to_call {
 	my $obj=shift; 
@@ -310,6 +284,7 @@ sub deliver_telegram_to_call {
 	}
 }
 
+# we got an ack lets see what we have to do with it 
 sub process_ack {	
 	my $obj=shift; 
 	my $aprs=shift;
@@ -350,6 +325,7 @@ sub process_ack {
 	}
 }
 
+# callsign transformation 
 sub call_qtc2aprs {
 	my $obj=shift; 
 	my $call=shift; 
@@ -358,6 +334,7 @@ sub call_qtc2aprs {
 	return $call; 
 }
 
+# callsign transformation 
 sub call_aprs2qtc {
 	my $obj=shift; 
 	my $call=shift; 
@@ -366,6 +343,7 @@ sub call_aprs2qtc {
 	return $call; 
 }
 
+# try to deliver this aprs message to QTC network 
 sub aprs_msg_to_qtc {
 	my $obj=shift; 
 	my $aprs=shift; 
@@ -395,7 +373,18 @@ sub aprs_msg_to_qtc {
 			to=>$obj->allowed_letters_for_call($call), 
 			from=>$obj->allowed_letters_for_call($obj->call_aprs2qtc($aprs->from)),
 			telegram=>$obj->allowed_letters_for_telegram($aprs->msg),
+			checksum_period=>100000, # abt 1 day 
 		);
+		if (
+			( $obj->query->telegram_by_checksum($telegram->checksum) ) 
+			or ( $obj->query->telegram_by_checksum($telegram->prev_checksum) ) 
+			or ( $obj->query->telegram_by_checksum($telegram->next_checksum) )
+		) {
+			# telegram already is in QTC net 
+			$obj->sock->send($aprs->create_ack.$crlf);
+			$obj->{acked_msgs}->{$id}=time; 
+			return; 
+		}
 		$obj->{spool}->{$id}=$telegram; 
 		$obj->{spoolack}->{$id}=$aprs; 
 		$obj->{spooltimeout}->{$id}=60; 
@@ -403,17 +392,6 @@ sub aprs_msg_to_qtc {
 		$telegram=$obj->{spool}->{$id}; 
 		print STDERR "We have already seen message $id, resend just chksum \n";
 	}
-	
-	my $gateinfo=qtc::aprs::packet->new(
-		from=>$obj->{user}, 
-		to=>"APQTCCHK",
-		call=>$obj->{user},
-		type=>":",
-		msg=>"$id ".substr($telegram->checksum, 0, 32),
-		#ack=>substr($telegram->checksum, 0, 2),
-	); 
-	print STDERR "Sending ".$gateinfo->generate_msg." to APRS IS\n"; 
-	$obj->sock->send($gateinfo->generate_msg.$crlf); 
 }
 
 1; 

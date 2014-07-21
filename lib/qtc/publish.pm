@@ -180,6 +180,7 @@ parameters:
  to=>$to_call,
  from=>$from_call,
  telegram=>$telegram_text,
+ [checksum_period=>$seconds],
 
 =cut
 #-------------------------------------------------------
@@ -193,6 +194,7 @@ sub create_telegram {
 		from=>$args{from}, 
 		to=>$args{to},
 		telegram=>$args{telegram},
+		checksum_period=>$args{checksum_period},
 	);
 	$obj->sig->sign($msg); 
 
