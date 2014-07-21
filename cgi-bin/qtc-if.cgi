@@ -20,14 +20,15 @@ sub publish_posted_msg {
 		my $msg; 
 		$data=unpack("H*", $data); 
 		$msg=qtc::msg->new(hex=>$data);
-		$msg->to_filesystem($root."/in"); 
-		$msg->{pidfile}=$root."/.qtc_processor.pid"; 
-		$msg->wakeup_processor;
-		$filename=$msg->filename; 
+		if ( ! -e $root."/in/".$msg->filename ) { 
+			$msg->to_filesystem($root."/in"); 
+			$msg->{pidfile}=$root."/.qtc_processor.pid"; 
+			$msg->wakeup_processor;
+			$filename=$msg->filename; 
+		}
 	};
 	return $@, $filename; 
 }
-
 
 my $putdata;
 if ( $ENV{REQUEST_METHOD} eq 'PUT' ) {
@@ -43,7 +44,7 @@ if (( ! $putdata ) and $q->param("POSTDATA") ) {
 			-status=>500
 		);
 		print "This would work but there is some bug when reading binary data either in CGI::Simple or even Perl\n"; 
-	$putdata=$q->param("POSTDATA"); 
+	#$putdata=$q->param("POSTDATA"); 
 }
 if ( $putdata ) {
 	my $err;
@@ -56,10 +57,13 @@ if ( $putdata ) {
 		"application/x-compress"=>1, 
 		"application/x-compressed"=>1,
 	); 
+	#print STDERR length($putdata)." bytes  \n";
+	#print STDERR $ENV{CONTENT_TYPE}." bytes  \n";
 	if ( $mtype{$ENV{CONTENT_TYPE}} ) {  # if we have got a tar archive
 		my $tarfh=IO::Scalar->new(\$putdata);
 		my $tar=Archive::Tar->new($tarfh);
 		foreach my $file ($tar->get_files) {
+			#print STDERR $file->name."\n"; 
 			my ($ret, $filename)=publish_posted_msg($file->get_content);
 			if ( $ret ) { 
 				$err.="For File: $filename the followin error occured:\n"; 
@@ -82,6 +86,9 @@ if ( $putdata ) {
 			-type=>'text/plain',
 			-status=>400
 		);
+		print STDERR "Import fail! \n"; 
+		print STDERR join("\n", @processed); 
+		print STDERR "\n$err\n"; 
 		print $err;
 		print "----------------------------------------------\n";
 		print "well processed files:\n"; 
@@ -91,6 +98,8 @@ if ( $putdata ) {
 			-type=>'text/plain',
 			-status=>200
 		);
+		# print STDERR "Import success! \n"; 
+		# print STDERR join("\n", @processed); 
 		print join("\n", @processed); 
 		#print Dumper(\%ENV); 
 	}
