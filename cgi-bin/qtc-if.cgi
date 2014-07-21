@@ -43,7 +43,7 @@ if (( ! $putdata ) and $q->param("POSTDATA") ) {
 			-status=>500
 		);
 		print "This would work but there is some bug when reading binary data either in CGI::Simple or even Perl\n"; 
-	#$putdata=$q->param("POSTDATA"); 
+	$putdata=$q->param("POSTDATA"); 
 }
 if ( $putdata ) {
 	my $err;
