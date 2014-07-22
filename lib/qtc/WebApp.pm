@@ -33,13 +33,13 @@ sub cgiapp_postrun {
 
 	my $cgi = $obj->query(); 
 	my $out=$cgi->start_html(
-		-title=>"ALPHA QTC Network Web Access ALPHA",
+		-title=>"QTC Network Web Access",
 		-script=>$obj->js_post_function, 
 	); 
 
 	$out.=$obj->h_e("center", {}, 
-		$obj->h_h1({}, '<a href="'.$obj->{qtc}->{home_page}.'">(ALPHA) QTC Net Web Access (ALPHA)</a>'),
-		'<small>a microblogging (like twitter) and messaging system for ham radio</small>'
+		$obj->h_h1({}, '<a href="'.$obj->{qtc}->{home_page}.'">QTC Net Web Access</a>'),
+		'<small>a microblogging (like twitter) and messaging system for ham radio (still in testing)</small>'
 		
 	); 
 	$out.=$obj->h_e("hr"); 
