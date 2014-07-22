@@ -258,7 +258,8 @@ sub deliver_telegram_to_call {
 	}
 	
 
-	my @anz=keys %{$obj->{sent}->{$obj->call_qtc2aprs($telegram->from)}->{$obj->call_qtc2aprs($call)}->{$chk}};
+	my @anz=keys %{$obj->{sent}->{$obj->call_qtc2aprs($call)}->{$obj->call_qtc2aprs($telegram->from)}->{$chk}};
+	print STDERR "Delivering Telegram ".$chk." ".$obj->call_qtc2aprs($telegram->from)." ".$obj->call_qtc2aprs($call)." anz is ".($#anz)."\n";
 
 	print STDERR "Delivering Telegram ".$telegram->checksum." anz is ".($#anz)."\n";
 	
