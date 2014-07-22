@@ -256,6 +256,9 @@ sub deliver_telegram_to_call {
 		print STDERR "Telegram is from the receiver $call itself we are not going to deliver\n"; 
 		return; 
 	}
+	
+
+	my @anz=keys %{$obj->{sent}->{$obj->call_qtc2aprs($telegram->from)}->{$obj->call_qtc2aprs($call)}->{$chk}};
 
 	print STDERR "Delivering Telegram ".$telegram->checksum."\n";
 	
@@ -273,14 +276,20 @@ sub deliver_telegram_to_call {
 			msg=>$part,
 			ack=>$ack,
 		);
-		print STDERR "I am going to sent ".$aprs->generate_msg."\n"; 
-		$obj->sock->send($aprs->generate_msg.$crlf); 
-		
-		# sorry for this complex structure it ist 
-		#
-		# TO - FROM - CHECKSUM - ACK
-		#
-		$obj->{sent}->{$aprs->to}->{$aprs->from}->{$telegram->checksum}->{$aprs->ack}=$aprs; 
+		if (
+			( $#anz < 0 )
+			or ( $obj->{sent}->{$aprs->to}->{$aprs->from}->{$telegram->checksum}->{$aprs->ack} ) 
+		) { 
+			print STDERR "I am going to sent this part of the telegram ".$aprs->generate_msg."\n"; 
+			$obj->sock->send($aprs->generate_msg.$crlf); 
+			# sorry for this complex structure it ist 
+			#
+			# TO - FROM - CHECKSUM - ACK
+			#
+			$obj->{sent}->{$aprs->to}->{$aprs->from}->{$telegram->checksum}->{$aprs->ack}=$aprs; 
+		} else {
+			print STDERR "This part of the Telegram is already acked ".$aprs->generate_msg."\n"; 
+		} 
 		
 		$part=substr($text, 0, 64);
 	}
