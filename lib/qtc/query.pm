@@ -79,6 +79,31 @@ sub latest_changes {
 #-------------------------------------------------------
 =pod
 
+=head2 msg_already_exists($msg, [$folder])
+
+returns 1 if the message already exists in the inbound folder of the server 
+or in the relative path given as second optional argument
+
+returns 0 otherwise
+
+This is needed to check if a message created with a rolling checksum is 
+already known to the server
+
+=cut
+#-------------------------------------------------------
+sub msg_already_exists { 
+	my $obj=shift; 
+	my $msg=shift; 
+	my $subpath=shift; if ( ! $subpath ) { $subpath="/in"; } 
+	
+	if ( -e $obj->{path}.$subpath."/".$msg->filename ) { return 1; }
+
+	return 0; 
+}
+
+#-------------------------------------------------------
+=pod
+
 =head2 telegram_by_checksum($chksum)
 
 Returns one specific telegram that matches the given checksum. 
@@ -90,7 +115,7 @@ cant be read.
 sub telegram_by_checksum { 
 	my $obj=shift; 
 	my $chksum=shift; 
-	my $path=shift; if ( ! $subpath ) { $subpath="/out"; } 
+	my $subpath=shift; if ( ! $subpath ) { $subpath="/out"; } 
 	
 	my @msgs;
 	foreach my $file ($obj->scan_dir($obj->{path}.$subpath, 'telegram_.+_'.$chksum.'\.qtc')){
