@@ -260,7 +260,7 @@ sub deliver_telegram_to_call {
 
 	my @anz=keys %{$obj->{sent}->{$obj->call_qtc2aprs($telegram->from)}->{$obj->call_qtc2aprs($call)}->{$chk}};
 
-	print STDERR "Delivering Telegram ".$telegram->checksum."\n";
+	print STDERR "Delivering Telegram ".$telegram->checksum." anz is ".($#anz)."\n";
 	
 	my $part=substr($text, 0, 64);
 	while ($part) {
@@ -319,9 +319,9 @@ sub process_ack {
 	# 3rd resolve the acks for aprs messages that we sent to a station 
 	foreach my $chk ( keys %{$obj->{sent}->{$aprs->from}->{$aprs->to}} ) {
 		delete $obj->{sent}->{$aprs->from}->{$aprs->to}->{$chk}->{$aprs->msg};
-		print STDERR "Message deleting ".$aprs->from." ".$aprs->to." ".$aprs->msg." $chk\n";
+		print STDERR "Message deleting ".$aprs->from." ".$aprs->to." $chk ".$aprs->msg."\n";
 		my @anz=keys %{$obj->{sent}->{$aprs->from}->{$aprs->to}->{$chk}};
-		print STDERR "Anz ".$#anz."\n";
+		print STDERR "Anz keys for $chk is".$#anz."\n";
 		if ( $#anz == -1  ) { 
 			print STDERR "oh the package $chk is done send qsp\n"; 
 			#sleep 1; 
