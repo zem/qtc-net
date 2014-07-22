@@ -182,7 +182,9 @@ sub process_line {
 		print STDERR "Ack:\n\tfrom: ".$pkg->from."\tto: ".$pkg->to."\n\tacked msg: ".$pkg->msg."\n";
 		print STDERR "Oh and path is: ".join(",", @{$pkg->path})."\n\n"; 
 		$obj->process_ack($pkg); 
-		$obj->look_for_telegrams($pkg->from); 
+		if ( ! $pkg->path_hash->{APQTC1} ) { 
+			$obj->look_for_telegrams($pkg->from);
+		}
 	} else {
 		#print STDERR "Seen call: ".$pkg->from."\n"; 
 		if ( $obj->look_for_telegrams($pkg->from) ) {
