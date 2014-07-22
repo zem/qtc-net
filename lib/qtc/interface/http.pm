@@ -61,13 +61,16 @@ sub publish_tar {
 	}
 
 	if ( $#msgs >= 0 ) {
-		$obj->dprint("put tar data  \n"); 
+		$obj->dprint("put tar data to ".$obj->url." lengh ".length($tar->write)." \n"); 
 		my $res=$obj->lwp->put($obj->url, 
 			"Content-Type"=>"application/x-tar",
 			Content=>$tar->write,
 		); 
 
-		if ( ! $res->is_success ) { die "File Upload not succeeded\n"; }
+		if ( ! $res->is_success ) { 
+			#open(TAR, "> /tmp/upload.tar"); print TAR $tar->write; close TAR; 
+			die "File Upload not succeeded\n"; 
+		}
 	}
 }
 
