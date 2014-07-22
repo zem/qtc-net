@@ -354,8 +354,11 @@ sub aprs_msg_to_qtc {
 	my $from=$obj->call_aprs2qtc($aprs->from);
 
 	if ( ! $obj->query->operator($from) ) { 
-		print STDERR "This operator does not have an operator message, we cant continue\n"; 
-		return; 
+		print STDERR "This operator does not have an operator message, we try target\n"; 
+		if ( ! $obj->query->operator($call) ) { 
+			print STDERR "neither sender nor receiver have an operator message we will stop processing of this msg here\n"; 
+			return;
+		} 
 	}
 	
 	my $id=$aprs->from."_".$aprs->to."_".$aprs->ack; 
