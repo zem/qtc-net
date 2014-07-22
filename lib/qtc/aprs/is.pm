@@ -203,6 +203,7 @@ sub deliver_telegrams {
 				( $obj->query->telegram_by_checksum($telegram->checksum) ) 
 				or ( $obj->query->telegram_by_checksum($telegram->prev_checksum) ) 
 				or ( $obj->query->telegram_by_checksum($telegram->next_checksum) )
+				or ( $obj->query->msg_already_exists($telegram) )
 			) {
 				# I will not publish just ack, telegram is already there in the net
 				print STDERR "Not publishing telegram ".$telegram->filename.", checksum already there\n"; 
@@ -383,6 +384,7 @@ sub aprs_msg_to_qtc {
 			( $obj->query->telegram_by_checksum($telegram->checksum) ) 
 			or ( $obj->query->telegram_by_checksum($telegram->prev_checksum) ) 
 			or ( $obj->query->telegram_by_checksum($telegram->next_checksum) )
+			or ( $obj->query->msg_already_exists($telegram) )
 		) {
 			# telegram already is in QTC net 
 			$obj->sock->send($aprs->create_ack.$crlf);
