@@ -250,7 +250,8 @@ sub deliver_telegram_to_call {
 	$obj->{telegrams}->{$call}->{$telegram->checksum}=$telegram;
 
 	my $chk=$telegram->checksum; 
-	my $text=$obj->call_qtc2aprs($telegram->to)." // ".$telegram->telegram;
+	#my $text=$obj->call_qtc2aprs($telegram->to)." // ".$telegram->telegram;
+	my $text=$telegram->telegram;
 
 	if ( $call eq $telegram->from ) { 
 		print STDERR "Telegram is from the receiver $call itself we are not going to deliver\n"; 
