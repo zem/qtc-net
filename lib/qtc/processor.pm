@@ -278,7 +278,12 @@ sub process_in {
 
 	my $cnt=0; 
 	foreach my $file ($obj->scan_dir($obj->{root}."/in", '.*\.qtc$')){
-		if (( ! -e $obj->{root}."/out/".$file ) and ( ! -e $obj->{root}."/bad/".$file )) { 
+		if (
+			( ! -e $obj->{root}."/out/".$file ) 
+			and ( ! -e $obj->{root}."/bad/".$file )
+			and ( ! -e $obj->{root}."/old/".$file )
+			and ( ! -e $obj->{root}."/archive/".$file )
+		) { 
 			$cnt++;
 			print STDERR $obj->ts_str." processing file $file\n"; 
 			eval { 
@@ -310,6 +315,8 @@ messages in /in. If the process receives a HUP signal it will wake up immidiatel
 #------------------------------------------------------------------------------------
 sub process_in_loop { 
 	my $obj=shift;
+	$obj->ensure_path($obj->{root}."/archive"); 
+	$obj->ensure_path($obj->{root}."/old"); 
 	$obj->ensure_path($obj->{root}."/bad"); 
 	$obj->ensure_path($obj->{root}."/in"); 
 
@@ -458,7 +465,7 @@ sub import_telegram {
 			my $other=$obj->query->telegram_by_checksum($chk); 
 			if ( ! $other ) { next; } 
 			if ( $other->telegram_date < $msg->telegram_date ) { 
-				$msg->link_to_path($obj->{root}."/bad");
+				$msg->link_to_path($obj->{root}."/old");
 				return; 
 			}
 			if ( $other->telegram_date > $msg->telegram_date ) { 
@@ -471,7 +478,7 @@ sub import_telegram {
 					$obj->remove_telegram($other); 
 					last; 
 				} else {
-					$msg->link_to_path($obj->{root}."/bad");
+					$msg->link_to_path($obj->{root}."/old");
 					return; 
 				}
 			}	
@@ -704,7 +711,9 @@ sub import_pubkey {
 			filename=>$revokefile,
 		); 
 		if ( $msg->key_id eq $revoke->key_id ) {
-			die "This key_id ".$msg->key_id." is revoked\n"; 
+			print STDERR "This key_id ".$msg->key_id." is revoked\n"; 
+			$msg->link_to_path($obj->{root}."/old");			
+			return; 
 		}
 	}
 	
@@ -728,7 +737,9 @@ sub import_pubkey {
 			if ( $msg->key_date > $oldmsg->key_date ) {
 				$obj->remove_pubkey($oldmsg);
 			} else { 
-				die "Key ".$msg->filename."is an old key, not importing\n"; 
+				print STDERR "Key ".$msg->filename."is an old key, not importing\n"; 
+				$msg->link_to_path($obj->{root}."/old");			
+				return; 
 			}
 		}
 	}
@@ -743,7 +754,7 @@ sub import_pubkey {
 	# keyring cache must be cleared now 
 	$obj->keyring_clear($msg->call); 
 
-	# last but not least if we came that far we need to get any bad message for this 
+	# last but not least if we came that far we need to get any old message for this 
 	# call for reprocessing
 	my @badmsgs=$obj->scan_dir(
 		$obj->{root}."/bad",
@@ -927,7 +938,9 @@ sub import_operator {
 	my $oldop=$obj->query->operator($msg->call); 
 	if ( $oldop ) { 
 		if ( $oldop->record_date >= $msg->record_date ) { 
-			die $obj->ts_str." there is an old operator message newer than this one skip this\n"; 
+			print STDERR $obj->ts_str." there is an old operator message newer than this one skip this\n"; 
+			$msg->link_to_path($obj->{root}."/old");
+			return;
 		}
 		print STDERR $obj->ts_str." I first need to remove the old operator message ".$oldop->checksum."\n"; 
 		$obj->remove_operator($oldop); 
