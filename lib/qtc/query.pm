@@ -128,11 +128,14 @@ sub telegram_by_checksum {
 #-------------------------------------------------------
 =pod
 
-=head2 list_telegrams($call, $type)
+=head2 list_telegrams($call, $type, $anz, $offset)
 
 Returns telegrams for $call where type can be one of 
 undef, new, all, sent
 if $type is undef all new telegrams are returned. 
+
+$anz and $offset are optional parameters, telling how 
+many messages are to be returned at once and which block. 
 
 =cut
 #-------------------------------------------------------
