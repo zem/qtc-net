@@ -39,7 +39,7 @@ sub telegram_item {
 	my $msg=shift; 
 	if ( $msg->type ne "telegram" ) { return; }
 	my $call=$qry->allowed_letters_for_call($msg->to); 
-	my $callurl=$url."?call=".$q->url_encode($call)."&type=$type";
+	my $callurl=$q->escapeHTML($url."?call=".$q->url_encode($call).'&type='.$type);
 
 	my $de=$msg->to." de ".$msg->from." = "; 
 	if ( $#calls != -1 ) { 
