@@ -12,6 +12,10 @@ my $type=$q->param("type");
 if ( ! $type ) { $type="new"; }
 if ( $type !~ /^new|all|sent|timeline|timeline_new$/ ) { die "unknown type"; }
 
+my $type=$q->param("type"); 
+if ( ! $type ) { $type="timeline"; }
+if ( $type !~ /^new|all|sent|timeline|timeline_new$/ ) { die "unknown type"; }
+
 my $dateformat="%a, %d %b %Y %T +0000";
 #my $dateformat="%Y-%m-%d %H:%M:%S UTC";
 
@@ -36,11 +40,28 @@ sub telegram_item {
 	if ( $msg->type ne "telegram" ) { return; }
 	my $call=$qry->allowed_letters_for_call($msg->to); 
 	my $callurl=$url."?call=".$q->url_encode($call);
+
+	my $de=$msg->to." de ".$msg->from." = "; 
+	if ( $#calls != -1 ) { 
+		if ( $msg->from eq $msg->to ) { 
+			$de="de ".$msg->from." = ";
+		} else {
+			my $op=$qry->operator($msg->to); 
+			if ( $op ) { 
+				foreach my $alias ($op->set_of_aliases) {
+					if ( $alias eq $msg->from ) {
+						$de="de ".$msg->from." = ";
+						break; 
+					}
+				}
+			}
+		}
+	}
 	
 	print '
     <item>
-      <title>'.$q->escapeHTML($msg->telegram).'</title>
-      <description>from: '.$q->escapeHTML($msg->from).'  to: '.$q->escapeHTML($call).' '.$q->escapeHTML($msg->to).'</description>
+      <title>'.$q->escapeHTML($de.$msg->telegram).'</title>
+      <description>'.$q->escapeHTML($to).' de '.$q->escapeHTML($msg->from).'</description>
       <link>'.$callurl.'</link>
       <author>'.$q->escapeHTML($msg->call).' ('.$q->escapeHTML($msg->call).')</author>
       <guid isPermaLink="false">'.$q->escapeHTML($msg->filename).'</guid>
