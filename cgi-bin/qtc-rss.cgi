@@ -16,6 +16,9 @@ my $type=$q->param("type");
 if ( ! $type ) { $type="timeline"; }
 if ( $type !~ /^new|all|sent|timeline|timeline_new$/ ) { die "unknown type"; }
 
+my $anz=$q->param("anz"); if ( ! $anz ) { $anz=40; } 
+my $offset=$q->param("offset"); if ( ! $offset ) { $offset=0; } 
+
 my $dateformat="%a, %d %b %Y %T +0000";
 #my $dateformat="%Y-%m-%d %H:%M:%S UTC";
 
@@ -95,7 +98,7 @@ if ( $#calls == -1 ) {
 	$call=$qry->allowed_letters_for_call($call); 
 	$callurl=$url."?call=".$q->url_encode($call);
 	
-		foreach my $msg ($qry->list_telegrams($call, $type)) {
+		foreach my $msg ($qry->list_telegrams($call, $type, $anz, $offset)) {
 			telegram_item($msg); 
 		}
 	}
