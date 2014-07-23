@@ -194,4 +194,13 @@ our %data_types=(
 		enum=>22,
 		data_type=>"integer",
 	}, 
+	"checksum_period"=>{
+		enum=>23,
+		data_type=>"integer",
+	}, 
+	"set_of_qsp_timeouts"=>{
+		enum=>24,
+		data_type=>"integer",
+		multiple_times=>2,
+	}, 
 );
