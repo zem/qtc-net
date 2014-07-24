@@ -243,7 +243,7 @@ sub look_for_telegrams {
 }
 
 # deliver a specific telegram to a call if seen 
-our $msg_length=67; 
+our $msg_length=67-4; 
 sub deliver_telegram_to_call {
 	my $obj=shift; 
 	my $call=shift;
@@ -266,10 +266,10 @@ sub deliver_telegram_to_call {
 
 	print STDERR "Delivering Telegram ".$telegram->checksum." anz is ".($#anz)."\n";
 	
-	my $part=substr($text, 0, 64);
+	my $part=substr($text, 0, $msg_length);
 	while ($part) {
 		if ( $part =~ /^ack/ ) { $part=".".$part; }
-		$text=substr($text, 64);
+		$text=substr($text,  $msg_length);
 		my $ack=$telegram->hr_refnum($chk); 
 		$chk=substr($chk, 8);
 		my $aprs=qtc::aprs::packet->new(
@@ -295,7 +295,7 @@ sub deliver_telegram_to_call {
 			print STDERR "This part of the Telegram is already acked ".$aprs->generate_msg."\n"; 
 		} 
 		
-		$part=substr($text, 0, 64);
+		$part=substr($text, 0, $msg_length);
 	}
 }
 
