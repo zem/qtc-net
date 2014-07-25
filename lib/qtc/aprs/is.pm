@@ -243,7 +243,7 @@ sub look_for_telegrams {
 }
 
 # deliver a specific telegram to a call if seen 
-our $msg_length=67-4; 
+our $msg_length=67; # it seems to be ok to have 67 chars in a message + checksum 
 sub deliver_telegram_to_call {
 	my $obj=shift; 
 	my $call=shift;
