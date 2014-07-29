@@ -40,8 +40,13 @@ $qry=qtc::query->new(
 ####################################################################################
 sub telegram_item {
 	my $msg=shift; 
+	my $call=shift; 
 	if ( $msg->type ne "telegram" ) { return; }
-	my $call=$qry->allowed_letters_for_call($msg->to); 
+	if ( $type =~ /^timeline/ ) { 
+		if ( ! $call ) { return; }  # if there is a timeline there is a call
+	} else {
+		$call=$qry->allowed_letters_for_call($msg->to); 
+	}
 	my $callurl=$q->escapeHTML($url."?call=".$q->url_encode($call).'&type='.$type.'#'.$msg->filename);
 
 	my $de=$msg->to." de ".$msg->from." = "; 
@@ -99,7 +104,7 @@ if ( $#calls == -1 ) {
 	$callurl=$url."?call=".$q->url_encode($call);
 	
 		foreach my $msg ($qry->list_telegrams($call, $type, $anz, $offset)) {
-			telegram_item($msg); 
+			telegram_item($msg, $call); 
 		}
 	}
 }
