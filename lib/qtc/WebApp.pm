@@ -683,7 +683,7 @@ sub format_telegram_in_html {
 	my $o=shift; 
 	my $msg=shift; 
 	my $r; 
-	$r.=$o->h_table({}, 
+	$r.=$o->h_table({id=>$msg->filename}, 
 		$o->h_tr({}, 
 			$o->h_td({}, "<b>number:</b> ".$msg->hr_refnum),
 			$o->h_td({colspan=>2}, "<b>publisher:</b> ".$o->h_call_lnk({call=>$msg->call})),
