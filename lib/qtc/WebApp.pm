@@ -670,7 +670,24 @@ sub render_latest_changes {
 			next; 
 		}
 		if ( $msg->type eq 'operator' ) {
-			$r.='<p><b>'.$msg->call.'</b> has updated his aliases and followings information</p>'; 
+			$r.='<p>';
+			$r.='<b>'.$msg->call.'</b> has updated his aliases and followings information<br/>';
+			$r.='<table width="70%"><tr><td>';
+			
+			$r.='<i>aliases:</i><ul>';
+			foreach my $call ($msg->set_of_aliases) {
+				$r.='<li>'.$o->h_call_lnk({call=>$call}).'</li>';	
+			}
+			$r.='</ul>';
+			
+			$r.='<i>followings:</i><ul>';
+			foreach my $call ($msg->set_of_followings) {
+				$r.='<li>'.$o->h_call_lnk({call=>$call}).'</li>';
+			}
+			$r.='</ul>';
+			
+			$r.='</td></tr></table>';
+			$r.='</p>';
 			next; 
 		}
 		$r.='<p><b>'.$msg->call.'</b> has send a '.$msg->type.' message</p>'; 
