@@ -671,21 +671,9 @@ sub render_latest_changes {
 		}
 		if ( $msg->type eq 'operator' ) {
 			$r.='<p>';
-			$r.='<b>'.$msg->call.'</b> has updated his aliases and followings information<br/>';
-			$r.='<table width="70%"><tr><td>';
-			
-			$r.='<i>aliases:</i><ul>';
-			foreach my $call ($msg->set_of_aliases) {
-				$r.='<li>'.$o->h_call_lnk({call=>$call}).'</li>';	
-			}
-			$r.='</ul>';
-			
-			$r.='<i>followings:</i><ul>';
-			foreach my $call ($msg->set_of_followings) {
-				$r.='<li>'.$o->h_call_lnk({call=>$call}).'</li>';
-			}
-			$r.='</ul>';
-			
+			$r.='<b>'.$msg->call.'</b> has updated his aliases and followings information:';
+			$r.='<table align="center" width="70%"><tr><td>';
+			$r.=$o->format_operator_in_html($msg);	
 			$r.='</td></tr></table>';
 			$r.='</p>';
 			next; 
@@ -694,6 +682,25 @@ sub render_latest_changes {
 	}
  
 	return $r; 
+}
+
+sub format_operator_in_html {
+	my $o=shift; 
+	my $msg=shift; 
+
+	my $r;
+	$r.='<i>aliases:</i><ul>';
+	foreach my $call ($msg->set_of_aliases) {
+		$r.='<li>'.$o->h_call_lnk({call=>$call}).'</li>';	
+	}
+	$r.='</ul>';
+	
+	$r.='<i>followings:</i><ul>';
+	foreach my $call ($msg->set_of_followings) {
+		$r.='<li>'.$o->h_call_lnk({call=>$call}).'</li>';
+	}
+	$r.='</ul>';
+	return $r;
 }
 
 sub format_telegram_in_html {
