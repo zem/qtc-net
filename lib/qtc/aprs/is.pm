@@ -144,6 +144,7 @@ sub process_line {
 			if ( $verifystatus eq "verified" ) { 
 				$obj->{login_verified}=1;
 				$obj->send_filter; # TODO I will surely forget to adjust this function call here 
+				$obj->{last_filter}=time; 
 			} else { 
 				die "Login was not verified $verifystatus -- $hash - $logresp - $logincall - $verifystatus\n"; 
 			}
@@ -154,6 +155,11 @@ sub process_line {
 			$obj->log_in; 
 			return; 
 		}
+	}
+
+	if ( $obj->{last_filter}+3600 <= time ) {
+		$obj->send_filter; # TODO I will surely forget to adjust this function call here 
+		$obj->{last_filter}=time; 
 	}
 
 	if ( $line =~ /^\#.+/ ) {
