@@ -670,7 +670,12 @@ sub render_latest_changes {
 			next; 
 		}
 		if ( $msg->type eq 'operator' ) {
-			$r.='<p><b>'.$msg->call.'</b> has updated his aliases and followings information</p>'; 
+			$r.='<p>';
+			$r.='<b>'.$msg->call.'</b> has updated his aliases and followings information:';
+			$r.='<table align="center" width="70%"><tr><td>';
+			$r.=$o->format_operator_in_html($msg);	
+			$r.='</td></tr></table>';
+			$r.='</p>';
 			next; 
 		}
 		$r.='<p><b>'.$msg->call.'</b> has send a '.$msg->type.' message</p>'; 
@@ -679,11 +684,30 @@ sub render_latest_changes {
 	return $r; 
 }
 
+sub format_operator_in_html {
+	my $o=shift; 
+	my $msg=shift; 
+
+	my $r;
+	$r.='<i>aliases:</i><ul>';
+	foreach my $call ($msg->set_of_aliases) {
+		$r.='<li>'.$o->h_call_lnk({call=>$call}).'</li>';	
+	}
+	$r.='</ul>';
+	
+	$r.='<i>followings:</i><ul>';
+	foreach my $call ($msg->set_of_followings) {
+		$r.='<li>'.$o->h_call_lnk({call=>$call}).'</li>';
+	}
+	$r.='</ul>';
+	return $r;
+}
+
 sub format_telegram_in_html {
 	my $o=shift; 
 	my $msg=shift; 
 	my $r; 
-	$r.=$o->h_table({}, 
+	$r.=$o->h_table({id=>$msg->filename}, 
 		$o->h_tr({}, 
 			$o->h_td({}, "<b>number:</b> ".$msg->hr_refnum),
 			$o->h_td({colspan=>2}, "<b>publisher:</b> ".$o->h_call_lnk({call=>$msg->call})),

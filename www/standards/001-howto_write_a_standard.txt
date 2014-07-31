@@ -1,0 +1,42 @@
+Title: How to Write QTC Net Standards
+Authors:
+	- Hans Freitag <zem@fnordpol.de>
+QTC Standard Number: 1
+Version: 2014073100
+License: GPLv3
+Abstract:
+	QTC Net only works by a set of standards where each standard defines a solution for 
+	one special problem. All those standards together will form the whole QTC Net. Because
+	QTC Net is still in Development we will keep and Maintain those Standard Documents within 
+	our GIT Source Repository. 
+	
+	This Document describes what is needed to be in a QTC Net Standard.
+---
+Format of a Standard:
+	The Format of a Standard is a Human Readable Textfile that contains a YAML Like Syntax 
+	called TYAML. It is YAML except that the indention is done by using Tabs. A TYAML2YAML 
+	converter will be provided. With a Tabbed Indention as used in the rest of the project 
+	you can configure your editors view to be comfortable for you.
+	
+	The Document consists of two sections (documents in YAML) the Head And the Body. This 
+	Document will be used as an example for the upcoming Standards. 
+	
+Format of Header:
+	The Header consists of the following Keys:
+		- Title: The Title of this Standard
+		- Author: The Authors of this Standard
+		- QTC Standard Number: The Number this Standard has in the QTC-Net Repo
+		- Version: Version of this Document YYYYMMDDnn where nn is a number between 00 and 99
+		- License: GPLv3 is good, it should be open
+		- Abstract: A short Abstract of this standard
+
+Format of The Body: 
+	The Body is a set of Topics with Text in it. Try to describe everything there, dont use to 
+	long lines because this is version controlled Text.
+
+Format of the Filename:
+	nnn-TOPIC.txt
+	The Format of the Filenme should Start with the QTC Standard Number up to 3 Digits as long 
+	as we do not have more than 1000 standards. :)  Within the Topic all spaces should be excanged 
+	with underscores (_). 
+	
