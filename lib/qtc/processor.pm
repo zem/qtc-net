@@ -92,7 +92,8 @@ sub new {
 		close STDERR; 
 		open(STDERR, ">> ".$obj->{log}) or die "can't open logfile ".$obj->{log}." \n";	
 		STDERR->autoflush(1); 
-	}	
+	}
+	$obj->{timeout}=8640000;  # should be abt 100 days not exactly 
 
    return $obj; 
 }
@@ -209,6 +210,47 @@ sub verify_signature {
 	if (! $sig->verify($msg->signed_content_bin, $msg->signature, $msg->signature_key_id) ) { 
 		die "Signature verification for message ".$msg->checksum." failed\n"; 
 	}
+}
+
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 calc_timeouts($msg)
+
+This calculates three numbers: delivery timeout, distribution timeout, archive timeout
+
+returns my ($tqsp, $told, $tarchive) 
+
+=cut
+#------------------------------------------------------------------------------------
+sub calc_timeouts { 
+	my $obj=shift; 
+	my $msg=shift; 
+	my $tqsp; 
+	my $told; 
+	my $tarchive; 
+
+	if ( $msg->type eq "telegram" ) { 
+		($tqsp, $told) = $msg->set_of_qsp_timeouts; 
+		if ( $tqsp ) { $tqsp=$tqsp+$msg->telegram_date; } else { $tqsp=undef; }
+		if (( $told ) and ($told<=$obj->{timeout})) { $told=$told+$msg->telegram_date; } else { $told=$obj->{timeout}+$msg->telegram_date; }
+		$tarchive=$told+$obj->{timeout};
+		return ($tqsp, $told, $tarchive); 
+	}
+	if ( $msg->type eq "qsp" ) { 
+		$tqsp=undef; 
+		$told=$msg->qsp_date+$obj->{timeout};
+		$tarchive=$told+$obj->{timeout};
+		return ($tqsp, $told, $tarchive); 
+	}
+	#if ( $msg->type eq "operator" ) { 
+	#if ( $msg->type eq "pubkey" ) { 
+	#if ( $msg->type eq "revoke" ) { 
+	#if ( $msg->type eq "trust" ) { 
+	$tqsp=undef; 
+	$told=undef;
+	$tarchive=undef;
+	return ($tqsp, $told, $tarchive); 
 }
 
 #------------------------------------------------------------------------------------
