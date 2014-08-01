@@ -684,6 +684,24 @@ sub render_latest_changes {
 	return $r; 
 }
 
+sub format_operator_in_htmlline {
+	my $o=shift; 
+	my $msg=shift; 
+
+	my $r;
+	$r.='<i>'.$msg->call.' has this aliases:</i> ';
+	foreach my $call ($msg->set_of_aliases) {
+		$r.=$o->h_call_lnk({call=>$call}).' ';	
+	}
+	$r.="<br/>";
+	
+	$r.='<i>'.$msg->call.' follows:</i> ';
+	foreach my $call ($msg->set_of_followings) {
+		$r.=$o->h_call_lnk({call=>$call}).' ';
+	}
+	return $r;
+}
+
 sub format_operator_in_html {
 	my $o=shift; 
 	my $msg=shift; 
@@ -830,6 +848,11 @@ as delivered in the qtc-net by him. </p>';
 	foreach $chk ($q->param("qsp")) { $qsp{$chk}=1; }
 
 	$r.="<h3>$type qtc telegrams for ".$q->param("call").":</h3>";
+	
+	my $operator=$obj->qtc_query->operator($q->param("call"));
+	if ( $operator) {
+		$r.="<p>".$obj->format_operator_in_htmlline($operator)."</p>";
+	}
 	
 	$r.=$obj->area_telegram_types_buttons;
 
