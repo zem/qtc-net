@@ -28,6 +28,7 @@ Format of Header:
 		- QTC Standard Number: The Number this Standard has in the QTC-Net Repo
 		- Version: Version of this Document YYYYMMDDnn where nn is a number between 00 and 99
 		- License: GPLv3 is good, it should be open
+		- References: a list of other standards referenced in this document
 		- Abstract: A short Abstract of this standard
 
 Format of The Body: 

@@ -4,6 +4,9 @@ Authors:
 QTC Standard Number: 2
 Version: 2014080400
 License: GPLv3
+References: 
+	- QTC Std 001-howto_write_a_standard.txt
+	- RFC 3232
 Abstract:
 	To exchange messages in QTC Net, a flexible binary Format is needed, other formats 
 	like xml or yaml contain to much redundant data, which is not good if you consider 
