@@ -1,0 +1,19 @@
+Title: QTC Binary Format
+Authors:
+  - Hans Freitag <zem@fnordpol.de>
+QTC Standard Number: 2
+Version: 2014080400
+License: GPLv3
+Abstract:
+  To exchange messages in QTC Net, a flexible binary Format is needed, other formats 
+  like xml or yaml contain to much redundant data, which is not good if you consider 
+  using small bandwidth links.
+  
+  This Spec defines how the qtc net binary format is structured, it should help you 
+  to build a parser for those messages. 
+---
+Magic:
+Flexible Size Interger Numbers:
+Format of the Message:
+Payload Data Types:
+Field Identifiers:
