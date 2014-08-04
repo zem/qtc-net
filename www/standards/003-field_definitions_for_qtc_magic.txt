@@ -1,0 +1,273 @@
+Title: How to Write QTC Net Standards
+Authors:
+	- Hans Freitag <zem@fnordpol.de>
+QTC Standard Number: 1
+Version: 2014073100
+License: GPLv3
+References:
+	- 001-howto_write_a_standard.txt
+	- 002-QTC_Binary_Format.txt
+Abstract:
+	As defined in the binary format spec (QTC Std 002) to complete a message fields 
+	and Data Types must be defined for a magic. 
+	
+	This Document defines Field names and Numbers and Magic for regular QTC Net 
+	Messages.
+---
+Magic: 
+	The magic is "qtc" or as hexadecimal values 0x717463
+
+Data Types:
+
+QTC Net Messages can be of one of the following basic types: 
+
+	- string, 
+		A string is the ascii stored as ascii string (it would be UTF-8 without 
+		BOM if we would use special chars).
+	- binary 
+		Binary data is copied 1to1 to the File. 
+	- FUINT 
+		FUINT is a number that follows the same rules as defined in 
+		QTC Std 002
+	- FINT 
+		FUINT is a number that follows allmost the same rules as defined in 
+		QTC Std 002 Excpt for the fact that is lowest byte additionally defines a sign. 
+		0 means +, 1 means -. so 0b10000011 is the binary rebresentation for -1 
+	- Enumeration
+		The enumerartions are stored as FUINT as well. They are for values where a 
+		special key may be set, like key_type of rsa and dsa, or type of qsp, telegram, 
+		operator, pubkey and trust. Right now all defined enumerations start with 1.
+
+
+Fiels Definitions: 
+
+	As found in qtc::binary.pm the file format has the following spec: 
+
+	#########################################################################
+	# enumerations are to order the identification numbers of fields
+	# from 0 to n
+	#########################################################################
+	our %data_types=(
+		"type"=>{
+			enum=>1,
+			data_type=>"enumeration",
+			values=>[
+				"telegram",
+				"qsp",
+				"operator",
+				"pubkey",
+				"revoke",
+				"trust",
+			],
+		},
+		"version"=>{
+			enum=>2,
+			data_type=>"integer",
+		},
+		"call"=>{
+			enum=>3,
+			data_type=>"string",
+		}, 
+		"signature"=>{
+			enum=>4,
+			data_type=>"binary",
+		}, 
+		"signature_key_id"=>{
+			enum=>5,
+			data_type=>"binary",
+		},
+		"checksum"=>{
+			enum=>6,
+			data_type=>"binary",
+		},
+		"from"=>{
+			enum=>7,
+			data_type=>"string",
+		}, 
+		"to"=>{
+			enum=>8,
+			data_type=>"string",
+		},
+		"telegram_date"=>{
+			enum=>9,
+			data_type=>"integer",
+		},
+		"telegram"=>{
+			enum=>10,
+			data_type=>"string",
+		},
+		"qsp_date"=>{
+			enum=>11,
+			data_type=>"integer",
+		},
+		"telegram_checksum"=>{
+			enum=>12,
+			data_type=>"binary",
+		},
+		"record_date"=>{
+			enum=>13,
+			data_type=>"integer",
+		}, 
+		"set_of_aliases"=>{
+			enum=>14,
+			data_type=>"string",
+			multiple_times=>1,
+		}, 
+		"set_of_followings"=>{
+			enum=>15,
+			data_type=>"string",
+			multiple_times=>1,
+		}, 
+		"key_type"=>{
+			enum=>16,
+			data_type=>"enumeration",
+			values=>["rsa", "dsa"],
+		}, 
+		"key_id"=>{
+			enum=>17,
+			data_type=>"binary",
+		}, 
+		"key"=>{
+			enum=>18,
+			data_type=>"binary",
+		}, 
+		"trustlevel"=>{
+			enum=>19,
+			data_type=>"signedinteger",
+		},
+		"set_of_key_ids"=>{
+			enum=>20,
+			data_type=>"binary",
+			multiple_times=>1,
+		},
+		"trust_date"=>{
+			enum=>21,
+			data_type=>"integer",
+		},
+		"key_date"=>{
+			enum=>22,
+			data_type=>"integer",
+		}, 
+		"checksum_period"=>{
+			enum=>23,
+			data_type=>"integer",
+		}, 
+		"set_of_qsp_timeouts"=>{
+			enum=>24,
+			data_type=>"integer",
+			multiple_times=>2,
+		}, 
+	);
+
+
+	If a value can appear multiple_times the max amount of apperances can be restricted by setting a number > 1 
+	
+
+	The field names are used as a reference for the programmer. 
+
+
+Message Types: 
+	Depending o the value of type several fields can be used together to form a message.  There are some fields 
+	that every message contains: 
+
+	- version (1 right now for the 1st version)
+	- type 
+	- call ( of the person who publish the message ) 
+	- signature
+	- signature_key_id
+	- checksum_period ( optional if you need to build checksums over a period of time ) 
+
+	Depending on the type of the message the following additional fields are defined with some content 
+	checks. if the check is defined as [] the field is handled as an array. 
+
+	our %msg_types=(
+		# this is the message itself with required fields
+		telegram=>{
+			"telegram_date"=>$valid_date, 
+			"from"=>$valid_call, 
+			"to"=>$valid_call, 
+			"telegram"=>$valid_telegram,
+			"set_of_qsp_timeouts"=>[$valid_integer],
+		}, 
+		# this is the qsp info where data is stored
+		qsp=>{
+			"qsp_date"=>$valid_date, 
+			"telegram_checksum"=>$valid_checksum,
+			"to"=>$valid_call,  #the to field is important for followings 
+		}, 
+		# aliases and delivery followings 
+		operator=>{
+			"record_date"=>$valid_date, 
+			"set_of_aliases"=>[$valid_call], 
+			"set_of_followings"=>[$valid_call],
+		}, 
+		# keystorage a key has a valid date 
+		# you should publish a new key 
+		# periodically (once a year)
+		pubkey=>{
+			"key_date"=>$valid_date,  
+			"key_type"=>$valid_rsa_or_dsa,  
+			"key_id"=>$valid_checksum,  
+			"key"=>$valid_hex,
+		},
+		# revokes are designed to be self signed 
+		# this means they are valid even without a 
+		# korresponding pubkey
+		revoke=>{
+			"key_type"=>$valid_rsa_or_dsa,  
+			"key_id"=>$valid_checksum,  
+			"key"=>$valid_hex,
+		},
+		# trust and untrust users 
+		trust=>{
+			"trust_date"=>$valid_date,
+			"trustlevel"=>$valid_trustlevel,
+			"to"=>$valid_call, # it is easier to store the call than to read every key for its ID
+			"set_of_key_ids"=>[$valid_checksum],
+		},
+	);
+
+
+Message Checksums: 
+
+	usually a message checksum is build over a qtc message binary that contains the following fields
+
+		(type, call, sort(keys %$msg_types{$type}))
+	
+	if you have a checksum_period set set the checksum is calculated over
+
+		(type, checksum_period, sort(keys %$msg_types{$type}))
+	
+	but then also all date timestamps are reduced to multiples of checksum_period. There is also 
+	a next_checksum and prev_checksum function calculating the following and previous periods checksum 
+	this message would have had. If any of those checksums match the messages are treated to be equal. 
+	
+	This enables multiple APRS Gateways to publish the same telegram to the QTC Net Server. 
+
+
+Message Filenames: 
+
+	Each message hat a unique Filename which is build like this: 
+
+		TYPE_CALL_CHECKSUM.qtc
+
+	example:
+
+		telegram_oe1src_d9382ee0ab8bd0a36ced5c99be10cbca1bedcf84548a00ac5a710dde7e1db956.qtc
+
+Human Readable Reference Number: 
+
+	The Human readabe refernce number is build by using the first 4 bytes of the sha256 
+	checksum and map the values to a 2 character string that contains letters and characters. 
+	One Letter is mapped over two bytes, by the following algorythm: 
+
+		my $num1=hex(substr($chksum, 0, 4));
+		$num1=int(($num1/hex("ffff"))*35.99);
+		if ( $num1 > 9 ) { $num1=chr($num1-10+0x61); }
+	
+	The hr_refnum has no importance to this spec or message transmission it is only 
+	the readable number so humans can refer to this message by an easy checksum. 
+	however the hr_refnum as a line number for APRS Messages, that fact is described 
+	in the APRS Standard  
+
+
