@@ -1,0 +1,93 @@
+Title: QTC Binary Format
+Authors:
+	- Hans Freitag <zem@fnordpol.de>
+QTC Standard Number: 2
+Version: 2014080400
+License: GPLv3
+Abstract:
+	To exchange messages in QTC Net, a flexible binary Format is needed, other formats 
+	like xml or yaml contain to much redundant data, which is not good if you consider 
+	using small bandwidth links.
+	
+	This Spec defines how the qtc net binary format is structured, it should help you 
+	to build a parser for those messages. 
+---
+Magic:
+	Every QTC-Net Binary Messsage starts with a 3 byte magic, called magic. It will 
+	help to identify the Data structure. This is also the place where Extensions can 
+	be made, by simply defining another magic, for example for pictures or Logbook data. 
+
+Flexible Size Unsigned Interger Numbers:
+	"Flexible Size Unsigned Integer Numbers" are called FUINT in this spec and all the 
+	upcoming specs. This is an unsigned Integer whose Length in Byte depends on the Digits 
+	needed to store the number. The Precision in Byte of the Number is defined by the 
+	Number of leading zeros terminated by the first 1 at the beginning of the Number.
+	
+	Example: 
+	    0b10000001 ==> one byte length number is 1
+	    0b01001111 ==> two byte length number is 255
+	    0b01010000 ==> two byte length number is 256
+	    0b001100000000 ==> 0x030000 ==> 3 byte length number results in 65536
+	 
+	 As you may see, the numbers are big endian as it should be for data that is going to 
+	 be exchanged. As defined in RFC-3232 the byte order should be big endian.
+	 
+	 By using this way, one byte can address numbers between 0 and 127 while two bytes 
+	 can address numbers between 0 and 1023. It makes sense to use two bytes between 
+	 128 and 1023, because between 0 and 127 one byte may used. 
+	 
+	 The FUINT theoretical does not have an upper limit. You count the leading zeros and 
+	 you will know how many bytes your number uses. however, your implementation may have 
+	 an upper limit as long as it can handle the data, if it makes things easier. 
+
+Format of the Message:
+
+	Generally a message will look like
+	
+		- MAGIC (see Magic)
+		- LENGTH (Length of Payload in Byte, FUINT)
+		- PAYLOAD
+	
+	The Messages Payload is a set of structures that looks like
+	
+		- FIELD TYPE (The Field Type Number FUINT)
+		- FIELD LENGTH (The Length of the FIELD PAYLOAD in Byte, FUINT)
+		- FIELD PAYLOAD (Various Payload) 
+		
+	The above information in tabular form: 
+	
+	+--------------+----------+-------------------------------------------------+
+	| Field        | Length   | Description                                     |
+	+--------------+----------+-------------------------------------------------+
+	+--------------+----------+-------------------------------------------------+
+	| magic        | 3 byte   | holds qtc in ascii                              |
+	+--------------+----------+-------------------------------------------------+
+	| length       | 1-n byte | The length of the rest of the message in bytes  |
+	+==============+==========+=================================================+
+	| field type   | 1-n byte | an enumerated field identifier                  |
+	+--------------+----------+-------------------------------------------------+
+	| field length | 1-n byte | the length of the data in bytes                 |
+	+--------------+----------+-------------------------------------------------+
+	| field payl.  | 0-n byte | the data itself                                 |
+	+==============+==========+=================================================+
+	| field type   | 1-n byte | enumerated field identifier                     |
+	+--------------+----------+-------------------------------------------------+
+	| field length | 1-n byte | length of the data                              |
+	+--------------+----------+-------------------------------------------------+
+	| field payl.  | 0-n byte | data                                            |
+	+==============+==========+=================================================+
+	| ...          | 1-n byte | more of those field-length-data triplets        |
+	+--------------+----------+-------------------------------------------------+
+	| ...          | 1-n byte |                                                 |
+	+--------------+----------+-------------------------------------------------+
+	| ...          | 0-n byte |                                                 |
+	+--------------+----------+-------------------------------------------------+
+
+	If a field of one type occures multiple times the order of the occurences is 
+	relevant and must be passed to the rest of the Implementation as an array. If 
+	a field is allowed to occur multiple times is part of the field types definition 
+	of the specific magic that is not part of this  document.
+	
+	Each used Magic must have a definition of its field types numbers and data types 
+	that is not transferred with the data itself, but the implementation will use it 
+	as a reference.
