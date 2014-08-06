@@ -368,6 +368,7 @@ sub process_in_loop {
 
 	while (1) { 
 		my @files=$obj->scan_dir($obj->{root}."/in", '.*\.qtc');
+		#print STDERR "there are ".($#files+1)." of $num files to process is that changed?\n"; 
 		if ( $#files != $num ) {
 			$num=$#files; 
 			# something changed, we have to process
@@ -379,7 +380,7 @@ sub process_in_loop {
 		}; 
 		if ( $@ ) { 
 			die $@ unless $@ =~ /^hup rcvd/;
-			print STDERR $obj->ts_str." Got a hup signal, will ware up immidiately\n"; 
+			print STDERR $obj->ts_str." Got a hup signal, will wake up immidiately\n"; 
 		} 
 	}
 }
