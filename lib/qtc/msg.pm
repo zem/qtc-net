@@ -77,8 +77,8 @@ our $valid_date=sub {
 	my $maxtime=$now+(3600*5);
 	if ( $_ > $maxtime ){ die "This date $_ is somehow more than 5 hours in the future, $maxtime, I don't belive that time is syncronized that bad\n"; }
 	#my $mintime=$now-(3600*24*120);
-	my $mintime=1398211200;
-	if ( $_ < $mintime ){ die "This date $_ is somehow older than 23.4.2014 which is $mintime and the launch of QTC net, I don't belive that time is syncronized that bad\n"; }
+	my $mintime=1395532800;
+	#if ( $_ < $mintime ){ die "This date $_ is somehow older than 23.3.2014 which is $mintime and the launch of QTC net, I don't belive that time is syncronized that bad\n"; }
 };
 
 our $valid_call=sub {
