@@ -1,5 +1,10 @@
 package qtc::WebApp; 
 
+##################################################################
+# pleae note and use (param("foo"))[0] whenever you need only one 
+# url Parameter to prevent URL injections
+################################################################# 
+
 use base 'CGI::Application'; 
 use qtc::query; 
 use qtc::publish; 
@@ -96,7 +101,7 @@ sub setup {
 	$obj->{qtc}->{exports}->{list_offset}=1;
 	
 	# the login data is required very very early so we need to check this during setup!
-	my $publisher_call=$obj->q->param("publisher_call");
+	my $publisher_call=($obj->q->param("publisher_call"))[0];
 	$publisher_call=$obj->qtc_query->allowed_letters_for_call($publisher_call); 
 	if ( ! $publisher_call ) { 
 		$obj->q->delete("publisher_call");
@@ -117,8 +122,8 @@ sub qtc_publish {
 		$o->{qtc}->{publish}=qtc::publish->new(
 			path=>$o->{qtc}->{path}, 
 			privpath=>$o->get_priv_dir, 
-			call=>$o->q->param("publisher_call"),
-			password=>$o->q->param("publisher_password"),
+			call=>($o->q->param("publisher_call"))[0], # pse note and copy the (foo())[0] for save use of url parameters 
+			password=>($o->q->param("publisher_password"))[0],
 		); 
 	}
 	return $o->{qtc}->{publish};
@@ -128,8 +133,8 @@ sub q { my $obj=shift; return $obj->query; }
 sub get_priv_dir {
 	my $obj=shift; 
 	if ( ! $obj->{qtc}->{priv_dir} ) {
-		my $user=$obj->q->param("publisher_call");
-		my $pass=$obj->q->param("publisher_password");
+		my $user=($obj->q->param("publisher_call"))[0];
+		my $pass=($obj->q->param("publisher_password"))[0];
 		my $user_pass_sha=$obj->qtc_query->call2fname($user)."_".sha256_hex($pass);
 		$obj->{qtc}->{priv_dir}=$obj->{qtc}->{priv_path_prefix}."/".$user_pass_sha;
 	}
@@ -138,7 +143,7 @@ sub get_priv_dir {
 
 sub filter_qsp_makes_sense {
 	my $obj=shift;
-	my $type=$obj->q->param("type"); 
+	my $type=($obj->q->param("type"))[0]; 
 	if ( $type !~ /^(new|timeline_new)$/ ) { return; }
 	return @_; 
 }
@@ -152,8 +157,8 @@ sub filter_login_required {
 sub logged_in {
 	my $obj=shift; 
 	if ( 
-		( $obj->q->param("publisher_call") )  and 
-		( $obj->q->param("publisher_password") ) and
+		( ($obj->q->param("publisher_call"))[0] )  and 
+		( ($obj->q->param("publisher_password"))[0] ) and
 		( -d $obj->get_priv_dir )
 	) { return 1; } 
 	else 
@@ -162,7 +167,7 @@ sub logged_in {
 
 sub publisher_exists {
 	my $o=shift; 
-	my $user=$o->q->param("publisher_call");
+	my $user=($o->q->param("publisher_call"))[0];
 	if ( ! $user ) { return; }
 	my @scan=$o->qtc_query->scan_dir($o->{qtc}->{priv_path_prefix}, '^'.$o->qtc_query->call2fname($user).'_[a-f0-9]+$');
 	if ( $#scan == -1 ) { return; }
@@ -174,16 +179,17 @@ sub publisher_exists {
 ##################################################################
 sub h_input_hidden {
 	my $obj=shift; 
-	my $r; 
+	my $r;
 	foreach my $p (keys %{$obj->{qtc}->{exports}}) {
-		foreach my $val ( $obj->q->param($p) ) {
+		my $val=($obj->q->param($p))[0]; # right now we do not have exported lists
+		#foreach my $val ( $obj->q->param($p) ) {
 			$r.=$obj->h_e("input", {
 					type=>"hidden", 
 					name=>$p,
 					value=>$val,
 				}
 			);
-		} 
+		#} 
 	}
 	return $r; 
 }
@@ -305,7 +311,7 @@ sub h_labled_input {
 sub h_telegram_types_button {
 	my $obj=shift; 
 	my $p=shift; 
-	my $mode=$obj->q->param("type");
+	my $mode=($obj->q->param("type"))[0];
 	if ( ! $mode ) { $mode="show_telegrams"; } 
 	my $r; 
 	my %opts=(
@@ -327,7 +333,7 @@ sub h_telegram_types_button {
 sub h_misc_button {
 	my $obj=shift; 
 	my $p=shift; 
-	my $mode=$obj->q->param("mode");
+	my $mode=($obj->q->param("mode"))[0];
 	if ( ! $mode ) { $mode="show_telegrams"; } 
 	my $r;
 	my %opts=(
@@ -384,14 +390,14 @@ sub h_captcha {
 sub area_ask_call {
 	my $obj=shift; 
 	my $r;
-	my $call=$obj->q->param("call");
+	my $call=($obj->q->param("call"))[0];
 	$call=$obj->qtc_query->allowed_letters_for_call($call); 
 	if ( ! $call ) { 
 		#$obj->q->delete("call");
 	} else {
 		$obj->q->param("call", $call);
 	}
-	my $mode=$obj->q->param("mode");
+	my $mode=($obj->q->param("mode"))[0];
 	if ( ! $mode ) { $mode="show_telegrams"; } 
 	$obj->q->param("mode", "show_telegrams");
 	delete $obj->{qtc}->{exports}->{call}; 
@@ -416,8 +422,8 @@ sub area_user_pass {
 	my $obj=shift; 
 	my $r;
 	# check if $publisher_call fits to allowed letters is done in setup()
-	my $publisher_call=$obj->q->param("publisher_call");
-	if ( ($publisher_call) and ($obj->q->param("publisher_password")) ) {
+	my $publisher_call=($obj->q->param("publisher_call"))[0];
+	if ( ($publisher_call) and (($obj->q->param("publisher_password"))[0]) ) {
 		if ( -d $obj->get_priv_dir ) { 
 			# we belive the login is succeeded if that directory exists
 			$r.=$obj->render_user_pass_logout; 
@@ -428,7 +434,7 @@ sub area_user_pass {
 			return $r; 
 		}
 	}
-	if ( ($publisher_call) or ($obj->q->param("publisher_password")) ){
+	if ( ($publisher_call) or (($obj->q->param("publisher_password"))[0]) ){
 		$r.="<h4>only one, either your call or your pw received</h4>"; 
 	}
 	$r.=$obj->render_user_pass_login; 
@@ -442,31 +448,31 @@ sub area_telegram_types_buttons {
 
 
 	# handle maxitems and offset 
-	my $maxitems=$obj->q->param("list_max_items");
+	my $maxitems=($obj->q->param("list_max_items"))[0];
 	if ( $maxitems !~ /^\d\d?\d?$/  ) { 
 		$maxitems=20; 
 		$obj->q->param("list_max_items", $maxitems);
 	}
-	my $offset=$obj->q->param("list_offset");
+	my $offset=($obj->q->param("list_offset"))[0];
 	if ( $maxitems !~ /^\d+$/  ) { 
 		$offset=0; 
 		$obj->q->param("list_offset", $offset);
 	}
-	if ( $obj->q->param("newoffset") eq "<<" ) { 
+	if ( ($obj->q->param("newoffset"))[0] eq "<<" ) { 
 		$obj->q->param("list_offset", 0);
 		$obj->q->delete("newoffset");
 	}
-	if (( $obj->q->param("newoffset") eq "<" ) and ( $offset > 0 ) ) { 
+	if (( ($obj->q->param("newoffset"))[0] eq "<" ) and ( $offset > 0 ) ) { 
 		$obj->q->param("list_offset", $obj->q->param("list_offset")-1);
 		$obj->q->delete("newoffset");
 	}
-	if ( $obj->q->param("newoffset") eq ">" ) { 
+	if ( ($obj->q->param("newoffset"))[0] eq ">" ) { 
 		$obj->q->param("list_offset", $obj->q->param("list_offset")+1);
 		$obj->q->delete("newoffset");
 	}
 
 	# read call from parameters 
-	my $call=$obj->q->param("call");
+	my $call=($obj->q->param("call"))[0];
 	$call=$obj->qtc_query->allowed_letters_for_call($call); 
 
 	#$r.="<b>Show me: </b>";
@@ -523,7 +529,7 @@ sub area_telegram_types_buttons {
 sub area_misc_buttons {
 	my $obj=shift; 
 	my $r; 
-	my $mode=$obj->q->param("mode");
+	my $mode=($obj->q->param("mode"))[0];
 	if ( ! $mode ) { $mode="show_telegrams"; } 
 	$r.="<table>"; 
 		$r.="<tr>"; 
@@ -540,8 +546,8 @@ sub area_misc_buttons {
 					mode=>"send_telegram", 
 					value=>"send telegram",
 				}); 
-				if ( $obj->q->param("call") ) {
-					if ( $obj->qtc_query->has_operator($obj->q->param("call"))) {
+				if ( ($obj->q->param("call"))[0] ) {
+					if ( $obj->qtc_query->has_operator(($obj->q->param("call"))[0])) {
 						$r.=$obj->h_misc_button({
 							mode=>"change_trust", 
 							value=>"change trust",
@@ -598,7 +604,7 @@ sub render_user_pass_login {
 			size=>10, 
 			maxlength=>20, 
 			name=>"publisher_call",
-			value=>$obj->q->param("publisher_call"), 
+			value=>($obj->q->param("publisher_call"))[0], 
 		}),
 		$obj->h_labled_input({
 			label=>"YOUR Password:", 
@@ -606,7 +612,7 @@ sub render_user_pass_login {
 			size=>10, 
 			maxlength=>50, 
 			name=>"publisher_password",
-			value=>$obj->q->param("publisher_password"), 
+			value=>($obj->q->param("publisher_password"))[0], 
 		}),
 		$obj->h_submit_for_tbl({value=>"publisher login"}), 
 	);
@@ -628,7 +634,7 @@ sub render_user_pass_logout {
 	delete $obj->{qtc}->{exports}->{publisher_password};
 	delete $obj->{qtc}->{exports}->{mode};
 	$r.=$obj->h_tabled_form({}, 
-		"<tr><td><b>YOUR Callsign:</b></td><td>".$obj->q->param("publisher_call")."</td></tr>",
+		"<tr><td><b>YOUR Callsign:</b></td><td>".($obj->q->param("publisher_call"))[0]."</td></tr>",
 		$obj->h_submit_for_tbl({value=>"publisher logout"}), 
 	);
 	$obj->{qtc}->{exports}->{publisher_call}=1;
@@ -753,10 +759,11 @@ sub js_post_exec {
 	my %parm=@_;
 	my $r="post('".$obj->q->escapeHTML($obj->q->url(-full=>1))."',{";
 	foreach my $p (keys %{$obj->{qtc}->{exports}}) {
-		foreach my $val ( $obj->q->param($p) ) {
+		my $val=($obj->q->param($p))[0]; # right now we do not have exported lists
+		#foreach my $val ( $obj->q->param($p) ) {
 			$val=~s/\'//g;
 			$r.=$obj->q->escapeHTML($p).": '".$obj->q->escapeHTML($val)."', ";
-		} 
+		#} 
 	}
 	foreach my $p (keys %parm) {
 		$parm{$p}=~s/\'//g; 	
@@ -805,13 +812,13 @@ form.submit();
 sub mode_show_telegrams {
 	my $obj=shift; 
 	my $q=$obj->query;
-	if ( ! $q->param("type") ) { $q->param("type", "new"); }
-	my $type=$q->param("type");
+	if ( ! ($q->param("type"))[0] ) { $q->param("type", "new"); }
+	my $type=($q->param("type"))[0];
 	if ( $type !~ /^((all)|(new)|(sent)|(timeline)|(timeline_new))$/ ) { return "<h1>FAIL telegram type invalid</h1>"; }
 	my $r; 
 
-	if ( ( $obj->logged_in ) and ( ! $q->param("call") ) ) {
-		$q->param("call", $q->param("publisher_call"));
+	if ( ( $obj->logged_in ) and ( ! ($q->param("call"))[0] ) ) {
+		$q->param("call", ($q->param("publisher_call"))[0]);
 		#$r.="<h3>You may search for telegrams to other calls in the upper left, I display the telegrams to YOUR publisher call until then</h3>"; 
 	}
 
@@ -827,7 +834,7 @@ sub mode_show_telegrams {
 
 	$r.=$obj->area_navigation; 
 
-	if ( ! $q->param("call") ) { 
+	if ( ! ($q->param("call"))[0] ) { 
 		$r.="<h3>Please enter a call in the upper left corner or login in the upper right one.</h3>";
 		$r.='<p></p>
 <p>QTC Net is a relay system for messages form of telegrams for amateur radio. It\'s goal is to establish the 
@@ -847,22 +854,22 @@ as delivered in the qtc-net by him. </p>';
 	my %qsp; 
 	foreach $chk ($q->param("qsp")) { $qsp{$chk}=1; }
 
-	$r.="<h3>$type qtc telegrams for ".$q->param("call").":</h3>";
+	$r.="<h3>$type qtc telegrams for ".($q->param("call"))[0].":</h3>";
 	
-	my $operator=$obj->qtc_query->operator($q->param("call"));
+	my $operator=$obj->qtc_query->operator(($q->param("call"))[0]);
 	if ( $operator) {
 		$r.="<p>".$obj->format_operator_in_htmlline($operator)."</p>";
 	}
 	
 	$r.=$obj->area_telegram_types_buttons;
 
-	my @msgs=$obj->qtc_query->list_telegrams($q->param("call"), $type, $q->param("list_max_items"), $q->param("list_offset"));
+	my @msgs=$obj->qtc_query->list_telegrams(($q->param("call"))[0], $type, ($q->param("list_max_items"))[0], ($q->param("list_offset"))[0]);
 	my @rows; 
 	foreach my $msg (@msgs) {  
-		if ( ( $qsp{$msg->checksum} ) and ($obj->logged_in) and ($q->param("call")) ) {
+		if ( ( $qsp{$msg->checksum} ) and ($obj->logged_in) and (($q->param("call"))[0]) ) {
 			$obj->qtc_publish->qsp(
 				msg=>$msg,
-				to=>$q->param("call"),
+				to=>($q->param("call"))[0],
 			);
 			next; 
 		} 
@@ -932,19 +939,19 @@ sub mode_register_publisher_login {
 	my $r; 
 	$r.=$o->area_navigation; 
 
-	if ( $o->q->param("captcha_token") ) { 
+	if ( ($o->q->param("captcha_token"))[0] ) { 
 		# this means we have to create a user account but first 
 		# we should check a few things...
 		my $ok=1; 
-		if ( ! $o->q->param("publisher_call") ) {
+		if ( ! ($o->q->param("publisher_call"))[0] ) {
 			$ok=0;
 			$r.="<h4>ERROR: The publisher call is empty!</h4>"; 
 		}
-		if ( $o->q->param("publisher_password") ne $o->q->param("publisher_password") ) {
+		if ( ($o->q->param("publisher_password"))[0] ne ($o->q->param("publisher_password"))[0] ) {
 			$ok=0;
 			$r.="<h4>ERROR: Passwords are not the same</h4>"; 
 		}
-		if ( $o->{qtc}->{captcha}->check_code($o->q->param("captcha"),$o->q->param("captcha_token")) < 1 ) {
+		if ( $o->{qtc}->{captcha}->check_code(($o->q->param("captcha"))[0],($o->q->param("captcha_token"))[0]) < 1 ) {
 			$ok=0;
 			$r.="<h4>ERROR: captcha verification failed</h4>"; 
 		}
@@ -957,8 +964,8 @@ sub mode_register_publisher_login {
 				path=>$o->{qtc}->{path}, 
 				rsa_keygen=>1,
 				privpath=>$o->get_priv_dir, 
-				call=>$o->q->param("publisher_call"),
-				password=>$o->q->param("publisher_password"),
+				call=>($o->q->param("publisher_call"))[0],
+				password=>($o->q->param("publisher_password"))[0],
 			); 
 			$o->q->param("mode", "show_telegrams"); 
 			return $o->mode_show_telegrams; 
@@ -976,7 +983,7 @@ sub mode_register_publisher_login {
 			size=>10, 
 			maxlength=>20, 
 			name=>"publisher_call",
-			value=>$o->q->param("publisher_call"), 
+			value=>($o->q->param("publisher_call"))[0], 
 		}),
 		$o->h_labled_input({
 			label=>"Password:", 
@@ -984,7 +991,7 @@ sub mode_register_publisher_login {
 			size=>10, 
 			maxlength=>50, 
 			name=>"publisher_password",
-			value=>$o->q->param("publisher_password"), 
+			value=>($o->q->param("publisher_password"))[0], 
 		}),
 		$o->h_labled_input({
 			label=>"Verify Password:", 
@@ -992,7 +999,7 @@ sub mode_register_publisher_login {
 			size=>10, 
 			maxlength=>50, 
 			name=>"verify_publisher_password",
-			value=>$o->q->param("verify_publisher_password"), 
+			value=>($o->q->param("verify_publisher_password"))[0], 
 		}),
 		$o->h_captcha({}),
 		$o->h_submit_for_tbl({
@@ -1013,8 +1020,8 @@ sub mode_captcha_image {
 
 	$o->header_add( -type => 'image/png' );
 	$o->{disable_postrun}=1; 
-	if ( ! $o->q->param("token") ) { die "I need a token for this mode"; }
-	my $token=$o->q->param("token"); 
+	if ( ! ($o->q->param("token"))[0] ) { die "I need a token for this mode"; }
+	my $token=($o->q->param("token"))[0]; 
 	if ( $token !~ /^([a-f0-9])+$/ ) { die "some characters in the token are not allowed\n"; }
 
 	my $path=$o->{qtc}->{captcha_output_dir}."/".$token.".png"; 
@@ -1033,8 +1040,8 @@ sub mode_key_management {
 	my $o=shift; 
 	my $r; 
 	
-	if ( $o->q->param("revoke.qtc") ) {
-			my $fh=$o->q->param("revoke.qtc");
+	if ( ($o->q->param("revoke.qtc"))[0] ) {
+			my $fh=($o->q->param("revoke.qtc"))[0];
 			$r.="<h4>got a file upload</h4>";
 			my $x; 
 			while ($_=<$fh>) { $x.=$_; }
@@ -1049,8 +1056,8 @@ sub mode_key_management {
 			return $o->mode_show_telegrams; 
 		}
 	} 
-	if ( $o->q->param("pubkey.qtc") ) {
-			my $fh=$o->q->param("pubkey.qtc");
+	if ( ($o->q->param("pubkey.qtc"))[0] ) {
+			my $fh=($o->q->param("pubkey.qtc"))[0];
 			$r.="<h4>got a file upload</h4>";
 			my $x; 
 			while ($_=<$fh>) { $x.=$_; }
@@ -1073,7 +1080,7 @@ sub mode_key_management {
 		with one of your other accounts/private keys, to activate this one.</p>";
 	$r.="<center>"; 
 	
-	my $mode=$o->q->param("mode");
+	my $mode=($o->q->param("mode"))[0];
 	$o->q->param("mode", "pubkey_download"); 
 	$r.=$o->h_form({}, 
 		'<input type="hidden" name="key_type" value="pubkey"></input>',
@@ -1104,7 +1111,7 @@ sub mode_key_management {
 		key and store it at a save place. Wenn this message is published it means 
 		that the private key of this account is not valid anymore.</p>";
 	$r.="<center>"; 
-	my $mode=$o->q->param("mode");
+	my $mode=($o->q->param("mode"))[0];
 	$o->q->param("mode", "pubkey_download"); 
 	$r.=$o->h_form({}, 
 		'<input type="hidden" name="key_type" value="revoke"></input>',
@@ -1140,9 +1147,9 @@ sub mode_pubkey_download {
 
 	if ( ! $o->logged_in ) { return "Access denied"; }
 	my $msg; 
-	if ( $o->q->param("key_type") eq "pubkey" ) {
+	if ( ($o->q->param("key_type"))[0] eq "pubkey" ) {
 		$msg=$o->qtc_publish->get_public_key_msg; 
-	} elsif ( $o->q->param("key_type") eq "revoke" ) {
+	} elsif ( ($o->q->param("key_type"))[0] eq "revoke" ) {
 		$msg=$o->qtc_publish->revoke(
 			download=>1,
 		); 
@@ -1167,39 +1174,39 @@ sub mode_send_telegram {
 		$r.="<h3>Please log in to use this feature</h3>"; 
 		return $r; 
 	}
-	if ( ( $o->q->param("submit") ) and ( $o->q->param("telegram") ) )  {
+	if ( ( ($o->q->param("submit"))[0] ) and ( ($o->q->param("telegram"))[0] ) )  {
 		# convert characters 
-		$o->q->param("call", $o->qtc_query->allowed_letters_for_call($o->q->param("call")));
-		$o->q->param("to", $o->qtc_query->allowed_letters_for_call($o->q->param("to")));
-		$o->q->param("telegram", $o->qtc_query->allowed_letters_for_telegram($o->q->param("telegram")));
+		$o->q->param("call", $o->qtc_query->allowed_letters_for_call(($o->q->param("call"))[0]));
+		$o->q->param("to", $o->qtc_query->allowed_letters_for_call(($o->q->param("to"))[0]));
+		$o->q->param("telegram", $o->qtc_query->allowed_letters_for_telegram(($o->q->param("telegram"))[0]));
 	
 		my $ok=1; 
-		if (! $o->q->param("call")) { 
+		if (! ($o->q->param("call"))[0]) { 
 			$r.="<h4>ERROR: Please enter a valid callsign </h4>";
 			$ok=0; 
 		}
-		if (! $o->q->param("to")) { 
+		if (! ($o->q->param("to"))[0]) { 
 			$r.="<h4>ERROR: Please enter a valid telegram receiver callsign </h4>";
 			$ok=0; 
 		}
-		if (! $o->q->param("telegram")) { 
+		if (! ($o->q->param("telegram"))[0]) { 
 			$r.="<h4>ERROR: Please enter a valid telegram text</h4>";
 			$ok=0; 
 		}
 		if ( $ok ) { 
 			$o->qtc_publish->telegram(
-				call=>$o->q->param("publisher_call"),
-				from=>$o->q->param("call"),
-				to=>$o->q->param("to"),
-				telegram=>$o->q->param("telegram"),
+				call=>($o->q->param("publisher_call"))[0],
+				from=>($o->q->param("call"))[0],
+				to=>($o->q->param("to"))[0],
+				telegram=>($o->q->param("telegram"))[0],
 			); 
 			$o->q->param("mode", "show_telegrams"); 
 			return $o->mode_show_telegrams; 
 		} 
 	}
 
-	if ( $o->q->param("reply") ) {
-		my $reply=$o->q->param("reply"); 
+	if ( ($o->q->param("reply"))[0] ) {
+		my $reply=($o->q->param("reply"))[0]; 
 		if (
 			( $reply =~ /^([a-f]|[0-9])+$/ ) 
 				and 
@@ -1211,7 +1218,7 @@ sub mode_send_telegram {
 				$r.="<center><table width=\"90\%\"><tr><td>"; 
 				$r.=$o->format_telegram_in_html($reply);
 				$r.="</td></tr></table></center><br/><br/><h4>Reply:</h4>"; 
-				if ( ! $o->q->param("to") ) { $o->q->param("to", $reply->from); }
+				if ( ! ($o->q->param("to"))[0] ) { $o->q->param("to", $reply->from); }
 			}
 		}
 	}
@@ -1225,7 +1232,7 @@ sub mode_send_telegram {
 			size=>10, 
 			maxlength=>20, 
 			name=>"call",
-			value=>$o->q->param("call"), 
+			value=>($o->q->param("call"))[0], 
 		}),
 		$o->h_labled_input({
 			label=>"To:", 
@@ -1233,7 +1240,7 @@ sub mode_send_telegram {
 			size=>10, 
 			maxlength=>20, 
 			name=>"to",
-			value=>$o->q->param("to"), 
+			value=>($o->q->param("to"))[0], 
 		}),
 		$o->h_labled_input({
 			label=>"Telegram:", 
@@ -1241,7 +1248,7 @@ sub mode_send_telegram {
 			size=>100, 
 			maxlength=>300, 
 			name=>"telegram",
-			value=>$o->q->param("telegram"), 
+			value=>($o->q->param("telegram"))[0], 
 		}),
 		$o->h_submit_for_tbl({
 			onClick=>$o->js_confirm("Do you really want to send this Telegram?"),
@@ -1267,15 +1274,15 @@ sub mode_change_password {
 
 	if ( ! $o->logged_in ) { return "<h4>ERROR Please log in first</h4>"; }
 
-	if ( $o->q->param("new_publisher_password") ) { 
+	if ( ($o->q->param("new_publisher_password"))[0] ) { 
 		my $ok=1; 
-		if ( $o->q->param("new_publisher_password") ne $o->q->param("verify_publisher_password")) {
+		if ( ($o->q->param("new_publisher_password"))[0] ne ($o->q->param("verify_publisher_password"))[0]) {
 			$ok=0;
 			$r.="<h4>ERROR: The new passwords don't match</h4>"; 
 		}
 		if ( $ok ) {
 			my $oldpath=$o->get_priv_dir;
-			$o->q->param("publisher_password", $o->q->param("new_publisher_password"));
+			$o->q->param("publisher_password", ($o->q->param("new_publisher_password"))[0]);
 			delete $o->{qtc}->{priv_dir}; 
 			if ( -e $o->get_priv_dir ) { return "<h1>BAD REQUEST, TARGET USERNAME PW ALREADY EXIST</h1>"; }
 			move($oldpath, $o->get_priv_dir) or return "<h1>password reset failed at move stage</h1>"; 
@@ -1296,7 +1303,7 @@ sub mode_change_password {
 			size=>10, 
 			maxlength=>50, 
 			name=>"publisher_password",
-			value=>$o->q->param("publisher_password"), 
+			value=>($o->q->param("publisher_password"))[0], 
 		}),
 		$o->h_labled_input({
 			label=>"New Password:", 
@@ -1304,7 +1311,7 @@ sub mode_change_password {
 			size=>10, 
 			maxlength=>50, 
 			name=>"new_publisher_password",
-			value=>$o->q->param("new_publisher_password"), 
+			value=>($o->q->param("new_publisher_password"))[0], 
 		}),
 		$o->h_labled_input({
 			label=>"Verify New Password:", 
@@ -1312,7 +1319,7 @@ sub mode_change_password {
 			size=>10, 
 			maxlength=>50, 
 			name=>"verify_publisher_password",
-			value=>$o->q->param("verify_publisher_password"), 
+			value=>($o->q->param("verify_publisher_password"))[0], 
 		}),
 		$o->h_submit_for_tbl({
 			onClick=>$o->js_confirm("Do you really want to change the password for your callsign?"),
@@ -1338,31 +1345,31 @@ sub mode_change_trust {
 
 	if ( ! $o->logged_in ) { return "<h4>ERROR Please log in first</h4>"; }
 
-	if ( ! $o->q->param("call") ) { 
+	if ( ! ($o->q->param("call"))[0] ) { 
 		$r.="<h4>I need a call to set a trustlevel for</h4>";
 		return $r;  
-	} elsif (! $o->qtc_query->operator($o->q->param("call"))) { 
+	} elsif (! $o->qtc_query->operator( ($o->q->param("call"))[0] ) ) { 
 		$r.="<h4>This call does not have an operator message we can trust</h4>";
 		return $r;  
 	} 
 	if (
 			( defined $o->q->param("trustlevel") )
 			and
-			( $o->q->param("trustlevel") <= 1 )
+			( ($o->q->param("trustlevel"))[0] <= 1 )
 			and 
-			( $o->q->param("trustlevel") >= -1 )
+			( ($o->q->param("trustlevel"))[0] >= -1 )
 	) { 
 		$o->qtc_publish->trust(
-			to=>$o->q->param("call"), 
-			trustlevel=>$o->q->param("trustlevel"),
+			to=>($o->q->param("call"))[0], 
+			trustlevel=>($o->q->param("trustlevel"))[0],
 		);
 		$o->q->param("mode", "show_telegrams"); 
 		return $o->mode_show_telegrams; 
 	}
 
 	my $msg=$o->qtc_query->get_old_trust(
-		call=>$o->q->param("publisher_call"),
-		to=>$o->q->param("call"),
+		call=>($o->q->param("publisher_call"))[0],
+		to=>($o->q->param("call"))[0],
 	);
 	my $trustlevel=0; 
 	if ( $msg ) { $trustlevel=$msg->trustlevel; }
@@ -1370,7 +1377,7 @@ sub mode_change_trust {
 	my @chk1; if ( $trustlevel == 1 ) { @chk1=("checked", "checked"); } 
 	my @chk_neg; if ( $trustlevel == -1 ) { @chk_neg=("checked", "checked"); } 
 
-	$r.="<h3>Set Your Trust for ".$o->q->param("call").":</h3>";
+	$r.="<h3>Set Your Trust for ".($o->q->param("call"))[0].":</h3>";
 	$r.="<center>";
 	$r.=$o->h_tabled_form({},
 		$o->h_labled_input({
@@ -1438,19 +1445,19 @@ sub mode_aliases_and_followings {
 	if ( 
 		( $#aliases==-1 ) and ( $#followings==-1 ) 
 	) { 
-		my $op=$o->qtc_query->operator($o->q->param("publisher_call")); 
+		my $op=$o->qtc_query->operator(($o->q->param("publisher_call"))[0]); 
 		if ( $op ) {
 			@aliases=$op->set_of_aliases; 
 			@followings=$op->set_of_followings; 
 		}
 	}
 
-	push @aliases, $o->qtc_query->allowed_letters_for_call($o->q->param("add_alias")); 
+	push @aliases, $o->qtc_query->allowed_letters_for_call($o->q->param("add_alias"));   # if add_alias comes as list, all elements will be added or removed 
 	push @followings, $o->qtc_query->allowed_letters_for_call($o->q->param("add_following")); 
 	@aliases=$o->apply_deletion_array(\@aliases, $o->q->param("delete_alias")); 
 	@followings=$o->apply_deletion_array(\@followings, $o->q->param("delete_following")); 
 
-	if ( $o->q->param("save_changes") eq "really" ) {
+	if ( ($o->q->param("save_changes"))[0] eq "really" ) {
 		# send operator here 
 		$o->qtc_publish->operator(
 			set_of_aliases=>[@aliases],
@@ -1478,7 +1485,7 @@ sub mode_aliases_and_followings {
 	
 	$r.='<p>Don\'t forget to save your changes when you are done</p>';
 
-	$r.="<h3>Aliases of ".$o->q->param("publisher_call").":</h3>";
+	$r.="<h3>Aliases of ".($o->q->param("publisher_call"))[0].":</h3>";
 	
 	$o->{qtc}->{exports}->{aliases}=1; 
 	$o->{qtc}->{exports}->{followings}=1; 
@@ -1511,7 +1518,7 @@ sub mode_aliases_and_followings {
 	);
 	$r.='</center>';
 
-	$r.="<h3>Calls that ".$o->q->param("publisher_call")." follows:</h3>";
+	$r.="<h3>Calls that ".($o->q->param("publisher_call"))[0]." follows:</h3>";
 	
 	$x='';
 	foreach my $following (@followings) {
