@@ -1,4 +1,10 @@
 #!/usr/bin/perl
+
+##################################################################
+# pleae note and use (param("foo"))[0] whenever you need only one 
+# url Parameter to prevent URL injections
+################################################################# 
+
 use qtc::query; 
 use CGI::Simple; 
 use POSIX qw(strftime); 
@@ -8,16 +14,12 @@ my $q = CGI::Simple->new;
 my @calls=$q->param("call"); 
 #@calls=("oe1gsu", "dm3da", "oe1src"); 
 
-my $type=$q->param("type"); 
-if ( ! $type ) { $type="new"; }
-if ( $type !~ /^new|all|sent|timeline|timeline_new$/ ) { die "unknown type"; }
-
-my $type=$q->param("type"); 
+my $type=($q->param("type"))[0]; 
 if ( ! $type ) { $type="timeline"; }
 if ( $type !~ /^new|all|sent|timeline|timeline_new$/ ) { die "unknown type"; }
 
-my $anz=$q->param("anz"); if ( ! $anz ) { $anz=40; } 
-my $offset=$q->param("offset"); if ( ! $offset ) { $offset=0; } 
+my $anz=($q->param("anz"))[0]; if ( ! $anz ) { $anz=40; } 
+my $offset=($q->param("offset"))[0]; if ( ! $offset ) { $offset=0; } 
 
 my $dateformat="%a, %d %b %Y %T +0000";
 #my $dateformat="%Y-%m-%d %H:%M:%S UTC";

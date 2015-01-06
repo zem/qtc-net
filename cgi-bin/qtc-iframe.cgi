@@ -8,14 +8,14 @@ my $q = CGI::Simple->new;
 my @calls=$q->param("call"); 
 #@calls=("oe1gsu", "dm3da", "oe1src"); 
 
-my $type=$q->param("type"); 
+my $type=($q->param("type"))[0]; 
 if ( ! $type ) { $type="timeline"; }
 if ( $type !~ /^new|all|sent|timeline|timeline_new$/ ) { die "unknown type"; }
 
 my $dateformat="%a, %d %b %Y %T +0000";
 #my $dateformat="%Y-%m-%d %H:%M:%S UTC";
 
-my $anz=$q->param("anz"); 
+my $anz=($q->param("anz"))[0]; 
 if (! $anz) { $anz=10; }
 if ( $anz !~ /^\d+$/ ) { $anz=10; }
 

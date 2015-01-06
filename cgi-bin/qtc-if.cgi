@@ -1,4 +1,9 @@
 #!/usr/bin/perl
+##################################################################
+# pleae note and use (param("foo"))[0] whenever you need only one 
+# url Parameter to prevent URL injections
+################################################################# 
+
 use qtc::misc; 
 use qtc::msg; 
 use CGI::Simple; 
@@ -139,7 +144,7 @@ if ( -d $root.$path ) {
 	@lst=$m->scan_dir($root.$path, '^[a-z]+_([a-z]|[0-9]|-)+_([a-f]|[0-9])+\.qtc$'); 
 	my $newts=time; 
 	my @ret;
-	my $ts=$q->param("ts"); if ( !$ts) { $ts=0; }
+	my $ts=($q->param("ts"))[0]; if ( !$ts) { $ts=0; }
 	foreach my $file (@lst) {
 		my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
                   $atime,$mtime,$ctime,$blksize,$blocks)
@@ -152,7 +157,7 @@ if ( -d $root.$path ) {
 	}
 	@ret=map {basename($_)} sort(@ret); 
 	
-	if ( ! $q->param("digest") ) {
+	if ( ! ($q->param("digest"))[0] ) {
 		print $q->header(
 			-type=>'text/plain',
 			-attachment => $newts,
@@ -167,7 +172,7 @@ if ( -d $root.$path ) {
 			-attachment => $newts,
 			-status=>200,
 		);
-		my $dig=$q->param("digest");
+		my $dig=($q->param("digest"))[0];
 		my %x;
 		if ( $dig eq "digest.lst" ){
 			my $fh=$q->upload($dig);
