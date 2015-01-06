@@ -1,4 +1,10 @@
 package qtc::WebApp::QuickInterface; 
+
+##################################################################
+# pleae note and use (param("foo"))[0] whenever you need only one 
+# url Parameter to prevent URL injections
+################################################################# 
+
 use base 'qtc::WebApp'; 
 
 ########################################################
@@ -29,16 +35,16 @@ sub setup {
 sub mode_show_telegrams {
 	my $obj=shift; 
 	my $q=$obj->query;
-	if ( ! $q->param("type") ) { $q->param("type", "new"); }
-	my $type=$q->param("type");
+	if ( ! ($q->param("type"))[0] ) { $q->param("type", "new"); }
+	my $type=($q->param("type"))[0];
 	if ( $type !~ /^((all)|(new)|(sent)|(timeline)|(timeline_new))$/ ) { return "<error>unknown search type</error>"; }
 	my $r; 
 
-	if ( ( $obj->logged_in ) and ( ! $q->param("call") ) ) {
+	if ( ( $obj->logged_in ) and ( ! ($q->param("call"))[0] ) ) {
 		$q->param("call", $q->param("publisher_call"));
 	}
 
-	if ( ! $q->param("call") ) { 
+	if ( ! ($q->param("call"))[0] ) { 
 		return '<error>I need a call to do any work</error>'; 
 	}
 
@@ -46,17 +52,17 @@ sub mode_show_telegrams {
 	my %qsp; 
 	foreach $chk ($q->param("qsp")) { $qsp{$chk}=1; }
 
-	my @msgs=$obj->qtc_query->list_telegrams($q->param("call"), $type);
+	my @msgs=$obj->qtc_query->list_telegrams(($q->param("call"))[0], $type);
 	my @rows; 
 	foreach my $msg (@msgs) {  
-		if ( ( $qsp{$msg->checksum} ) and ($obj->logged_in) and ($q->param("call")) ) {
+		if ( ( $qsp{$msg->checksum} ) and ($obj->logged_in) and (($q->param("call"))[0]) ) {
 			$obj->qtc_publish->qsp(
 				msg=>$msg,
-				to=>$q->param("call"),
+				to=>($q->param("call"))[0],
 			);
 			$r.="<qsp>\n";
 			$r.="	<telegram_checksum>".$msg->checksum."</telegram_checksum>\n";
-			$r.="	<to>".$q->param("call")."</to>\n";
+			$r.="	<to>".($q->param("call"))[0]."</to>\n";
 			$r.="</qsp>\n";
 			next; 
 		} 
@@ -82,37 +88,37 @@ sub mode_send_telegram {
 		$r.="<error>Please log in to use this feature</error>"; 
 		return $r; 
 	}
-	if ( $o->q->param("telegram") )  {
+	if ( ($o->q->param("telegram"))[0] )  {
 		# convert characters 
-		$o->q->param("call", $o->qtc_query->allowed_letters_for_call($o->q->param("call")));
-		$o->q->param("to", $o->qtc_query->allowed_letters_for_call($o->q->param("to")));
-		$o->q->param("telegram", $o->qtc_query->allowed_letters_for_telegram($o->q->param("telegram")));
+		$o->q->param("call", $o->qtc_query->allowed_letters_for_call(($o->q->param("call"))[0]));
+		$o->q->param("to", $o->qtc_query->allowed_letters_for_call(($o->q->param("to"))[0]));
+		$o->q->param("telegram", $o->qtc_query->allowed_letters_for_telegram(($o->q->param("telegram"))[0]));
 	
 		my $ok=1; 
-		if (! $o->q->param("call")) { 
+		if (! ($o->q->param("call"))[0] ) { 
 			$r.="<error>Please enter a valid callsign </error>";
 			$ok=0; 
 		}
-		if (! $o->q->param("to")) { 
+		if (! ($o->q->param("to"))[0] ) { 
 			$r.="<error>Please enter a valid telegram receiver callsign</error>";
 			$ok=0; 
 		}
-		if (! $o->q->param("telegram")) { 
+		if (! ($o->q->param("telegram"))[0] ) { 
 			$r.="<error>Please enter a valid telegram text</error>";
 			$ok=0; 
 		}
 		if ( $ok ) { 
 			$o->qtc_publish->telegram(
-				call=>$o->q->param("publisher_call"),
-				from=>$o->q->param("call"),
-				to=>$o->q->param("to"),
-				telegram=>$o->q->param("telegram"),
+				call=>($o->q->param("publisher_call"))[0],
+				from=>($o->q->param("call"))[0],
+				to=>($o->q->param("to"))[0],
+				telegram=>($o->q->param("telegram"))[0],
 			); 
 			$r.="<sent_telegram>\n";
-			$r.="	<call>".$o->q->param("publisher_call")."</call>\n"; 
-			$r.="	<from>".$o->q->param("call")."</from>\n"; 
-			$r.="	<to>".$o->q->param("to")."</to>\n"; 
-			$r.="	<telegram>".$o->q->param("telegram")."</telegram>\n"; 
+			$r.="	<call>".($o->q->param("publisher_call"))[0]."</call>\n"; 
+			$r.="	<from>".($o->q->param("call"))[0]."</from>\n"; 
+			$r.="	<to>".($o->q->param("to"))[0]."</to>\n"; 
+			$r.="	<telegram>".($o->q->param("telegram"))[0]."</telegram>\n"; 
 			$r.="</sent_telegram>\n";
 			$o->q->param("mode", "show_telegrams"); 
 			return $r.$o->mode_show_telegrams; 
