@@ -1,0 +1,31 @@
+#!/bin/bash
+
+. /etc/qtc/aprs.conf
+
+case $1 in
+start)
+	EXTRA=""
+	if [ "$FILTER" != "" ] 
+	then
+		EXTRA=$EXTRA"-f "'"'$FILTER'" '
+	fi
+	if [ "$FILTER" != "" ] 
+	then
+		EXTRA=$EXTRA"--hostport "$HOSTPORT' '
+	fi
+	/usr/local/bin/qtc_aprs.pl \
+		-u $APRS_IS_USER \
+		-p $APRS_IS_PASS \
+		-pd $PRIVATE_KEY_DIR \
+		-d $DATA_DIR \
+		-l $LOG_FILE \
+		$EXTRA
+;; 
+stop)
+	killall /usr/local/bin/qtc_aprs.pl
+;; 
+restart)
+	$0 stop
+	$0 start
+;;
+esac
