@@ -5,12 +5,12 @@ DATADIR=/var/spool/qtc
 CGIDIR=$(PREFIX)/share/qtc/cgi-bin
 ETCDIR=/etc/qtc
 
+all: Makefile.PL.mk
+	make -f Makefile.PL.mk
+
 # create perl makefile 
 Makefile.PL.mk: Makefile.PL
 	perl $<
-
-all: Makefile.PL.mk
-	make -f Makefile.PL.mk
 
 install: Makefile.PL.mk
 	make -f Makefile.PL.mk install
