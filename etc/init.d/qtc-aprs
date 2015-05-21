@@ -2,6 +2,12 @@
 
 . /etc/qtc/aprs.conf
 
+IAM=`whoami`
+if [ $IAM != $RUN_AS ] 
+then
+	su - $RUN_AS -c "$0 $1"
+fi
+
 case $1 in
 start)
 	EXTRA=""
