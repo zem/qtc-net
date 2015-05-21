@@ -1,5 +1,6 @@
 use ExtUtils::MakeMaker;
 WriteMakefile(
+	FIRST_MAKEFILE=>'Makefile.PL.mk',
     NAME         => 'qtc::net',
     VERSION => '0.0.1', 
 	'PREREQ_PM' => {
