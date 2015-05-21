@@ -2,6 +2,6 @@ blib
 *.swp
 MANIFEST
 MYMETA.*
-Makefile*
+Makefile.PL.mk
 www/pod
 pm_to_blib
