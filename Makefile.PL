@@ -1,8 +1,8 @@
 use ExtUtils::MakeMaker;
 WriteMakefile(
 	FIRST_MAKEFILE=>'Makefile.PL.mk',
-    NAME         => 'qtc::net',
-    VERSION => '0.0.1', 
+	NAME         => 'qtc::net',
+	VERSION => '0.0.1', 
 	'PREREQ_PM' => {
 		'POSIX' => '0',
 		'Crypt::OpenSSL::RSA' => '0',
