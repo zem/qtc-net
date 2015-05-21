@@ -70,6 +70,7 @@ sub fname2call {
 	my $call=shift; 
 	if ( ! $call ) { die "we should get a callsign as parameter to this function\n"; } 
 	$call=~s/-/\//g; 
+	#$call=~s/:/\//g; 
 	return $call; 
 }
 
@@ -92,6 +93,7 @@ sub call2fname {
 	my $call=shift; 
 	if ( ! $call ) { die "we should get a callsign as parameter to this function\n"; } 
 	$call=~s/\//-/g; 
+	#$call=~s/\//:/g; 
 	return $call; 
 }
 
