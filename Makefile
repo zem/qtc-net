@@ -31,3 +31,11 @@ install: Makefile.PL.mk
 		fi ; \
 	done
 
+clean:
+	rm -f Makefile.PL.mk
+	MYMETA.yml
+	MYMETA.json
+	pm_to_blib
+	deps
+	Makefile.old
+
