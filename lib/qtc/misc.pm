@@ -170,6 +170,33 @@ sub scan_dir {
 #------------------------------------------------------------------------------------
 =pod
 
+=head2 scan_dir_ordered_by()
+
+my @basenames=$obj->scan_dir_ordered_by($dir, $regex, $fieldpos); 
+
+like scan_dir() but returns a list ordered wich is ordered by one of the 
+fields returned by stat which is identified by fieldpos and 
+alphabet if two files have the same field id. 
+
+=cut
+#------------------------------------------------------------------------------------
+sub scan_dir_ordered_by {
+	my $obj=shift;
+	my $dir=shift;
+	my $prefix=shift; 
+	my $by=shift; 
+	
+	return map {basename($_)} 
+		sort(
+			map { sprintf("%011d", (stat($dir."/".$_))[$by])."/".$_ } 
+				$obj->scan_dir($dir, $prefix)
+		); 
+}
+
+
+#------------------------------------------------------------------------------------
+=pod
+
 =head2 scan_dir_ordered()
 
 my @basenames=$obj->scan_dir_ordered($dir, $regex); 
@@ -183,14 +210,30 @@ sub scan_dir_ordered {
 	my $obj=shift;
 	my $dir=shift;
 	my $prefix=shift; 
-	my @files; 
-	
-	foreach my $file ($obj->scan_dir($dir, $prefix)) {
-		push @files, sprintf("%011d", (stat($dir."/".$file))[9])."/".$file; 
-	}
-	@files=map {basename($_)} sort(@files); 
-	return @files; 
+
+	return $obj->scan_dir_ordered_by($dir, $prefix, 9); 
 }
+
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 scan_dir_ordered_ctime()
+
+my @basenames=$obj->scan_dir_ordered($dir, $regex); 
+
+like scan_dir() but returns a list ordered by ctime and alphabet if two files 
+have the same ctime. 
+
+=cut
+#------------------------------------------------------------------------------------
+sub scan_dir_ordered_ctime {
+	my $obj=shift;
+	my $dir=shift;
+	my $prefix=shift; 
+
+	return $obj->scan_dir_ordered_by($dir, $prefix, 10); 
+}
+
 
 #------------------------------------------------------------------------------------
 =pod
