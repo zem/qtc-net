@@ -168,6 +168,16 @@ our %data_types=(
 		data_type=>"integer",
 		multiple_times=>2,
 	}, 
+	"set_of_replies"=>{
+		enum=>25,
+		data_type=>"binary",
+		multiple_times=>0,
+	},
+	"set_of_comment"=>{
+		enum=>26,
+		data_type=>"string",
+		multiple_times=>1,
+	},
 );
 
 

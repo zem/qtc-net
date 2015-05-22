@@ -49,6 +49,7 @@ package qtc::msg;
 use Digest::SHA qw(sha256_hex);
 use qtc::signature; 
 use File::Basename; 
+use File::ExtAttr ':all';
 use qtc::binary; 
 use qtc::misc;
 @ISA=(qtc::misc); 
@@ -83,7 +84,7 @@ our $valid_date=sub {
 
 our $valid_call=sub {
 	$_=shift;
-	if ( ! /^([a-z]|[0-9]|\/)+$/ ) {
+	if ( ! /^([a-z]|[0-9]|\/|\-)+$/ ) {
 		die "This call $_ has invalid characters\n"; 
 	}
 	if ( length > 20 ) { 
@@ -163,17 +164,19 @@ on the value of the type field. Those type specific fields are defined in %msg_t
 our %msg_types=(
 	# this is the message itself with required fields
 	telegram=>{
-		"telegram_date"=>$valid_date, 
-		"from"=>$valid_call, 
-		"to"=>$valid_call, 
+		"telegram_date"=>$valid_date,
+		"from"=>$valid_call,
+		"to"=>$valid_call,
 		"telegram"=>$valid_telegram,
 		"set_of_qsp_timeouts"=>[$valid_integer], 
+		"set_of_replies"=>[$valid_checksum],
 	}, 
 	# this is the qsp info where data is stored
 	qsp=>{
 		"qsp_date"=>$valid_date, 
 		"telegram_checksum"=>$valid_checksum,
 		"to"=>$valid_call,  #the to field is important for followings
+		"set_of_comment"=>[$valid_telegram], 
 	}, 
 	# aliases and delivery followings 
 	operator=>{
@@ -189,6 +192,7 @@ our %msg_types=(
 		"key_type"=>$valid_rsa_or_dsa,  
 		"key_id"=>$valid_checksum,  
 		"key"=>$valid_hex,
+		"set_of_comment"=>[$valid_telegram], 
 	},
 	# revokes are designed to be self signed 
 	# this means they are valid even without a 
@@ -204,7 +208,30 @@ our %msg_types=(
 		"trustlevel"=>$valid_trustlevel,
 		"to"=>$valid_call, # it is easier to store the call than to read every key for its ID
 		"set_of_key_ids"=>[$valid_checksum],
+		"set_of_comment"=>[$valid_telegram], 
 	},
+);
+
+
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 our %btime_info
+
+The birth time of a message is an extended attribute in the Filename 
+which is used for sorting messages by the date provided by the message 
+itself.
+
+Sometimes it is better to order messages by their user provided date 
+rater than mtime.  
+
+=cut
+our %btime_info=(
+	trust=>"trust_date",
+	pubkey=>"key_date",
+	operator=>"record_date",
+	qsp=>"qsp_date",
+	telegram=>"telegram_date",
 );
 
 
@@ -871,6 +898,7 @@ sub to_filesystem {
 	$obj->is_object_valid;
 	my $filename=$obj->filename;
 	$obj->{path}=$path; 
+	my $btime=$obj->btime; if ( ! $btime ) { $btime=time; }
 	
 	my $tmpfile=$$."_".time."_".$filename.".tmp"; 
 	if ( -e $path."/.".$tmpfile ) { die "$path/$tmpfile already exists \n"; }
@@ -879,9 +907,27 @@ sub to_filesystem {
 	print WRITE pack("H*", $obj->as_hex) or die "Can't write data to disk\n"; 
 	close(WRITE); 
 	link($path."/.".$tmpfile, $path."/".$filename) or die "Can't link to path ".$path."/".$filename."\n"; 
-	unlink($path."/.".$tmpfile) or die "Can't unlink tmpfile, this should never happen\n"; 
+	unlink($path."/.".$tmpfile) or die "Can't unlink tmpfile, this should never happen\n";	
+	setfattr($path."/".$filename, "user.btime", $btime); 
 }
 
+=pod
+
+=head2 get_btime()
+
+returns the time of birth of the object, this is the time that is 
+written in the _date fields, if no date is stored it returns undef.
+
+the birth time is also stored at birth time in filesystem levels 
+extended attributes therefore you can sort all messages by birth 
+date.
+
+=cut
+sub get_btime {
+	my $obj=shift; 
+	if ( ! $btime_info{$obj->type} ) { return ; }
+	return $obj->value($btime_info{$obj->type});
+}
 
 
 =pod
@@ -942,6 +988,18 @@ sub load_file {
 	close(READ); 
 
 	$obj->bin->parse(unpack("H*", $bin)); 
+
+	# check for bdate here and set it on file access
+	my $bdate_attr=getfattr("$path/$filename", "user.bdate"); 
+	my $bdate=$obj->get_bdate; 
+	if (! $bdate_attr ) {
+		if ( $bdate ) { setfattr("$path/$filename", "user.bdate", $bdate); }
+		else { setfattr("$path/$filename", "user.bdate", (stat("$path/$filename"))[9]); }
+	} else {
+		if (( $bdate ) and ($bdate != $bdate_attr)) {
+			setfattr("$path/$filename", "user.bdate", $bdate);
+		}
+	}
 }
 
 

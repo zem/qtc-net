@@ -351,7 +351,7 @@ sub call_qtc2aprs {
 	my $obj=shift; 
 	my $call=shift; 
 	$call=uc($call); 
-	$call=~s/\/\//-/g; 
+	#$call=~s/\/\//-/g; 
 	return $call; 
 }
 
@@ -360,7 +360,7 @@ sub call_aprs2qtc {
 	my $obj=shift; 
 	my $call=shift; 
 	$call=lc($call); 
-	$call=~s/-/\/\//g; 
+	#$call=~s/-/\/\//g; 
 	return $call; 
 }
 

@@ -28,6 +28,7 @@ code base.
 #-----------------------------------------------------------------------------------
 package qtc::misc; 
 use File::Basename; 
+use File::ExtAttr ':all';
 use POSIX qw(strftime); 
 
 #------------------------------------------------------------------------------------
@@ -69,8 +70,8 @@ sub fname2call {
 	my $obj=shift; 
 	my $call=shift; 
 	if ( ! $call ) { die "we should get a callsign as parameter to this function\n"; } 
-	$call=~s/-/\//g; 
-	#$call=~s/:/\//g; 
+	#$call=~s/-/\//g; 
+	$call=~s/:/\//g; 
 	return $call; 
 }
 
@@ -79,7 +80,7 @@ sub fname2call {
 
 =head2 call2fname()
 
-my $filename=$obj->fname2call($call); 
+my $filename=$obj->call2fname($call); 
 
 This method converts a callsign into its filename representation. 
 It addresses the problems that / is a directory splitter 
@@ -92,8 +93,8 @@ sub call2fname {
 	my $obj=shift; 
 	my $call=shift; 
 	if ( ! $call ) { die "we should get a callsign as parameter to this function\n"; } 
-	$call=~s/\//-/g; 
-	#$call=~s/\//:/g; 
+	#$call=~s/\//-/g; 
+	$call=~s/\//:/g; 
 	return $call; 
 }
 
@@ -170,17 +171,16 @@ sub scan_dir {
 #------------------------------------------------------------------------------------
 =pod
 
-=head2 scan_dir_ordered_by()
+=head2 scan_dir_ordered_btime()
 
-my @basenames=$obj->scan_dir_ordered_by($dir, $regex, $fieldpos); 
+my @basenames=$obj->scan_dir_ordered_btime($dir, $regex); 
 
-like scan_dir() but returns a list ordered wich is ordered by one of the 
-fields returned by stat which is identified by fieldpos and 
-alphabet if two files have the same field id. 
-
+like scan_dir() but returns a list ordered wich is ordered by 
+the user.btime extended attribute of the Filesystem
+ 
 =cut
 #------------------------------------------------------------------------------------
-sub scan_dir_ordered_by {
+sub scan_dir_ordered_btime {
 	my $obj=shift;
 	my $dir=shift;
 	my $prefix=shift; 
@@ -188,8 +188,14 @@ sub scan_dir_ordered_by {
 	
 	return map {basename($_)} 
 		sort(
-			map { sprintf("%011d", (stat($dir."/".$_))[$by])."/".$_ } 
-				$obj->scan_dir($dir, $prefix)
+			map { 
+				sprintf(
+					"%011d", 
+					(getfattr($dir."/".$_, "user.btime") || (stat($dir."/".$_))[9])
+				)."/".$_
+				 
+			} 
+			$obj->scan_dir($dir, $prefix)
 		); 
 }
 
@@ -211,28 +217,13 @@ sub scan_dir_ordered {
 	my $dir=shift;
 	my $prefix=shift; 
 
-	return $obj->scan_dir_ordered_by($dir, $prefix, 9); 
+	return map {basename($_)} 
+		sort(
+			map { sprintf("%011d", (stat($dir."/".$_))[9])."/".$_ } 
+				$obj->scan_dir($dir, $prefix)
+		); 
 }
 
-#------------------------------------------------------------------------------------
-=pod
-
-=head2 scan_dir_ordered_ctime()
-
-my @basenames=$obj->scan_dir_ordered($dir, $regex); 
-
-like scan_dir() but returns a list ordered by ctime and alphabet if two files 
-have the same ctime. 
-
-=cut
-#------------------------------------------------------------------------------------
-sub scan_dir_ordered_ctime {
-	my $obj=shift;
-	my $dir=shift;
-	my $prefix=shift; 
-
-	return $obj->scan_dir_ordered_by($dir, $prefix, 10); 
-}
 
 
 #------------------------------------------------------------------------------------
