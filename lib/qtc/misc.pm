@@ -193,7 +193,6 @@ sub scan_dir_ordered_btime {
 					"%011d", 
 					(getfattr($dir."/".$_, "user.btime") || (stat($dir."/".$_))[9])
 				)."/".$_
-				 
 			} 
 			$obj->scan_dir($dir, $prefix)
 		); 
