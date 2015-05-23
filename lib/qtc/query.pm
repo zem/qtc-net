@@ -69,7 +69,7 @@ sub latest_changes {
 	else { $number = $number * -1 }
 	
 	my @msgs;
-	foreach my $file (($obj->scan_dir_ordered($obj->{path}."/out", '.+\.qtc'))[$number..-1]) {
+	foreach my $file (($obj->scan_dir_ordered_btime($obj->{path}."/out", '.+\.qtc'))[$number..-1]) {
 		unshift @msgs, qtc::msg->new(path=>$obj->{path}."/out", filename=>$file); 
 	}
 
@@ -148,7 +148,7 @@ sub list_telegrams {
 	
 	my $offset=$anz*$offset; 
 	my @msgs;
-	foreach my $file ($obj->scan_dir_ordered($obj->{path}."/call/$call/telegrams/$type", '.+\.qtc')){
+	foreach my $file ($obj->scan_dir_ordered_btime($obj->{path}."/call/$call/telegrams/$type", '.+\.qtc')){
 		unshift @msgs, qtc::msg->new(path=>$obj->{path}."/call/$call/telegrams/$type", filename=>$file); 
 	}
 
