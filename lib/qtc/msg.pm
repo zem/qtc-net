@@ -904,7 +904,7 @@ sub to_filesystem {
 	$obj->is_object_valid;
 	my $filename=$obj->filename;
 	$obj->{path}=$path; 
-	my $btime=$obj->btime; if ( ! $btime ) { $btime=time; }
+	my $btime=$obj->get_btime; if ( ! $btime ) { $btime=time; }
 	
 	my $tmpfile=$$."_".time."_".$filename.".tmp"; 
 	if ( -e $path."/.".$tmpfile ) { die "$path/$tmpfile already exists \n"; }
@@ -914,7 +914,7 @@ sub to_filesystem {
 	close(WRITE); 
 	link($path."/.".$tmpfile, $path."/".$filename) or die "Can't link to path ".$path."/".$filename."\n"; 
 	unlink($path."/.".$tmpfile) or die "Can't unlink tmpfile, this should never happen\n";	
-	setfattr($path."/".$filename, "user.btime", $btime); 
+	setfattr($path."/".$filename, "btime", $btime); 
 }
 
 =pod
@@ -995,15 +995,15 @@ sub load_file {
 
 	$obj->bin->parse(unpack("H*", $bin)); 
 
-	# check for bdate here and set it on file access
-	my $bdate_attr=getfattr("$path/$filename", "user.bdate"); 
-	my $bdate=$obj->get_bdate; 
-	if (! $bdate_attr ) {
-		if ( $bdate ) { setfattr("$path/$filename", "user.bdate", $bdate); }
-		else { setfattr("$path/$filename", "user.bdate", (stat("$path/$filename"))[9]); }
+	# check for btime here and set it on file access
+	my $btime_attr=getfattr("$path/$filename", "btime"); 
+	my $btime=$obj->get_btime; 
+	if (! $btime_attr ) {
+		if ( $btime ) { setfattr("$path/$filename", "btime", $btime); }
+		else { setfattr("$path/$filename", "btime", (stat("$path/$filename"))[9]); }
 	} else {
-		if (( $bdate ) and ($bdate != $bdate_attr)) {
-			setfattr("$path/$filename", "user.bdate", $bdate);
+		if (( $btime ) and ($btime != $btime_attr)) {
+			setfattr("$path/$filename", "btime", $btime);
 		}
 	}
 }
