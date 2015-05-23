@@ -171,6 +171,12 @@ our %msg_types=(
 		"set_of_qsp_timeouts"=>[$valid_integer], 
 		"set_of_replies"=>[$valid_checksum],
 	}, 
+	withdraw=>{
+		"withdraw_date"=>$valid_date,
+		"telegram_checksum"=>$valid_checksum,
+		"to"=>$valid_call,  #the to field is important for followings
+		"set_of_comment"=>[$valid_telegram], 
+	}, 
 	# this is the qsp info where data is stored
 	qsp=>{
 		"qsp_date"=>$valid_date, 
@@ -229,6 +235,7 @@ rater than mtime.
 our %btime_info=(
 	trust=>"trust_date",
 	pubkey=>"key_date",
+	withdraw=>"withdraw_date",
 	operator=>"record_date",
 	qsp=>"qsp_date",
 	telegram=>"telegram_date",

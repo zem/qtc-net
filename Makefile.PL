@@ -17,6 +17,7 @@ WriteMakefile(
 		'IO::Scalar'=>0,
 		'Authen::Captcha'=>0, 
 		'File::Copy'=>0, 
+		'File::ExtAttr'=>0, 
 	},
 	AUTHOR=>[
 		"Hans Freitag <oe1src\@oevsv.at>",

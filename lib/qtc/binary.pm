@@ -69,6 +69,7 @@ our %data_types=(
 			"pubkey",
 			"revoke",
 			"trust",
+			"withdraw",
 		],
 	},
 	"version"=>{
@@ -177,6 +178,10 @@ our %data_types=(
 		enum=>26,
 		data_type=>"string",
 		multiple_times=>1,
+	},
+	"withdraw_date"=>{
+		enum=>26,
+		data_type=>"integer",
 	},
 );
 
