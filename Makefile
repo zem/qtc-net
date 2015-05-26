@@ -26,18 +26,18 @@ install: Makefile.PL.mk
 	fi
 	for etcfile in etc/qtc/* ; \
 	do \
-		if [ ! -f $(ETCDIR)`basename $$etcfile` ] ; \
+		if [ ! -f $(ETCDIR)/`basename $$etcfile` ] ; \
 		then \
 			cp $$etcfile $(ETCDIR) ; \
-			chown root:root $(ETCDIR)`basename $$etcfile`
+			chown root:root $(ETCDIR)/`basename $$etcfile` ; \
 		fi ; \
 	done
 	for service in etc/init.d/* ; \
 	do \
-		if [ ! -f $(INITDIR)`basename $$service` ] ; \
+		if [ ! -f $(INITDIR)/`basename $$service` ] ; \
 		then \
 			cp $$service $(INITDIR) ; \
-			chown root:root $(INITDIR)`basename $$service`
+			chown root:root $(INITDIR)/`basename $$service` ; \
 		fi ; \
 	done
 

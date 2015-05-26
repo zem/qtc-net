@@ -339,7 +339,7 @@ sub allowed_letters_for_call {
 	my $t; 
 	while ($call) { 
 		my $x=substr($call, 0, 1);  $call=substr($call, 1); 
-		if ($x=~/([a-z]|[0-9]|\/)/) { $t.=$x; } 
+		if ($x=~/([a-z]|[0-9]|\/|-)/) { $t.=$x; } 
 	} 
 	return $t; 
 }
