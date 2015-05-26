@@ -25,9 +25,10 @@ install: Makefile.PL.mk
 	fi
 	for etcfile in etc/qtc/* ; \
 	do \
-		if [ ! -f $etcfile ] ; \
+		echo $$etcfile ; \
+		if [ ! -f $(ETCDIR)`basename $$etcfile` ] ; \
 		then \
-			cp $etcfile $(ETCDIR) ; \
+			cp $$etcfile $(ETCDIR) ; \
 		fi ; \
 	done
 
