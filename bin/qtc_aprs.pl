@@ -61,15 +61,15 @@ while ($_=shift(@ARGV)) {
 
 
 if ( ! $pidfile ) { $pidfile=$path."/.aprsgate.pid"; }
-my $misc=qtc::misc(pidfile=>$pidfile); 
+my $misc=qtc::misc->new(pidfile=>$pidfile); 
 
 # do some setup stuff 
 if ( $daemon ) {
 	my $pid=fork(); 
 	if ( $pid != 0 ) { exit; }
 
-	if ( ! -e $pid ) {
-		open(PID, "> ".$pid) or die "Cant open pidfile\n"; 
+	if ( ! -e $pidfile ) {
+		open(PID, "> ".$pidfile) or die "Cant open pidfile\n"; 
 		print(PID $$) or die "can't write to pid file\n"; 
 		close PID; 
 		if ( $misc->get_pid() != $$ ) { die "the pid in the file we wrote just now is not ours\n"; }
