@@ -6,6 +6,7 @@ IAM=`whoami`
 if [ $IAM != $RUN_AS ] 
 then
 	su - $RUN_AS -c "$0 $1"
+	exit $?
 fi
 
 case $1 in
