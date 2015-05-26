@@ -51,6 +51,13 @@ if ( $verbose ) {
 		set_of_aliases=>[map { s/\/\//-/g; } $msg->set_of_aliases],
 		set_of_followings=>[map { s/\/\//-/g; } $msg->set_of_followings],
 	);
+	foreach my $val (map { s/\/\//-/g; } $msg->set_of_followings) {
+		print "follow: $val\n"; 
+	}
+	foreach my $val (map { s/\/\//-/g; } $msg->set_of_aliases) {
+		print "alias: $val\n"; 
+	}
+
 	
 } 
 print "\n";
