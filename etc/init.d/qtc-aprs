@@ -29,7 +29,7 @@ start)
 		$EXTRA
 ;; 
 stop)
-	killall /usr/local/bin/qtc_aprs.pl
+	kill `cat $DATA_DIR/.aprsgate.pid`
 ;; 
 restart)
 	$0 stop
