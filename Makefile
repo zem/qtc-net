@@ -30,7 +30,7 @@ install: Makefile.PL.mk
 		then \
 			cp $$etcfile $(ETCDIR) ; \
 			chown root:root $(ETCDIR)/`basename $$etcfile` ; \
-		else ; \
+		else \
 			cp $$etcfile $(ETCDIR)/`basename $$etcfile`.dist ; \
 			chown root:root $(ETCDIR)/`basename $$etcfile`.dist ; \
 		fi ; \
@@ -41,8 +41,8 @@ install: Makefile.PL.mk
 		then \
 			cp $$service $(INITDIR) ; \
 			chown root:root $(INITDIR)/`basename $$service` ; \
-		else ; \
-			cp $$etcfile $(ETCDIR)//`basename $$etcfile`.dist
+		else \
+			cp $$service $(INITDIR)/`basename $$service`.dist ; \
 			chown root:root $(INITDIR)/`basename $$service`.dist ; \
 		fi ; \
 	done
