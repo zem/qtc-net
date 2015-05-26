@@ -65,18 +65,7 @@ my $misc=qtc::misc->new(pidfile=>$pidfile);
 
 # do some setup stuff 
 if ( $daemon ) {
-	my $pid=fork(); 
-	if ( $pid != 0 ) { exit; }
-
-	if ( ! -e $pidfile ) {
-		open(PID, "> ".$pidfile) or die "Cant open pidfile\n"; 
-		print(PID $$) or die "can't write to pid file\n"; 
-		close PID; 
-		if ( $misc->get_pid() != $$ ) { die "the pid in the file we wrote just now is not ours\n"; }
-		
-		$SIG{TERM}=sub { unlink($pidfile); exit; }; # link pidfile destruction to TERM and KILL
-		$SIG{KILL}=sub { unlink($pidfile); exit; }; # link pidfile destruction to TERM and KILL
-	} else { die "There is a pid file and it is not ours\n"; }
+	$misc->daemonize; 
 }
 
 if ( $log ) { 

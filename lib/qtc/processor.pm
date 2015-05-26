@@ -79,15 +79,7 @@ sub new {
 	if ( ! $obj->{pidfile} ) { 
 		$obj->{pidfile}=$obj->{root}."/.qtc_processor.pid";
 	}
-	if ( ! -e $obj->{pidfile} ) {
-		open(PID, "> ".$obj->{pidfile}) or die "Cant open pidfile\n"; 
-		print(PID $$) or die "can't write to pid file\n"; 
-		close PID; 
-		if ( $obj->get_pid != $$ ) { die "the pid in the file we wrote just now is not ours\n"; }
-		$SIG{TERM}=sub { unlink($obj->{pidfile}); exit; }; # link pidfile destruction to TERM and KILL
-		$SIG{KILL}=sub { unlink($obj->{pidfile}); exit; }; # link pidfile destruction to TERM and KILL
-		$obj->{daemonized}=1; 
-	} else { die "There is a pid file and it is not ours\n"; }
+	$obj->daemonize(); 
 	if ( $obj->{log} ) { 
 		close STDERR; 
 		open(STDERR, ">> ".$obj->{log}) or die "can't open logfile ".$obj->{log}." \n";	
