@@ -223,6 +223,43 @@ sub scan_dir_ordered {
 		); 
 }
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 daemonize()
+
+my $pid=$obj->daemonize($pidfile); 
+my $pid=$obj->daemonize(); 
+
+this is used to daemonize a script or the processor loop or 
+something like that if needed. 
+
+it does a fork, checks if the pod file is there and if it has 
+the right pid inside. It also reconnects SIGTERM and SIGKILL to unlink 
+the PID on program destruction.  
+
+=cut
+#------------------------------------------------------------------------------------
+sub get_pid {
+	my $o=shift; 
+	my $pidfile=shift; 
+	my $pidfile=$o->{pidfile}; 
+
+	my $pid=fork(); 
+	if ( $pid != 0 ) { exit; }
+
+	if ( ! -e $pidfile ) {
+		open(PID, "> ".$pidfile) or die "Cant open pidfile\n"; 
+		print(PID $$) or die "can't write to pid file\n"; 
+		close PID; 
+		if ( $o->get_pid($pidfile) != $$ ) { die "the pid in the file we wrote just now is not ours\n"; }
+		
+		$SIG{TERM}=sub { unlink($pidfile); exit; }; # unlink pidfile destruction to TERM and KILL
+		$SIG{KILL}=sub { unlink($pidfile); exit; }; # unlink pidfile destruction to TERM and KILL
+	} else { die "There is a pid file and it is not ours\n"; }
+
+	return $pid; 
+}
 
 
 #------------------------------------------------------------------------------------
@@ -241,7 +278,10 @@ string without any linebreaks.
 #------------------------------------------------------------------------------------
 sub get_pid {
 	my $o=shift; 
-	my $pfile=$o->{pidfile}; 
+	my $pfile=shift;
+	if ( ! $pfile ) {  
+		$pfile=$o->{pidfile};
+	} 
 
 	if ( ! -f $pfile ) { return undef; }
 	
