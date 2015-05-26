@@ -26,7 +26,7 @@ start)
 		$EXTRA
 ;; 
 stop)
-	killall /usr/local/bin/qtc_process_in_loop.pl
+	kill `cat $DATA_DIR/.qtc_processor.pid`
 ;; 
 restart)
 	$0 stop
