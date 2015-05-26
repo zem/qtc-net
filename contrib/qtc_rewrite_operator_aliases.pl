@@ -47,14 +47,24 @@ if ( $verbose ) {
 			path=>"/var/spool/qtc/messages", 
 			privpath=>$privdir, 
 		);
+	my @follow; 
+	foreach ($msg->set_of_followings) {
+		s/\/\//-/g; 
+		push(@follow, $_); 
+	}
+	my @alias; 
+	foreach ($msg->set_of_aliases) {
+		s/\/\//-/g; 
+		push(@alias, $_); 
+	}
 	$publish->operator(
-		set_of_aliases=>[map { s/\/\//-/g; } $msg->set_of_aliases],
-		set_of_followings=>[map { s/\/\//-/g; } $msg->set_of_followings],
+		set_of_aliases=>[@alias],
+		set_of_followings=>[@follow],
 	);
-	foreach my $val (map { s/\/\//-/g; } $msg->set_of_followings) {
+	foreach my $val (@follow) {
 		print "follow: $val\n"; 
 	}
-	foreach my $val (map { s/\/\//-/g; } $msg->set_of_aliases) {
+	foreach my $val (@alias) {
 		print "alias: $val\n"; 
 	}
 
