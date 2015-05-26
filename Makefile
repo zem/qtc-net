@@ -4,6 +4,7 @@ PREFIX=/usr/local
 DATADIR=/var/spool/qtc
 CGIDIR=$(PREFIX)/share/qtc/cgi-bin
 ETCDIR=/etc/qtc
+INITDIR=/etc/init.d
 
 all: Makefile.PL.mk
 	make -f Makefile.PL.mk
@@ -25,10 +26,18 @@ install: Makefile.PL.mk
 	fi
 	for etcfile in etc/qtc/* ; \
 	do \
-		echo $$etcfile ; \
 		if [ ! -f $(ETCDIR)`basename $$etcfile` ] ; \
 		then \
 			cp $$etcfile $(ETCDIR) ; \
+			chown root:root $(ETCDIR)`basename $$etcfile`
+		fi ; \
+	done
+	for service in etc/init.d/* ; \
+	do \
+		if [ ! -f $(INITDIR)`basename $$service` ] ; \
+		then \
+			cp $$service $(INITDIR) ; \
+			chown root:root $(INITDIR)`basename $$service`
 		fi ; \
 	done
 
