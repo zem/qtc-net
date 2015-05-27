@@ -1,1 +1,0 @@
-@hourly	www-data	/usr/local/bin/qtc_sync_http.pl -d /var/spool/qtc/messages http://www.qtc-net.org/qtc-if.cgi

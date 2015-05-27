@@ -240,7 +240,7 @@ the PID on program destruction.
 
 =cut
 #------------------------------------------------------------------------------------
-sub get_pid {
+sub daemonize {
 	my $o=shift; 
 	my $pidfile=shift; 
 	my $pidfile=$o->{pidfile}; 
