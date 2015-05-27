@@ -337,7 +337,8 @@ sub process_ack {
 			#sleep 1; 
 			$obj->publish->qsp(
 				to=>$obj->call_aprs2qtc($aprs->from), 
-				msg=>$obj->{telegrams}->{$obj->call_aprs2qtc($aprs->from)}->{$chk} 
+				msg=>$obj->{telegrams}->{$obj->call_aprs2qtc($aprs->from)}->{$chk},
+				set_of_comment=>"via aprs",
 			); 
 			print STDERR "telegram  ".$obj->{telegrams}->{$obj->call_aprs2qtc($aprs->from)}->{$chk}->checksum." qsped \n"; 
 			# we need to delete the chksum as well to prevent doubled telegrams 

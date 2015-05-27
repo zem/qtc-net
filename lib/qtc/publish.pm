@@ -181,12 +181,28 @@ parameters:
  from=>$from_call,
  telegram=>$telegram_text,
  [checksum_period=>$seconds],
+ [qsp_timeout=>$ts_where_msg_is_trated_as_qsped], 
+ [telegram_expire=>$ts_when_msg_expires], 
+ [set_of_references=>[$reply_to_reference1, $reference2, ...]],
 
 =cut
 #-------------------------------------------------------
 sub create_telegram {
 	my $obj=shift; 
 	my %args=(@_); 
+	
+	my $references=[]; 
+	if ( $arg{set_of_references} ) { $references=$arg{set_of_references}; }
+
+	my $timeouts=[];
+	if (($args{telegram_expire}) and ( ! $args{qsp_timeout})){$args{qsp_timeout}=$args{telegram_expire};}
+	if ( $args{qsp_timeout} ) {
+		push @$timeouts, $args{qsp_timeout};
+		if ( $args{telegram_expire} ) {
+			push @$timeouts, $args{telegram_expire};
+		}
+	} 
+
 	my $msg=qtc::msg->new(
 		type=>"telegram",
 		call=>$obj->{call},
@@ -195,6 +211,8 @@ sub create_telegram {
 		to=>$args{to},
 		telegram=>$args{telegram},
 		checksum_period=>$args{checksum_period},
+		set_of_qsp_timeouts=>$timeouts,
+		set_of_references=>$references,
 	);
 	$obj->sig->sign($msg); 
 
@@ -234,6 +252,7 @@ publishes a qsp message
 parameters: 
  to=>$to_call,
  msg=>$telegram_qtc_msg_object,
+ [set_of_comment=>$some_comment]
 
 =cut
 #-------------------------------------------------------
@@ -242,13 +261,19 @@ sub qsp {
 	my %args=(@_);
 	
 	my $msg=$args{msg}; # this is a qtc message
+
+	my $comment=[]; 
+	if ( $args{set_of_comment} ) {
+		push @$comment, $args{set_of_comment}; 
+	} 
 	
 	my $qsp=qtc::msg->new(
-        type=>"qsp",
-        call=>$obj->{call},
-        qsp_date=>time,
-        to=>$args{to},
-        telegram_checksum=>$msg->checksum, 
+		type=>"qsp",
+		call=>$obj->{call},
+		qsp_date=>time,
+		to=>$args{to},
+		telegram_checksum=>$msg->checksum, 
+		set_of_comment=>$comment,
 	);
 	$obj->sig->sign($qsp); 
 	$qsp->to_filesystem($obj->{path}."/in");
@@ -384,6 +409,7 @@ publishes a trustlevel message
 parameters: 
  to=>$to_call,
  trustlevel=>$level, # may be 1, 0 or -1 
+ [set_of_comment=>$some_comment]
 
 =cut
 #-------------------------------------------------------
@@ -391,6 +417,11 @@ sub trust {
 	my $obj=shift; 
 	my %args=(@_); 
 	
+	my $comment=[]; 
+	if ( $args{set_of_comment} ) {
+		push @$comment, $args{set_of_comment}; 
+	} 
+
 	$qtc=qtc::msg->new(
 		call=>$obj->{call},
 		type=>"trust",
@@ -398,6 +429,7 @@ sub trust {
 		to=>$args{to},
 		set_of_key_ids=>[keys $obj->query->pubkey_hash($args{to})],
 		trustlevel=>$args{trustlevel},
+		set_of_comment=>$comment,
 	); 
 	
 	$obj->sig->sign($qtc); 

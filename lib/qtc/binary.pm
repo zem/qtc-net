@@ -169,7 +169,7 @@ our %data_types=(
 		data_type=>"integer",
 		multiple_times=>2,
 	}, 
-	"set_of_replies"=>{
+	"set_of_references"=>{
 		enum=>25,
 		data_type=>"binary",
 		multiple_times=>0,

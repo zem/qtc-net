@@ -169,7 +169,7 @@ our %msg_types=(
 		"to"=>$valid_call,
 		"telegram"=>$valid_telegram,
 		"set_of_qsp_timeouts"=>[$valid_integer], 
-		"set_of_replies"=>[$valid_checksum],
+		"set_of_references"=>[$valid_checksum],
 	}, 
 	withdraw=>{
 		"withdraw_date"=>$valid_date,
