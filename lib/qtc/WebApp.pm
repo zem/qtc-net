@@ -1219,6 +1219,7 @@ sub mode_send_telegram {
 				from=>($o->q->param("call"))[0],
 				to=>($o->q->param("to"))[0],
 				telegram=>($o->q->param("telegram"))[0],
+				set_of_reference=>($o->q->param("reply"))[0],
 			); 
 			$o->q->param("mode", "show_telegrams"); 
 			return $o->mode_show_telegrams; 
@@ -1244,6 +1245,7 @@ sub mode_send_telegram {
 	}
 
 	delete $o->{qtc}->{exports}->{call}; 
+	$o->{qtc}->{exports}->{reply}=1; 
 	$r.="<center>";
 	$r.=$o->h_tabled_form({},
 		$o->h_labled_input({
@@ -1276,6 +1278,7 @@ sub mode_send_telegram {
 		}), 
 	);
 	$r.="</center>";
+	delete $o->{qtc}->{exports}->{reply}; 
 	$o->{qtc}->{exports}->{call}=1; 
 
 	$r.="<p>Note: telegrams can be 300 small letter characters as well as numbers and some 
