@@ -20,4 +20,6 @@ You may have to link you /etc/qtc/apache-site.conf manually to your
 apache site directory, the file is a bit complex to avoid login 
 access without ssl. 
 
+There are three init.d services (qtc-processor, qtc-aprs, qtc-sync-http) which have config files in /etc/qtc/
+The default system wide message store is in /var/spool/qtc/messages as user www-data. 
 
