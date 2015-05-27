@@ -41,6 +41,7 @@ use qtc::msg;
 use qtc::query; 
 use IO::Handle;
 use File::Basename; 
+use File::ExtAttr; 
 use qtc::signature; 
 use qtc::keyring; 
 use Data::Dumper; 
@@ -85,7 +86,19 @@ sub new {
 		open(STDERR, ">> ".$obj->{log}) or die "can't open logfile ".$obj->{log}." \n";	
 		STDERR->autoflush(1); 
 	}
-	$obj->{timeout}=8640000;  # should be abt 100 days not exactly 
+	if ( ! $obj->{qsp_timeout} ) {
+		$obj->{qsp_timeout}=8640000;  # should be abt 100 days not exactly 
+	} 
+
+	# if ttl_timeout is changed the server should act as an archive, never pushing 
+	# actively to the network...... 
+	if ( ! $obj->{ttl_timeout} ) {
+		$obj->{ttl_timeout}=86400*200;  # we don't need to distribute messages older 200 days
+	} 
+	if ( ! $obj->{archive_timeout} ) {
+		$obj->{archive_timeout}=$obj->{ttl_timeout}+(86400*200);  
+		# we will move a message older than 400 days to archive
+	} 
 
    return $obj; 
 }
@@ -204,46 +217,6 @@ sub verify_signature {
 	}
 }
 
-#------------------------------------------------------------------------------------
-=pod
-
-=head3 calc_timeouts($msg)
-
-This calculates three numbers: delivery timeout, distribution timeout, archive timeout
-
-returns my ($tqsp, $told, $tarchive) 
-
-=cut
-#------------------------------------------------------------------------------------
-sub calc_timeouts { 
-	my $obj=shift; 
-	my $msg=shift; 
-	my $tqsp; 
-	my $told; 
-	my $tarchive; 
-
-	if ( $msg->type eq "telegram" ) { 
-		($tqsp, $told) = $msg->set_of_qsp_timeouts; 
-		if ( $tqsp ) { $tqsp=$tqsp+$msg->telegram_date; } else { $tqsp=undef; }
-		if (( $told ) and ($told<=$obj->{timeout})) { $told=$told+$msg->telegram_date; } else { $told=$obj->{timeout}+$msg->telegram_date; }
-		$tarchive=$told+$obj->{timeout};
-		return ($tqsp, $told, $tarchive); 
-	}
-	if ( $msg->type eq "qsp" ) { 
-		$tqsp=undef; 
-		$told=$msg->qsp_date+$obj->{timeout};
-		$tarchive=$told+$obj->{timeout};
-		return ($tqsp, $told, $tarchive); 
-	}
-	#if ( $msg->type eq "operator" ) { 
-	#if ( $msg->type eq "pubkey" ) { 
-	#if ( $msg->type eq "revoke" ) { 
-	#if ( $msg->type eq "trust" ) { 
-	$tqsp=undef; 
-	$told=undef;
-	$tarchive=undef;
-	return ($tqsp, $told, $tarchive); 
-}
 
 #------------------------------------------------------------------------------------
 =pod
@@ -332,7 +305,7 @@ sub process_in {
 				print STDERR $obj->ts_str." ".$@; 
 				link($obj->{root}."/in/".$file,  $obj->{root}."/bad/".$file) or die "yes really this link fail leads to death\n"; 
 			}
-		}
+		} 
 	} 
 	return $cnt; 
 }
@@ -490,6 +463,16 @@ sub import_telegram {
 
 	$obj->verify_signature($msg);
 
+	# this calculates the qsptime timestamp and sets it as user attribute
+	my $qsptime=$obj->{qsp_timeout};
+	if ( $msg->set_of_qsp_timeout ) {
+		$qsptime=$msg->btime+($msg->set_of_qsp_timeout)[0];
+	}
+	setfattr(
+		$obj->{root}."/in/".$msg->filename,
+		"qsptime", 
+		$qsptime
+	);
 
 	#############################
 	# this block calculates if a message with multiple checksums is to be propagated, oldest wins. 
