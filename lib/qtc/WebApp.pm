@@ -889,6 +889,7 @@ as delivered in the qtc-net by him. </p>';
 			$obj->qtc_publish->qsp(
 				msg=>$msg,
 				to=>($q->param("call"))[0],
+				set_of_comment=>"via webapp",
 			);
 			next; 
 		} 
