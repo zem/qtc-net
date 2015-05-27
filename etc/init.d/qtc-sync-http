@@ -1,0 +1,33 @@
+#!/bin/bash
+
+. /etc/qtc/sync-http.conf
+
+IAM=`whoami`
+if [ $IAM != $RUN_AS ] 
+then
+	su - $RUN_AS -c "$0 $1"
+	exit $?
+fi
+
+case $1 in
+start)
+	EXTRA=""
+	if [ "$TIME" != "" ] 
+	then
+		EXTRA=$TIME"-t "'"'$TIME'" '
+	fi
+	/usr/local/bin/qtc_sync_http.pl \
+		-d $DATA_DIR \
+		-l $LOG_FILE \
+		--daemon \
+		$EXTRA \
+		$URLS
+;; 
+stop)
+	kill `cat $DATA_DIR/.qtc_sync_http.pid`
+;; 
+restart)
+	$0 stop
+	$0 start
+;;
+esac
