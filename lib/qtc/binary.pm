@@ -69,7 +69,6 @@ our %data_types=(
 			"pubkey",
 			"revoke",
 			"trust",
-			"withdraw",
 		],
 	},
 	"version"=>{
@@ -164,24 +163,20 @@ our %data_types=(
 		enum=>23,
 		data_type=>"integer",
 	}, 
-	"set_of_qsp_timeouts"=>{
+	"set_of_qsp_timeout"=>{
 		enum=>24,
 		data_type=>"integer",
-		multiple_times=>2,
+		multiple_times=>1,
 	}, 
-	"set_of_references"=>{
+	"set_of_reference"=>{
 		enum=>25,
 		data_type=>"binary",
-		multiple_times=>0,
+		multiple_times=>1,
 	},
 	"set_of_comment"=>{
 		enum=>26,
 		data_type=>"string",
 		multiple_times=>1,
-	},
-	"withdraw_date"=>{
-		enum=>26,
-		data_type=>"integer",
 	},
 );
 

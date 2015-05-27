@@ -183,7 +183,7 @@ parameters:
  [checksum_period=>$seconds],
  [qsp_timeout=>$ts_where_msg_is_trated_as_qsped], 
  [telegram_expire=>$ts_when_msg_expires], 
- [set_of_references=>[$reply_to_reference1, $reference2, ...]],
+ [set_of_reference=>$reply_to_reference],
 
 =cut
 #-------------------------------------------------------
@@ -191,16 +191,14 @@ sub create_telegram {
 	my $obj=shift; 
 	my %args=(@_); 
 	
-	my $references=[]; 
-	if ( $arg{set_of_references} ) { $references=$arg{set_of_references}; }
+	my $reference=[]; 
+	if ( $args{set_of_reference} ) {
+		push @$reference, $args{set_of_reference};
+	}
 
-	my $timeouts=[];
-	if (($args{telegram_expire}) and ( ! $args{qsp_timeout})){$args{qsp_timeout}=$args{telegram_expire};}
+	my $timeout=[];
 	if ( $args{qsp_timeout} ) {
-		push @$timeouts, $args{qsp_timeout};
-		if ( $args{telegram_expire} ) {
-			push @$timeouts, $args{telegram_expire};
-		}
+		push @$timeout, $args{set_of_qsp_timeout};
 	} 
 
 	my $msg=qtc::msg->new(
@@ -211,8 +209,8 @@ sub create_telegram {
 		to=>$args{to},
 		telegram=>$args{telegram},
 		checksum_period=>$args{checksum_period},
-		set_of_qsp_timeouts=>$timeouts,
-		set_of_references=>$references,
+		set_of_qsp_timeout=>$timeout,
+		set_of_reference=>$reference,
 	);
 	$obj->sig->sign($msg); 
 

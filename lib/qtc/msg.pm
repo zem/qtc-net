@@ -168,13 +168,8 @@ our %msg_types=(
 		"from"=>$valid_call,
 		"to"=>$valid_call,
 		"telegram"=>$valid_telegram,
-		"set_of_qsp_timeouts"=>[$valid_integer], 
-		"set_of_references"=>[$valid_checksum],
-	}, 
-	withdraw=>{
-		"withdraw_date"=>$valid_date,
-		"telegram_checksum"=>$valid_checksum,
-		"set_of_comment"=>[$valid_telegram], 
+		"set_of_qsp_timeout"=>[$valid_integer], 
+		"set_of_reference"=>[$valid_checksum],
 	}, 
 	# this is the qsp info where data is stored
 	qsp=>{

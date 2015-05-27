@@ -659,8 +659,10 @@ sub render_latest_changes {
 			next; 
 		}
 		if ( $msg->type eq 'qsp' ) {
+			my $comment; 
+			if ( $msg->set_of_comment ) { $comment=" comment <i>".($msg->set_of_comment)."</i>"; }
 			$r.='<p><b>'.$msg->call.'</b> delivered telegram number '.$msg->hr_refnum($msg->telegram_checksum).
-				' to '.$msg->to.' at '.strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($msg->qsp_date)).'</p>'; 
+				' to '.$msg->to.' at '.strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($msg->qsp_date)).$comment.'</p>'; 
 			next; 
 		}
 		if ( $msg->type eq 'pubkey' ) {
@@ -672,7 +674,9 @@ sub render_latest_changes {
 			next; 
 		}
 		if ( $msg->type eq 'trust' ) {
-			$r.='<p><b>'.$msg->call.'</b> sets trustlevel of '.$msg->to.' to '.$msg->trustlevel.'</p>'; 
+			my $comment; 
+			if ( $msg->set_of_comment ) { $comment=" comment <i>".($msg->set_of_comment)."</i>"; }
+			$r.='<p><b>'.$msg->call.'</b> sets trustlevel of '.$msg->to.' to '.$msg->trustlevel.$comment.'</p>'; 
 			next; 
 		}
 		if ( $msg->type eq 'operator' ) {
@@ -731,6 +735,21 @@ sub format_telegram_in_html {
 	my $o=shift; 
 	my $msg=shift; 
 	my $r; 
+	my $reference;
+	if ( $msg->set_of_reference ) { 
+		my $reference_msg=$o->query->telegram_by_checksum($msg->set_of_reference);
+		if ( $reference_msg ) {
+			$reference=$o->h_table({}, 
+				$o->h_tr({},
+					$o->h_td({border=>1}), 
+					$o->h_td({}, 
+						$o->format_telegram_in_html($reference_msg)
+					),
+				),
+			);
+		}
+	}
+	$r.=$reference;
 	$r.=$o->h_table({id=>$msg->filename}, 
 		$o->h_tr({}, 
 			$o->h_td({}, "<b>number:</b> ".$msg->hr_refnum),
