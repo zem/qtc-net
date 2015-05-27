@@ -736,7 +736,7 @@ sub format_telegram_in_html {
 	my $msg=shift; 
 	my $r; 
 	my $reference;
-	if ( $msg->set_of_reference ) { 
+	if (( $msg->set_of_reference )and (!$o->{qtc}->{no_threads})) { 
 		my $reference_msg=$o->qtc_query->telegram_by_checksum($msg->set_of_reference);
 		if ( $reference_msg ) {
 			$reference=$o->h_table({}, 
@@ -834,6 +834,7 @@ sub mode_show_telegrams {
 	if ( ! ($q->param("type"))[0] ) { $q->param("type", "new"); }
 	my $type=($q->param("type"))[0];
 	if ( $type !~ /^((all)|(new)|(sent)|(timeline)|(timeline_new))$/ ) { return "<h1>FAIL telegram type invalid</h1>"; }
+	if ( $type =~ /^((new)|(timeline_new)|(sent))$/ ) { $obj->{qtc}->{no_threads}=1; }
 	my $r; 
 
 	if ( ( $obj->logged_in ) and ( ! ($q->param("call"))[0] ) ) {
@@ -894,7 +895,7 @@ as delivered in the qtc-net by him. </p>';
 			next; 
 		} 
 		push @rows, $obj->h_tr({},
-			$obj->h_td({}, $obj->format_telegram_in_html($msg)),
+			$obj->h_td({}, $obj->format_telegram_in_html($msg), '<br/>'),
 			$obj->filter_login_required(
 			$obj->h_td({}, $obj->h_e("input", {
 				type=>"submit", 
