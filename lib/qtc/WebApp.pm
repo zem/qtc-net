@@ -660,7 +660,7 @@ sub render_latest_changes {
 		}
 		if ( $msg->type eq 'qsp' ) {
 			my $comment; 
-			if ( $msg->set_of_comment ) { $comment=" comment <i>".($msg->set_of_comment)."</i>"; }
+			if ( $msg->set_of_comment ) { $comment=" comment <i>".($msg->set_of_comment)[0]."</i>"; }
 			$r.='<p><b>'.$msg->call.'</b> delivered telegram number '.$msg->hr_refnum($msg->telegram_checksum).
 				' to '.$msg->to.' at '.strftime("%Y-%m-%d %H:%M:%S UTC", gmtime($msg->qsp_date)).$comment.'</p>'; 
 			next; 
@@ -675,7 +675,7 @@ sub render_latest_changes {
 		}
 		if ( $msg->type eq 'trust' ) {
 			my $comment; 
-			if ( $msg->set_of_comment ) { $comment=" comment <i>".($msg->set_of_comment)."</i>"; }
+			if ( $msg->set_of_comment ) { $comment=" comment <i>".($msg->set_of_comment)[0]."</i>"; }
 			$r.='<p><b>'.$msg->call.'</b> sets trustlevel of '.$msg->to.' to '.$msg->trustlevel.$comment.'</p>'; 
 			next; 
 		}
@@ -737,11 +737,11 @@ sub format_telegram_in_html {
 	my $r; 
 	my $reference;
 	if ( $msg->set_of_reference ) { 
-		my $reference_msg=$o->query->telegram_by_checksum($msg->set_of_reference);
+		my $reference_msg=$o->qtc_query->telegram_by_checksum($msg->set_of_reference);
 		if ( $reference_msg ) {
 			$reference=$o->h_table({}, 
 				$o->h_tr({},
-					$o->h_td({border=>1}), 
+					$o->h_td({bgcolor=>"blue", width=>"1px"}), 
 					$o->h_td({}, 
 						$o->format_telegram_in_html($reference_msg)
 					),
