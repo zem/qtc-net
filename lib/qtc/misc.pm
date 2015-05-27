@@ -191,7 +191,7 @@ sub scan_dir_ordered_btime {
 			map { 
 				sprintf(
 					"%011d", 
-					(getfattr($dir."/".$_, "user.btime") || (stat($dir."/".$_))[9])
+					(getfattr($dir."/".$_, "btime") || (stat($dir."/".$_))[9])
 				)."/".$_
 			} 
 			$obj->scan_dir($dir, $prefix)
