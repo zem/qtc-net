@@ -13,7 +13,7 @@ my $log;
 my $pidfile;
 my $timer=0; 
 
-while ($ARGV[0] ~ /^-/ ) {
+while ($ARGV[0] =~ /^-/ ) {
 	if ( $ARGV[0] eq "-d" ) {
 		shift(@ARGV); 
 		$path=shift(@ARGV); 
@@ -49,18 +49,21 @@ if ( $log ) {
 
 
 while (1) {
-	# url may be http://localhost/qtc_if.cgi
-	foreach my $url (@ARGV) {
-		my $if=qtc::interface::http->new(
-			path=>$path, 
-			url=>$url,
-			debug=>1, 
-		); 
-		$if->dprint("Sync down $url\n"); 
-		$if->sync("/out"); 
-		$if->dprint("Sync up $url\n"); 
-		$if->{use_digest}=1; 
-		$if->sync_upload("/out"); 
-	}
+	eval {
+		# url may be http://localhost/qtc_if.cgi
+		foreach my $url (@ARGV) {
+			my $if=qtc::interface::http->new(
+				path=>$path, 
+				url=>$url,
+				debug=>1, 
+			); 
+			$if->dprint("Sync down $url\n"); 
+			$if->sync("/out"); 
+			$if->dprint("Sync up $url\n"); 
+			$if->{use_digest}=1; 
+			$if->sync_upload("/out"); 
+		}
+	}; 
+	if ( $@ ) { print STDERR $@; } 
 	if ( $timer ) { sleep($timer); } else { exit; }
 }
