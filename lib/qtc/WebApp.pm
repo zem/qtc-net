@@ -1386,6 +1386,7 @@ sub mode_change_trust {
 		$o->qtc_publish->trust(
 			to=>($o->q->param("call"))[0], 
 			trustlevel=>($o->q->param("trustlevel"))[0],
+			set_of_comment=>($o->q->param("comment"))[0],
 		);
 		$o->q->param("mode", "show_telegrams"); 
 		return $o->mode_show_telegrams; 
@@ -1396,7 +1397,13 @@ sub mode_change_trust {
 		to=>($o->q->param("call"))[0],
 	);
 	my $trustlevel=0; 
-	if ( $msg ) { $trustlevel=$msg->trustlevel; }
+	my $comment='';
+	if ( $msg ) { 
+		$trustlevel=$msg->trustlevel; 
+		if ( $msg->set_of_comment ) {
+			$comment=($msg->set_of_comment)[0]; 
+		}
+	}
 	my @chk0; if ( $trustlevel == 0 ) { @chk0=("checked", "checked"); }
 	my @chk1; if ( $trustlevel == 1 ) { @chk1=("checked", "checked"); } 
 	my @chk_neg; if ( $trustlevel == -1 ) { @chk_neg=("checked", "checked"); } 
@@ -1424,6 +1431,14 @@ sub mode_change_trust {
 			name=>"trustlevel",
 			value=>"-1",
 			@chk_neg, 
+		}),
+		$o->h_labled_input({
+			label=>"Comment:", 
+			type=>"text", 
+			size=>30,
+			maxlength=>300, 
+			name=>"comment",
+			value=>$comment,
 		}),
 		$o->h_submit_for_tbl({
 			onClick=>$o->js_confirm("Do you really want to change the trustlevel for this callsign?"),
