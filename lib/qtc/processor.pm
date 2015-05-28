@@ -96,8 +96,8 @@ sub new {
 		$obj->{ttl_timeout}=86400*200;  # we don't need to distribute messages older 200 days
 	} 
 	if ( ! $obj->{archive_timeout} ) {
-		$obj->{archive_timeout}=$obj->{ttl_timeout}+(86400*200);  
-		# we will move a message older than 400 days to archive
+		$obj->{archive_timeout}=86400*200;  
+		# we will move a message that is longer that 200 days in old to the archive
 	} 
 	# for reference, this setting tells the processor to move all old 
 	# messages to archive. 
@@ -300,6 +300,24 @@ sub process_in {
 		) {
 			$obj->chk_qsptime_on_telegram($file);
 		}	
+		if (
+			( -e $obj->{root}."/out/".$file ) 
+			and ( ! -e $obj->{root}."/bad/".$file )
+			and ( ! -e $obj->{root}."/old/".$file )
+			and ( ! -e $obj->{root}."/archive/".$file )
+		) {
+			$obj->chk_ttl_timeout($file);
+		}	
+		if (
+			( ! -e $obj->{root}."/out/".$file ) 
+			and (
+				( -e $obj->{root}."/bad/".$file )
+				or ( -e $obj->{root}."/old/".$file )
+			)
+			and ( ! -e $obj->{root}."/archive/".$file )
+		) {
+			$obj->chk_archive_timeout($file);
+		}	
 		# if a message is new.....
 		if (
 			( ! -e $obj->{root}."/out/".$file ) 
@@ -453,11 +471,10 @@ sub process {
 	$msg->link_to_path($obj->{root}."/bad"); 
 }
 
-
 #------------------------------------------------------------------------------------
 =pod
 
-=head2 import and remove methods
+=head2 chk timestamp methods
 
 
 =cut
@@ -504,6 +521,136 @@ sub chk_qsptime_on_telegram {
 #------------------------------------------------------------------------------------
 =pod
 
+=head3 chk_ttl_timeout($filename)
+
+This method checks if the ttl timeout for a message is reached. 
+It triggers a message remove and a move to the /old directory if so. 
+
+=cut
+#------------------------------------------------------------------------------------
+sub chk_ttl_timeout {
+	my $obj=shift; 
+	my $file=shift; 
+
+	my $btime=getfattr(
+		$obj->{root}."/in/".$file,
+		"btime"
+	);
+
+	if ( ! $btime ) {
+		print STDERR "Message $file does not have a btime attr\n";  
+		return; 
+	}
+
+	if ( $btime+$obj->{ttl_timeout} < time ) { 
+		if (
+			( $file =~ /(^(pubkey_)|(trust_)|(operator_)|(revoke_)/ )
+			and ( -e $obj->{root}."/out/".$file ) 
+		) {
+			# these messages need to stick longer if they are still in out
+			# NOP 
+		} else {
+			my $msg=qtc::msg->new(
+				filename=>$file, 
+				path=>$obj->{root}."/in",
+			); 
+			$msg->link_to_path($obj->{root}."/old");
+			setfattr(
+				$obj->{root}."/in/".$msg->filename,
+				"ttltime",
+				time
+			);
+			if ( $msg->type eq "telegram" ) { 
+				$obj->remove_telegram($msg); 
+				return; 
+			}
+			if ( $msg->type eq "qsp" ) { 
+				$obj->remove_qsp($msg); 
+				return; 
+			}
+			if ( $msg->type eq "operator" ) { 
+				$obj->remove_operator($msg); 
+				return; 
+			}
+			if ( $msg->type eq "pubkey" ) { 
+				$obj->remove_pubkey($msg); 
+				return; 
+			}
+			if ( $msg->type eq "revoke" ) { 
+				# should never be made
+				$obj->remove_revoke($msg); 
+				return; 
+			}
+			if ( $msg->type eq "trust" ) { 
+				$obj->remove_trust($msg); 
+				return; 
+			}				
+		}
+	} 
+}
+
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 chk_archive_timeout($filename)
+
+This method checks if the archive timeout for a message is reached. 
+it either removes the message from the directorys or it will moves 
+them to /archive if needed 
+
+=cut
+#------------------------------------------------------------------------------------
+sub chk_archive_timeout {
+	my $obj=shift; 
+	my $file=shift; 
+	my $badmessage=0; 
+
+	my $ttltime=getfattr(
+		$obj->{root}."/in/".$file,
+		"ttltime"
+	);
+
+	if ( ! $ttltime ) {
+		if ( -e $obj->{root}."/bad/".$file ) {
+			$badmessage=1; 
+			# this is a bad message, use either mtime or btime
+			$ttltime=getfattr(
+				$obj->{root}."/in/".$file,
+				"btime"
+			);
+			if ( ! $ttltime ) { $ttltime=(stat($obj->{root}."/in/".$file))[9]; }
+			if ( ! $ttltime ) { 
+				print STDERR "Message $file does not have a ttltime attr and we could not stat a suitable time\n";  
+				return; 
+			}
+	}
+
+	if ( $ttltime+$obj->{archive_timeout} < time ) { 
+		if ( $obj->{archive} ) { 
+			link($obj->{root}."/in/".$file, $obj->{root}."/archive/".$file) or die "can't link to archive directory\n";
+		}
+		unlink($obj->{root}."/in/".$file); 
+		if ( $badmessage ) {
+			unlink($obj->{root}."/bad/".$file); 
+		} else {
+			unlink($obj->{root}."/old/".$file);
+		} 
+	}
+}
+
+#------------------------------------------------------------------------------------
+=pod
+
+=head2 import and remove methods
+
+
+=cut
+#------------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------------
+=pod
+
 =head3 import_telegram($msg)
 
 This imports a telegram message to the filesystem structure
@@ -543,6 +690,16 @@ sub import_telegram {
 			if ( ! $other ) { next; } 
 			if ( $other->telegram_date < $msg->telegram_date ) { 
 				$msg->link_to_path($obj->{root}."/old");
+				setfattr(
+					$obj->{root}."/in/".$msg->filename,
+					"ttltime",
+					time
+				);
+				setfattr(
+					$obj->{root}."/in/".$msg->filename,
+					"identical_with",
+					"$other->checksum"
+				);
 				return; 
 			}
 			if ( $other->telegram_date > $msg->telegram_date ) { 
