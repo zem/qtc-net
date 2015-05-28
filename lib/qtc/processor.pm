@@ -526,6 +526,12 @@ sub import_telegram {
 		"qsptime", 
 		$qsptime
 	);
+	# if there is any qsp attribute, delete it, we may have the rare 
+	# event that we have to reimport a telegram 
+	delfattr(
+		$obj->{root}."/in/".$msg->filename,
+		"qsp", 
+	);
 
 	#############################
 	# this block calculates if a message with multiple checksums is to be propagated, oldest wins. 
