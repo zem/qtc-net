@@ -12,10 +12,10 @@ fi
 case $1 in
 start)
 	EXTRA=""
-	#if [ "$FILTER" != "" ] 
-	#then
-	#	EXTRA=$EXTRA"-f "'"'$FILTER'" '
-	#fi
+	if [ "$ARCHIVE" != "true" ] 
+	then
+		EXTRA=$EXTRA"--archive "
+	fi
 	#if [ "$FILTER" != "" ] 
 	#then
 	#	EXTRA=$EXTRA"--hostport "$HOSTPORT' '
