@@ -41,7 +41,7 @@ use qtc::msg;
 use qtc::query; 
 use IO::Handle;
 use File::Basename; 
-use File::ExtAttr; 
+use File::ExtAttr ':all';
 use qtc::signature; 
 use qtc::keyring; 
 use Data::Dumper; 
@@ -544,7 +544,7 @@ sub chk_ttl_timeout {
 
 	if ( $btime+$obj->{ttl_timeout} < time ) { 
 		if (
-			( $file =~ /(^(pubkey_)|(trust_)|(operator_)|(revoke_)/ )
+			( $file =~ /^(pubkey_)|(trust_)|(operator_)|(revoke_)/ )
 			and ( -e $obj->{root}."/out/".$file ) 
 		) {
 			# these messages need to stick longer if they are still in out
@@ -619,10 +619,11 @@ sub chk_archive_timeout {
 				"btime"
 			);
 			if ( ! $ttltime ) { $ttltime=(stat($obj->{root}."/in/".$file))[9]; }
-			if ( ! $ttltime ) { 
-				print STDERR "Message $file does not have a ttltime attr and we could not stat a suitable time\n";  
-				return; 
-			}
+		}
+		if ( ! $ttltime ) { 
+			print STDERR "Message $file does not have a ttltime attr and we could not stat a suitable time\n";  
+			return; 
+		}
 	}
 
 	if ( $ttltime+$obj->{archive_timeout} < time ) { 
