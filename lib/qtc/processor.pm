@@ -665,7 +665,7 @@ sub import_telegram {
 	$obj->verify_signature($msg);
 
 	# this calculates the qsptime timestamp and sets it as user attribute
-	my $qsptime=$obj->{qsp_timeout};
+	my $qsptime=$msg->btime+$obj->{qsp_timeout};
 	if ( $msg->set_of_qsp_timeout ) {
 		$qsptime=$msg->btime+($msg->set_of_qsp_timeout)[0];
 	}
