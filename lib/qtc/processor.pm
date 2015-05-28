@@ -99,6 +99,11 @@ sub new {
 		$obj->{archive_timeout}=$obj->{ttl_timeout}+(86400*200);  
 		# we will move a message older than 400 days to archive
 	} 
+	# for reference, this setting tells the processor to move all old 
+	# messages to archive. 
+	if ( ! $obj->{archive} ) {
+		$obj->{archive}=0;  
+	} 
 
    return $obj; 
 }
@@ -285,6 +290,17 @@ sub process_in {
 
 	my $cnt=0; 
 	foreach my $file ($obj->scan_dir($obj->{root}."/in", '.*\.qtc$')){
+		# this tweak handles a telegram messages qsptime 
+		if (
+			( -e $obj->{root}."/out/".$file ) 
+			and ( $file =~ /^telegram_/ )
+			and ( ! -e $obj->{root}."/bad/".$file )
+			and ( ! -e $obj->{root}."/old/".$file )
+			and ( ! -e $obj->{root}."/archive/".$file )
+		) {
+			$obj->chk_qsptime_on_telegram($file);
+		}	
+		# if a message is new.....
 		if (
 			( ! -e $obj->{root}."/out/".$file ) 
 			and ( ! -e $obj->{root}."/bad/".$file )
@@ -447,6 +463,43 @@ sub process {
 =cut
 #------------------------------------------------------------------------------------
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 chk_qsptime_on_telegram($filename)
+
+This method checks if the QSP time for a telegram is reached and triggers 
+a delivery even if there is no qsp, if so. 
+
+=cut
+#------------------------------------------------------------------------------------
+sub chk_qsptime_on_telegram {
+	my $obj=shift; 
+	my $file=shift; 
+
+	my $qsptime=getfattr(
+		$obj->{root}."/in/".$file,
+		"qsptime"
+	);
+	my $qsp_delivered=getfattr(
+		$obj->{root}."/in/".$file,
+		"qsp"
+	);
+
+	if ( ! $qsptime ) {
+		print STDERR "Message $file does not have a qsptime attr\n";  
+		return; 
+	}
+	if (( $qsptime < time ) and ( ! $qsp_delivered)) {
+		# because we had already read this telegram when we set 
+		# the $qsptime we know that this works
+		my $msg=qtc::msg->new(
+			filename=>$file, 
+			path=>$obj->{root}."/in",
+		); 
+		$obj->qsp_telegram($msg->to, $msg->checksum, "timeout"); 
+	}
+}
 
 #------------------------------------------------------------------------------------
 =pod
@@ -646,6 +699,58 @@ sub chksum_is_lt {
 }
 
 
+#------------------------------------------------------------------------------------
+=pod
+
+=head3 qsp_telegram($to, $checksum, $comment)
+
+this method will qsp a telegram to a person with some checksum, it is called 
+either from import_qsp() or from qsp_timeout(). the string comment is placed into 
+the extended attribute of the telegram file
+
+=cut
+#------------------------------------------------------------------------------------
+sub qsp_telegram {
+	my $obj=shift; 
+	my $to=shift; 
+	my $checksum=shift; 
+	my $comment=shift; 
+
+	my @newmsgs=$obj->scan_dir(
+		$obj->{root}."/call/".$obj->call2fname($to)."/telegrams/new",
+		"telegram_([a-z]|[0-9]|-)+_".$checksum.".qtc"
+	);
+	foreach my $newmsg (@newmsgs) {
+		# set qsp comment see also next foreach with the "same" code
+		if ( $comment ) {
+			setfattr(
+				$obj->{root}."/in/".$newmsg,
+				"qsp", 
+				$comment
+			);		
+			$comment=""; 
+		}
+		unlink($obj->{root}."/call/".$obj->call2fname($to)."/telegrams/new/".$newmsg) or die "removing of transmitted message $newmsg failed"; 
+	}
+	# remove also telegrams from the timeline_new directory
+	@newmsgs=$obj->scan_dir(
+		$obj->{root}."/call/".$obj->call2fname($to)."/telegrams/timeline_new",
+		"telegram_([a-z]|[0-9]|-)+_".$checksum.".qtc"
+	);
+	foreach my $newmsg (@newmsgs) {
+		unlink($obj->{root}."/call/".$obj->call2fname($to)."/telegrams/timeline_new/".$newmsg) or die "removing of transmitted message $newmsg failed"; 
+		# just to be sure that the comment is really set, it is a bit of spagetti mama mia 
+		if ( $comment ) {
+			setfattr(
+				$obj->{root}."/in/".$newmsg,
+				"qsp", 
+				$comment
+			);		
+			$comment=""; 
+		}
+	}
+}
+
 
 #------------------------------------------------------------------------------------
 =pod
@@ -665,21 +770,7 @@ sub import_qsp {
 
 	# TODO: not working, implementing lookup via sha256 hashes first
 	$msg->link_to_path($obj->{root}."/call/".$obj->call2fname($msg->to)."/qsp/".$msg->telegram_checksum);
-	my @newmsgs=$obj->scan_dir(
-		$obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/new",
-		"telegram_([a-z]|[0-9]|-)+_".$msg->telegram_checksum.".qtc"
-	);
-	foreach my $newmsg (@newmsgs) {
-		unlink($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/new/".$newmsg) or die "removing of transmitted message $newmsg failed"; 
-	}
-	# remove also telegrams from the timeline_new directory
-	@newmsgs=$obj->scan_dir(
-		$obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/timeline_new",
-		"telegram_([a-z]|[0-9]|-)+_".$msg->telegram_checksum.".qtc"
-	);
-	foreach my $newmsg (@newmsgs) {
-		unlink($obj->{root}."/call/".$obj->call2fname($msg->to)."/telegrams/timeline_new/".$newmsg) or die "removing of transmitted message $newmsg failed"; 
-	}
+	$obj->qsp_telegram($msg->to, $msg->telegram_checksum, "qsp");
 	$msg->link_to_path($obj->{root}."/out");
 }
 
