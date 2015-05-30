@@ -699,7 +699,7 @@ sub import_telegram {
 				setfattr(
 					$obj->{root}."/in/".$msg->filename,
 					"identical_with",
-					"$other->checksum"
+					$other->checksum
 				);
 				return; 
 			}
@@ -714,6 +714,16 @@ sub import_telegram {
 					last; 
 				} else {
 					$msg->link_to_path($obj->{root}."/old");
+					setfattr(
+						$obj->{root}."/in/".$msg->filename,
+						"ttltime",
+						time
+					);
+					setfattr(
+						$obj->{root}."/in/".$msg->filename,
+						"identical_with",
+						$other->checksum
+					);
 					return; 
 				}
 			}	
@@ -986,6 +996,16 @@ sub import_pubkey {
 		if ( $msg->key_id eq $revoke->key_id ) {
 			print STDERR "This key_id ".$msg->key_id." is revoked\n"; 
 			$msg->link_to_path($obj->{root}."/old");			
+			setfattr(
+				$obj->{root}."/in/".$msg->filename,
+				"ttltime",
+				time
+			);
+			setfattr(
+				$obj->{root}."/in/".$msg->filename,
+				"revoked_by",
+				$revoke->checksum
+			);
 			return; 
 		}
 	}
@@ -1012,7 +1032,17 @@ sub import_pubkey {
 			} else { 
 				print STDERR "Key ".$msg->filename."is an old key, not importing\n"; 
 				$msg->link_to_path($obj->{root}."/old");			
-				return; 
+				setfattr(
+					$obj->{root}."/in/".$msg->filename,
+					"ttltime",
+					time
+				);
+				setfattr(
+					$obj->{root}."/in/".$msg->filename,
+					"newer_key",
+					$oldmsg->checksum
+				);
+				return;		 
 			}
 		}
 	}
@@ -1213,6 +1243,16 @@ sub import_operator {
 		if ( $oldop->record_date >= $msg->record_date ) { 
 			print STDERR $obj->ts_str." there is an old operator message newer than this one skip this\n"; 
 			$msg->link_to_path($obj->{root}."/old");
+			setfattr(
+				$obj->{root}."/in/".$msg->filename,
+				"ttltime",
+				time
+			);
+			setfattr(
+				$obj->{root}."/in/".$msg->filename,
+				"newer_operator",
+				$oldop->checksum
+			);
 			return;
 		}
 		print STDERR $obj->ts_str." I first need to remove the old operator message ".$oldop->checksum."\n"; 
