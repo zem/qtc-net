@@ -104,6 +104,33 @@ sub msg_already_exists {
 #-------------------------------------------------------
 =pod
 
+=head2 telegram_by_refnum($hr_refnum, $call, [$type])
+
+Returns one specific newest telegram that matches the given 
+hr_refnum of the call. or undef if such a telegram is not there. 
+it will die if the message cant be read. $type defines where to 
+look default is timeline because it contains all the messages 
+you may want to qsp from a command line. 
+
+=cut
+#-------------------------------------------------------
+sub telegram_by_refnum { 
+	my $obj=shift; 
+	my $hr_refnum=shift; 
+	my $call=shift; 
+	my $type=shift; if ( ! $type ) { $type="timeline"; }
+	
+	foreach my $file ($obj->scan_dir($obj->{path}."/call/$call/telegrams/$type", 'telegram_.+_'.$chksum.'\.qtc')){
+		my $msg=qtc::msg->new(path=>$obj->{path}."/call/$call/telegrams/$type", filename=>$file); 
+		if ( $msg->hr_refnum eq $hr_refnum ) { return $msg; } 
+	}
+
+	return; 
+}
+
+#-------------------------------------------------------
+=pod
+
 =head2 telegram_by_checksum($chksum)
 
 Returns one specific telegram that matches the given checksum. 
@@ -117,7 +144,6 @@ sub telegram_by_checksum {
 	my $chksum=shift; 
 	my $subpath=shift; if ( ! $subpath ) { $subpath="/out"; } 
 	
-	my @msgs;
 	foreach my $file ($obj->scan_dir($obj->{path}.$subpath, 'telegram_.+_'.$chksum.'\.qtc')){
 		return qtc::msg->new(path=>$obj->{path}.$subpath, filename=>$file); 
 	}
