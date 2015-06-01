@@ -1,3 +1,31 @@
+#-----------------------------------------------------------------------------------
+=pod
+
+=head1 NAME
+
+qtc::interface::http - is a sync interface for QTC net via http
+
+=head1 SYNOPSIS
+
+ use qtc::interface::http; 
+
+ my $if=qtc::interface::http->new(
+   path=>$path, 
+   url=>$url,
+   debug=>1, 
+ ); 
+ $if->dprint("Sync down $url\n"); 
+ $if->sync("/out"); 
+ $if->dprint("Sync up $url\n"); 
+ $if->{use_digest}=1; 
+ $if->sync_upload("/out"); 
+
+=head1 DESCRIPTION
+
+qtc::interface::http is used to sync qtc net message repositorys 
+via qtc-if.cgi script. 
+
+=cut
 # this is the http part of the interface
 package qtc::interface::http;
 use Digest::SHA qw(sha256_hex); 
@@ -11,6 +39,28 @@ use qtc::misc;
 use qtc::interface;
 @ISA=("qtc::interface"); 
 
+#-------------------------------------------------------
+=pod
+
+=head2 new(parameter=>"value", ...)
+
+Object creator function, returns qtc::interface object
+
+Parameter: 
+ path=>$path_to_qtc_root,  # required if not $HOME/.qtc
+ url=>$url,      # The URL to sync with 
+ debug=>0 or 1,            # this is 0 if not set. 
+ use_ts=>1 or 0 # default 1 , use timestamps for syncronisation
+ ts_dir=>$directory   # this is the directory where the timestamps 
+               # for the syncronisations to the last server are recorded
+              # default is $path/.interface_http 
+ use_digest=>1,0     # get all messages as digest (default 0) 
+ use_digest_lst=>1,0   # get message list as digest... 
+                       # default 1
+ lwp=>$lwp_object,   # an optional lwp object
+
+=cut
+#-------------------------------------------------------
 sub new { 
 	my $obj=shift; 
 	my %arg=(@_); 
@@ -46,9 +96,40 @@ sub new {
 	return $obj; 
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 url()
+
+returns objects url
+
+=cut
+#-------------------------------------------------------
 sub url { my $obj=shift; return $obj->{url}; }
+
+
+#-------------------------------------------------------
+=pod
+
+=head2 lwp()
+
+returns objects lwp object
+
+=cut
+#-------------------------------------------------------
 sub lwp { my $obj=shift; return $obj->{lwp}; }
 
+
+#-------------------------------------------------------
+=pod
+
+=head2 publish_tar(@msgs)
+
+This puts a bunch of messages into a tar archive and puts that 
+tar up to the server. 
+
+=cut
+#-------------------------------------------------------
 sub publish_tar {
 	my $obj=shift; 
 	my @msgs=@_; 
@@ -74,6 +155,16 @@ sub publish_tar {
 	}
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 publish(@msgs)
+
+This puts a bunch of messages and uploads them to the 
+server
+
+=cut
+#-------------------------------------------------------
 sub publish {
 	my $obj=shift; 
 	my @msgs=@_; 
@@ -95,6 +186,18 @@ sub publish {
 	}
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 sync_upload($local_path, $remote_path)
+
+This compares the File lists between the localpath and the remotepath 
+and uploads the differences to the remote location. 
+
+If the pathes are ommitted, defaults are used. 
+
+=cut
+#-------------------------------------------------------
 sub sync_upload {
 	my $obj=shift; 
 	my $local_path=shift;  # the qtc path (/out /call/FOO/telegrams/new) goes in here as parameter
@@ -149,6 +252,18 @@ sub sync_upload {
 	}
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 sync($remote_path)
+
+This compares the File lists between the localpath and the remotepath 
+and downloads the differences from the remote location. 
+
+Path is mandatory here.... 
+
+=cut
+#-------------------------------------------------------
 sub sync {
 	my $obj=shift; 
 	my $path=shift;  # the qtc path (/out /call/FOO/telegrams/new) goes in here as parameter
@@ -218,10 +333,31 @@ sub sync {
 	return $obj->{message_count};
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 message_count()
+
+Returns the count of messages of the last syncronization run. 
+
+=cut
+#-------------------------------------------------------
 sub message_count {
 	my $obj=shift; return $obj->{message_count}; 
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 process_dir_upload($local_path, $dirdata, $urlpath, $ts)
+
+This is an internal method that compares the remote directory information 
+with the local directory.
+
+dirdata is a list of filenames separated by \n
+
+=cut
+#-------------------------------------------------------
 sub process_dir_upload { 
 	my $obj=shift; 
 	my $local_path=shift;
@@ -264,6 +400,18 @@ sub process_dir_upload {
 	}
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 process_dir($dirdata, $urlpath, $ts)
+
+This is an internal method that compares the local /in directory 
+information with a remote directory. 
+
+dirdata is a list of filenames separated by \n
+
+=cut
+#-------------------------------------------------------
 sub process_dir { 
 	my $obj=shift; 
 	my $dirdata=shift; 
@@ -316,6 +464,16 @@ sub process_dir {
 }
 
 
+#-------------------------------------------------------
+=pod
+
+=head2 process_tar($tardata)
+
+This help method unpacks a tar archive, and forwards each file to 
+write_content()
+
+=cut
+#-------------------------------------------------------
 sub process_tar { 
 	my $obj=shift; 
 	my $tardata=shift; 
@@ -334,6 +492,16 @@ sub process_tar {
 	return $obj->{message_count}; 
 }
 
+#-------------------------------------------------------
+=pod
+
+=head2 write_content($path. $filename, $content)
+
+This helping method savely writes $content to $path/$filename.
+If Successful, it increments message_count.
+
+=cut
+#-------------------------------------------------------
 sub write_content {
 	my $obj=shift; 
 	my $path=shift; 
@@ -355,3 +523,14 @@ sub write_content {
 
 
 1;
+=pod
+
+=head1 AUTHOR
+
+Hans Freitag <oe1src@oevsv.at>
+
+=head1 LICENCE
+
+GPL v3
+
+=cut

@@ -47,6 +47,7 @@ Parameter:
  debug=>0 or 1,            # this is 0 if not set. 
 
 =cut
+#-------------------------------------------------------
 sub new { 
 	my $class=shift; 
 	my %parm=(@_); 
