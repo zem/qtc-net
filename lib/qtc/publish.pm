@@ -47,6 +47,8 @@ Object creator function, returns qtc::publish object
 
 Parameter: 
  path=>$path_to_qtc_root,  # required
+ interface=>$qtc_interface,  # optional, publish using this
+                          # this qtc::interface::* obj.
  privpath=>$directory_where_private_key_is,  # required
  pidfile=>$processor_pid, # optional, defaults within the 
                           # path/.qtc_processor.pid
@@ -164,8 +166,12 @@ sub publish_msg {
 	my $obj=shift; 
 	my $msg=shift; 
 
-	$msg->to_filesystem($obj->{path}."/in");
-	$obj->wakeup_processor; 
+	if ( ! $obj->{interface} ) {
+		$msg->to_filesystem($obj->{path}."/in");
+		$obj->wakeup_processor; 
+	} else { 
+		$obj->{interface}->publish($msg); 
+	}
 }
 
 
