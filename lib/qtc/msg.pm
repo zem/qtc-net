@@ -416,7 +416,7 @@ sub checksum {
 			$obj->{checksum}=sha256_hex($obj->checksum_content_bin);
 		}
 	} 
-	if ($obj->{checksum}!=sha256_hex($obj->checksum_content_bin)) {
+	if ($obj->{checksum} ne sha256_hex($obj->checksum_content_bin)) {
 		die "object checksum mismatch\n"; 
 	} 
 	return $obj->{checksum};
@@ -443,7 +443,7 @@ sub prev_checksum {
 			$obj->{prev_checksum}=sha256_hex($obj->checksum_content_bin(-1));
 		}
 	} 
-	if ($obj->{prev_checksum}!=sha256_hex($obj->checksum_content_bin(-1))) {
+	if ($obj->{prev_checksum} ne sha256_hex($obj->checksum_content_bin(-1))) {
 		die "object prev checksum mismatch\n"; 
 	} 
 	return $obj->{prev_checksum};
@@ -471,7 +471,7 @@ sub next_checksum {
 			$obj->{next_checksum}=sha256_hex($obj->checksum_content_bin(1));
 		}
 	} 
-	if ($obj->{next_checksum}!=sha256_hex($obj->checksum_content_bin(1))) {
+	if ($obj->{next_checksum} ne sha256_hex($obj->checksum_content_bin(1))) {
 		die "object next checksum mismatch\n"; 
 	} 
 	return $obj->{next_checksum};
@@ -496,7 +496,7 @@ sub signed_checksum {
 			$obj->{signed_checksum}=sha256_hex($obj->signed_content_bin);
 		}
 	} 
-	if ($obj->{signed_checksum}!=sha256_hex($obj->signed_content_bin)) {
+	if ($obj->{signed_checksum} ne sha256_hex($obj->signed_content_bin)) {
 		die "object signed checksum mismatch\n"; 
 	} 
 	return $obj->{signed_checksum};
