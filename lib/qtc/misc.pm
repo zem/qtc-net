@@ -243,7 +243,8 @@ the PID on program destruction.
 sub daemonize {
 	my $o=shift; 
 	my $pidfile=shift; 
-	my $pidfile=$o->{pidfile}; 
+	if ( ! $pidfile ) { $pidfile=$o->{pidfile}; }
+	if ( ! $pidfile ) { die "I do not have a pidfile\n"; }
 
 	my $pid=fork(); 
 	if ( $pid != 0 ) { exit; }

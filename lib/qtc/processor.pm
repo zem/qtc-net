@@ -72,15 +72,13 @@ sub new {
 	if ( ! $obj->{root} ) { 
 		$obj->{root}=$ENV{HOME}."/.qtc"; 
 	}
-	if ( $obj->{daemon} ) {
-		# deamonize
-		my $pid=fork(); 
-		if ( $pid != 0 ) { exit; }
-	}
 	if ( ! $obj->{pidfile} ) { 
 		$obj->{pidfile}=$obj->{root}."/.qtc_processor.pid";
 	}
-	$obj->daemonize(); 
+	if ( $obj->{daemon} ) {
+		# deamonize
+		$obj->daemonize(); 
+	}
 	if ( $obj->{log} ) { 
 		close STDERR; 
 		open(STDERR, ">> ".$obj->{log}) or die "can't open logfile ".$obj->{log}." \n";	
