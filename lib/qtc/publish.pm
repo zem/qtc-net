@@ -149,6 +149,29 @@ sub sig {
 #-------------------------------------------------------
 =pod
 
+=head2 publish_msg($msg)
+
+this is a general method to publish a telegram 
+It decides which path to take and calls one of the 
+publish_msg_via_...() methods. 
+
+parameters: 
+ $msg   a qtc::msg::object,
+
+=cut
+#-------------------------------------------------------
+sub publish_msg {
+	my $obj=shift; 
+	my $msg=shift; 
+
+	$msg->to_filesystem($obj->{path}."/in");
+	$obj->wakeup_processor; 
+}
+
+
+#-------------------------------------------------------
+=pod
+
 =head2 telegram(parameter=>"value", ...)
 
 publishes a telegram
@@ -234,8 +257,7 @@ sub publish_telegram {
 	my $obj=shift; 
 	my $msg=shift; 
 
-	$msg->to_filesystem($obj->{path}."/in");
-	$obj->wakeup_processor; 
+	$obj->publish_msg($msg); 
 }
 
 
@@ -274,8 +296,7 @@ sub qsp {
 		set_of_comment=>$comment,
 	);
 	$obj->sig->sign($qsp); 
-	$qsp->to_filesystem($obj->{path}."/in");
-	$obj->wakeup_processor; 
+	$obj->publish_msg($qsp);
 }
 
 #-------------------------------------------------------
@@ -302,8 +323,7 @@ sub pubkey {
 	$qtc->drop_checksum; 
 	$qtc->key_date(time); 
 	$obj->sig->sign($qtc);
-	$qtc->to_filesystem($obj->{path}."/in");
-	$obj->wakeup_processor; 
+	$obj->publish_msg($qtc);
 }
 
 #-------------------------------------------------------
@@ -359,8 +379,7 @@ sub revoke {
 	if ( $args{download} ) { 
 		return $qtc; 
 	} else {
-		$qtc->to_filesystem($obj->{path}."/in");
-		$obj->wakeup_processor;
+		$obj->publish_msg($qtc); 
 	}
 }
 
@@ -393,8 +412,7 @@ sub operator {
 	); 
 	
 	$obj->sig->sign($qtc); 
-	$qtc->to_filesystem($obj->{path}."/in");
-	$obj->wakeup_processor; 
+	$obj->publish_msg($qtc); 
 }
 
 #-------------------------------------------------------
@@ -431,8 +449,7 @@ sub trust {
 	); 
 	
 	$obj->sig->sign($qtc); 
-	$qtc->to_filesystem($obj->{path}."/in");
-	$obj->wakeup_processor; 
+	$obj->publish_msg($qtc);
 }
 
 1; 
