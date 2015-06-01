@@ -146,7 +146,7 @@ sub list_telegrams {
 	my $anz=shift; 
 	my $offset=shift; if ( ! defined $offset ) { $offset=0; }
 	
-	my $offset=$anz*$offset; 
+	$offset=$anz*$offset; 
 	my @msgs;
 	foreach my $file ($obj->scan_dir_ordered_btime($obj->{path}."/call/$call/telegrams/$type", '.+\.qtc')){
 		unshift @msgs, qtc::msg->new(path=>$obj->{path}."/call/$call/telegrams/$type", filename=>$file); 
