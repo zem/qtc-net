@@ -95,6 +95,10 @@ sub new {
 			rsa_keygen=>$obj->{rsa_keygen},
 		);
 	}
+	if (
+		( $obj->{interface} ) and 
+		( ! $obj->{interface}->can_publish() )
+	) { die "This Interface can not publish\n"; }  
 	return $obj; 
 }
 
