@@ -120,7 +120,7 @@ sub telegram_by_refnum {
 	my $call=shift; 
 	my $type=shift; if ( ! $type ) { $type="timeline"; }
 	
-	foreach my $file ($obj->scan_dir($obj->{path}."/call/$call/telegrams/$type", 'telegram_.+_'.$chksum.'\.qtc')){
+	foreach my $file ($obj->scan_dir($obj->{path}."/call/$call/telegrams/$type", 'telegram_.+\.qtc')){
 		my $msg=qtc::msg->new(path=>$obj->{path}."/call/$call/telegrams/$type", filename=>$file); 
 		if ( $msg->hr_refnum eq $hr_refnum ) { return $msg; } 
 	}
