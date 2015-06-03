@@ -706,9 +706,6 @@ sub is_object_valid {
 	my $obj=shift; 
 	$obj->has_valid_type; 
 	$valid_call->($obj->{call}); 
-	if ( ! defined $msg_types{$obj->{type}} ) { 
-		die "This message Type ".$obj->{type}."is unknown object invalid\n"; 
-	}
 	foreach my $field (keys %{$msg_types{$obj->{type}}}) {
 		#DEBUG print STDERR $field."\n" ;
 		$obj->is_field_valid($field); 
