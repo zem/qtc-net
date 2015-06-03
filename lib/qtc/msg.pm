@@ -706,6 +706,9 @@ sub is_object_valid {
 	my $obj=shift; 
 	$obj->has_valid_type; 
 	$valid_call->($obj->{call}); 
+	if ( ! defined $msg_types{$obj->{type}} ) { 
+		die "This message Type ".$obj->{type}."is unknown object invalid\n"; 
+	}
 	foreach my $field (keys %{$msg_types{$obj->{type}}}) {
 		#DEBUG print STDERR $field."\n" ;
 		$obj->is_field_valid($field); 
@@ -727,7 +730,7 @@ sub is_field_valid {
 	$obj->has_valid_type; 
 
 	if ( ref($msg_types{$obj->{type}}->{$field}) eq "ARRAY" ) {
-		foreach my $dat (@{$obj->{field}}) { 
+		foreach my $dat (@{$obj->{$field}}) { 
 			$msg_types{$obj->{type}}->{$field}->[0]->($dat); 
 		}
 	} else {
@@ -989,6 +992,12 @@ sub load_file {
 	close(READ); 
 
 	$obj->bin->parse(unpack("H*", $bin)); 
+
+	# THOUGHTS: 
+	# When the parsing is done the data was put directly into 
+	# the messages data structure without verification
+	# however the fields are verified on access so it may 
+	# be a performance issue not to do so here.
 
 	# check for btime here and set it on file access
 	my $btime_attr=getfattr("$path/$filename", "btime"); 
