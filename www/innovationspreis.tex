@@ -1,0 +1,106 @@
+\documentstyle{article}
+
+\begin{document}
+
+\begin{abstract}
+What if HAM A wants to send a Message to HAM B but he does not have any 
+Phone Number, Address, information where his friend is and what activities 
+he is involved in? He will send a QTC-NET Telegram in the future. 
+\end{abstract}
+
+\section{Goals}
+
+The Goal of this project is to create something that:
+
+\begin{itemize}
+	\item should just use the callsigns for addressing, no routing info 
+	\item should know when somebody owns more than one callsign
+	\item is widely accepted, relieable
+	\item should not fail in case of a catastrophic event
+	\item can legally distributed over ham radio links
+	\item provides more data-safety than a late 80th solution
+\end{itemize}
+
+This is a huge task. To be widely accepted the new thing must fit into almost 
+any existing infrastructures like HamNet, Internet, Packet Radio, DXCluster, 
+QSL Databases, DStar, DMR, APRS, and even Manual Operations, and systems I 
+forgot about. For example, if someone types in a telegram in crzcq someone 
+the receiver who may have his callbook entry on QRZ.com, can read it there. 
+I have choosen these two projects as an example because they have their 
+differences, and it illustrates perfectly that you to not go with a simple 
+database. \\
+
+If you do someone opens the next database because he does not feel 
+comfortable with your work. However this may happen anyway, qtc-net can deal 
+with it. \\
+
+All this has lead me to the design of QTC-Net.  
+
+\section{Architecture}
+
+The main component of qtc net is a public key signed message, which is
+distributed between all nodes\footnote{It except for the bockchain data, 
+it is possible to filter down the amount of messages until the amount 
+of traffic is low enough for your line}.\\
+
+A message is one of the following types: 
+
+\begin{description}
+	\item[telegram] a standard text message
+	\item[qsp] states if a telegram was received
+	\item[operator] holds operator Information
+	\item[key] holds an operators public key
+	\item[revoke] points out if an operators key is revoked
+	\item[trust] publishes a trustlevel for a public key
+\end{description}
+
+
+Every Message is signed with a public key owned by the creators callsign. 
+Every Message is public, too. So everyone can read it. Because of the keys 
+and trustlevels no extra authentication is needed if you are a node. \\
+
+\subsection{Roles and Aliases}
+
+A telegram contains 3 callsigns, the sender of the telegram (from), he 
+receiver of the telegram (to) and the creator of the message (call). This 
+makes it possible that the creator of a message picks up a telegram from any 
+sender to any receiver, so that sender and receiver do not need to have a 
+public key stored in the network.\\
+
+The Advantage of those 3 role concept is that even RTTY, PSK31 and CW links 
+can be used together with QTC Net Telegrams, on APRS for example, a message 
+is send by the sender to a receiver, but signed and placed into QTC Net by 
+one of the APRS Gateways callsigns.\\ 
+
+The QSP (deliver without fee) Message has two callsigns, the receiver of 
+the telegram that is delivered (to), and again the messages creator (call). It
+may happen that a telegram to oe1src is delivered to dd5tt which is the same OP
+but who just owns two callsigns. The qsp-to keeps track of this. \\
+
+The operator message contains a set-of-aliases for the creator of the aliases 
+message (call). For example oe1src and dd5tt but also oe1src-7 and 9a/oe1src 
+are aliases of oe1src. This also means that if there is a resource oe1src-7 
+on aprs it can receive and tell the gateway to qsp (mark as delivered) a qtc-net 
+telegram for oe1src. \\
+
+An operator can also follow several different other cals with the set-of-followings
+list in the operator message.  If you follow a call, you get every message to that call 
+listed  too when you query for messages to your call, but not as new messages, those 
+messages are getting sorted into a timeline and timeline-new message list\\
+
+An Operator can have more than one different public keys, one for each 
+node he is working with. He needs to sign both of them against each other. \\
+
+\subsection{Syncronization}
+
+The Server Nodes can syncronize each other by using different protocols, right
+now there only is an http based sync protocol defined and implemented, but this
+will change in the near future. The current http based protocol may be used to 
+sync the nodes over HamNet or the Internet. 
+
+\section{Development}
+
+
+\section{Installation}
+
+\end{document}
