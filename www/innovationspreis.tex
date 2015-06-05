@@ -36,6 +36,7 @@ with it. \\
 
 All this has lead me to the design of QTC-Net.  
 
+
 \section{Architecture}
 
 The main component of qtc net is a public key signed message, which is
@@ -96,11 +97,73 @@ node he is working with. He needs to sign both of them against each other. \\
 The Server Nodes can syncronize each other by using different protocols, right
 now there only is an http based sync protocol defined and implemented, but this
 will change in the near future. The current http based protocol may be used to 
-sync the nodes over HamNet or the Internet. 
+sync the nodes over HamNet or the Internet. A Syncronization over other radio 
+links is also planned.  \\
 
 \section{Development}
 
+QTC Net is developed in Perl for Unix.
 
-\section{Installation}
+The Project is released as GPLv3 and the development takes place on GIT-HUB,
+this means that everybody can help with the development, and has easy access
+even to old revisions. The Project has a good reference Documentation about
+every part of the solution to make it easy to understand how it works. \\
+
+This Open Developent is not common some Ham Radio Software, but it should so 
+because Ham Radio is an Open Radio Service. \\
+
+\section{3rd Party Software}
+
+QTC Net depends on 3rd party Ham Radio Systems utilizing it for telegram
+transport. Currently there is a Web Frontent delivered with the QTC-Net Node
+Software, which can be installed on your webserver. This is the same Web
+frontend that powers \url{https://www.qtc-net.org/} \\
+
+A second frontend is the APRS Gateway which behaves like an APRS IGATE. It
+translates QTC Messages between APRS and QTC-Net. A nice side effect of the
+gate is, that APRS messages are now stored in QTC-Net if the receiver does 
+not answer in time, and is forwarded as soon as the receiving station 
+appears. \\
+
+A third way to access is the DXSpider DXCluster software. There is a funktion 
+available which shows how many new QTC messages a spotted call has. So you may
+tell him the messages when you have a QSO with the spotted OP. The DXSpider
+Plugin can also send, show and qsp telegrams in QTC-Net. \\
+
+There is an RSS News Feed Generator for QTC Net. This Piece of software will 
+show you new or timelined QTC Telegrams as RSS Feeds in your newsfeed reader.
+Theese Feeds can also be forwarded to Twitter and other Microblogging sites if
+needed. \\ 
+
+Planned Plugins go for a QTC Net enabled PSKMail system together with some 
+PSK31 and CW Bots for shortwave radio access. 
+
+
+\section{Criteria}
+
+\subsection{Age}
+
+Unfortunately the Project is a few month older than one year due to the fact
+that there was no Innovation price last year. However it is still a young 
+project. I hope that the Innovations price is defines the project still as 
+new. 
+
+\subsection{Public Relations}
+
+You can see the Projects Website and the Development in the Internet. The 
+code is released unter GPLv3 and can be used by everyone. Everyone can help 
+with the development by submitting Issues on Git-Hub or by Integrating the 
+Projects data into his website. By showing that there is new developent in Ham 
+Radio the Project makes our radio service interesting to others.
+
+
+\subsection{Youth empowerment}
+
+New technologies play a key role for Youth empowerment, they show that Ham Radio 
+isn't only an old mans hobby and they are making ham radio atractive to young people 
+who have an interest to experiment with new technical innovations. It also improves 
+the possibilitys that you have with homebrew equitment...
+
+TODO Argue Youth-Empowerment
 
 \end{document}
