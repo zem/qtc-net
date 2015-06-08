@@ -70,7 +70,7 @@ sub new {
 	$obj->{can_sync}=1; 
 	
 	# features
-	if ( ! $obj->{use_ts} ) { $obj->{use_ts}=1; } 
+	if ( ! defined $obj->{use_ts} ) { $obj->{use_ts}=1; } 
 	if ( ! $obj->{ts_dir} ) { 
 		$obj->{ts_dir}=$obj->{path}."/.interface_http";
 	} 
