@@ -626,6 +626,7 @@ sub chk_archive_timeout {
 	}
 
 	if ( $ttltime+$obj->{archive_timeout} < time ) { 
+		print STDERR "Message $file has reached archive/drop timeout...\n";  
 		if ( $obj->{archive} ) { 
 			link($obj->{root}."/in/".$file, $obj->{root}."/archive/".$file) or die "can't link to archive directory\n";
 		}
@@ -1353,6 +1354,8 @@ sub import_trust {
 	my $msg=shift; 
 	$obj->verify_signature($msg);	
 	if ( $msg->checksum_period ) { die "I dont know how to deal with ".$msg->type." and checksum_period \n"; }
+
+	# TODO write some trustmessage exchange code here if there already is a to call trust.... 
 
 	$msg->link_to_path($obj->{root}."/call/".$msg->escaped_call."/trust");
 
