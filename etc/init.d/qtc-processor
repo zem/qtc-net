@@ -12,7 +12,7 @@ fi
 case $1 in
 start)
 	EXTRA=""
-	if [ "$ARCHIVE" != "true" ] 
+	if [ "$ARCHIVE" = "true" ] 
 	then
 		EXTRA=$EXTRA"--archive "
 	fi
