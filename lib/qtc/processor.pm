@@ -314,7 +314,10 @@ sub process_in {
 			)
 			and ( ! -e $obj->{root}."/archive/".$file )
 		) {
-			$obj->chk_archive_timeout($file);
+			if ($obj->chk_archive_timeout($file)) { next; }
+			# note if we remove a file from /in we need to stop 
+			# further processing of the file because it is not 
+			# there anymore... 
 		}	
 		# if a message is new.....
 		if (
@@ -612,12 +615,17 @@ sub chk_archive_timeout {
 	if ( ! $ttltime ) {
 		if ( -e $obj->{root}."/bad/".$file ) {
 			$badmessage=1; 
+			$mtime=(stat($obj->{root}."/in/".$file))[9];
+			if ( $mtime+86400 < time ) { 
+				print STDERR "Mtime younger that 1d not archiving $file\n";  
+				return; 
+			}
 			# this is a bad message, use either mtime or btime
 			$ttltime=getfattr(
 				$obj->{root}."/in/".$file,
 				"btime"
 			);
-			if ( ! $ttltime ) { $ttltime=(stat($obj->{root}."/in/".$file))[9]; }
+			if ( ! $ttltime ) { $ttltime=$mtime; }
 		}
 		if ( ! $ttltime ) { 
 			print STDERR "Message $file does not have a ttltime attr and we could not stat a suitable time\n";  
@@ -625,7 +633,7 @@ sub chk_archive_timeout {
 		}
 	}
 
-	if ( $ttltime+$obj->{archive_timeout} < time ) { 
+	if ( ($ttltime+$obj->{archive_timeout}) < time ) { 
 		print STDERR "Message $file has reached archive/drop timeout $ttltime + $obj->{archive_timeout} ...\n";  
 		if ( $obj->{archive} ) { 
 			link($obj->{root}."/in/".$file, $obj->{root}."/archive/".$file) or die "can't link to archive directory\n";
@@ -636,7 +644,9 @@ sub chk_archive_timeout {
 		} else {
 			unlink($obj->{root}."/old/".$file);
 		} 
+		return 1; 
 	}
+	return 0; 
 }
 
 #------------------------------------------------------------------------------------
