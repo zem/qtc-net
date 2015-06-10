@@ -616,7 +616,7 @@ sub chk_archive_timeout {
 		if ( -e $obj->{root}."/bad/".$file ) {
 			$badmessage=1; 
 			$mtime=(stat($obj->{root}."/in/".$file))[9];
-			if ( $mtime+86400 < time ) { 
+			if ( $mtime+86400 > time ) { 
 				print STDERR "Mtime younger that 1d not archiving $file\n";  
 				return; 
 			}
