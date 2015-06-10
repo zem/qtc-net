@@ -49,9 +49,9 @@ install: Makefile.PL.mk
 
 clean:
 	rm -f Makefile.PL.mk
-	MYMETA.yml
-	MYMETA.json
-	pm_to_blib
-	deps
-	Makefile.old
+	rm -f MYMETA.yml
+	rm -f MYMETA.json
+	rm -f pm_to_blib
+	rm -f deps
+	rm -f Makefile.old
 
