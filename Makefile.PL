@@ -10,6 +10,7 @@ WriteMakefile(
 		'Digest::SHA' => '0',
 		'MIME::Base64' => 0,
 		'LWP::UserAgent' => 0,
+		'CGI::Simple' => 0, # fer rss feed
 		'CGI::Application' => 0,
 		'CGI' => 0,
 		'Data::Dumper' => 0,
