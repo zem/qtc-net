@@ -626,7 +626,7 @@ sub chk_archive_timeout {
 	}
 
 	if ( $ttltime+$obj->{archive_timeout} < time ) { 
-		print STDERR "Message $file has reached archive/drop timeout...\n";  
+		print STDERR "Message $file has reached archive/drop timeout $ttltime + $obj->{archive_timeout} ...\n";  
 		if ( $obj->{archive} ) { 
 			link($obj->{root}."/in/".$file, $obj->{root}."/archive/".$file) or die "can't link to archive directory\n";
 		}
