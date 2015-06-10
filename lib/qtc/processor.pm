@@ -1059,9 +1059,10 @@ sub import_pubkey {
 	# call for reprocessing
 	my @badmsgs=$obj->scan_dir(
 		$obj->{root}."/bad",
-		".+_".$msg->escaped_call."_([0-9]|[a-f])+.qtc"
+		".+?_".$msg->escaped_call."_([0-9]|[a-f])+.qtc"
 	);
 	foreach my $badmsg (@badmsgs) {
+		print STDERR "unlink this badmsg $badmsg for reprocessing\n"; 
 		unlink($obj->{root}."/bad/".$badmsg) or die "can't unlink bad message $badmsg for reprocessing\n"; 
 	}
 	
