@@ -335,6 +335,7 @@ sub process_in {
 			if ( $@ ) { 
 				# an error occured
 				print STDERR $obj->ts_str." ".$@; 
+				print STDERR $obj->ts_str." I have a Big Prob with $file\n"; 
 				link($obj->{root}."/in/".$file,  $obj->{root}."/bad/".$file) or die "yes really this link fail leads to death\n"; 
 			}
 		} 
