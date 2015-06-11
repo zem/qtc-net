@@ -1023,7 +1023,9 @@ sub import_pubkey {
 	
 	print STDERR "check for revokes of this key passed\n"; 
 
-	#this block removes old keys with the same signature from the repo
+	#this block removes old keys from the repository if 
+	# there is reason to do it. for example if the key is 
+	# a self signed one or if the keys signature not good
 	my @oldversions=$obj->scan_dir(
 		$obj->{root}."/call/".$msg->escaped_call."/pubkey",
 		"pubkey_([a-z]|[0-9]|-)+_[0-9a-f]+.qtc"
@@ -1033,16 +1035,32 @@ sub import_pubkey {
 			path=>$obj->{root}."/call/".$msg->escaped_call."/pubkey",
 			filename=>$oldversion,
 		);
-		if (
+		
+		if ( # both keys are self signed, oldest one rules 
+			( $msg->key_id eq $msg->signature_key_id ) 
+			and ( $oldmsg->key_id eq $oldmsg->signature_key_id )
+		) {
+			if ( $msg->key_date < $oldmsg->key_date ) {
+				print STDERR "existing selfsigned Key ".$oldmsg->filename."is newer than this key ".$msg->filename." I will remove the old one from repo\n"; 
+				$obj->remove_pubkey($oldmsg);
+				$oldmsg->link_to_path($obj->{root}."/bad");
+			} else {
+				print STDERR "selfsigned Key ".$msg->filename."is newer than an existing ".$oldmsg->filename." I will not do the import\n"; 
+				$msg->link_to_path($obj->{root}."/bad");
+				return; 
+			}
+		}
+		if ( # if we have the same message but at a different time we will remove the newest
 			( $msg->key_id eq $oldmsg->key_id ) 
 			and 
 			( $msg->signature_key_id eq $oldmsg->signature_key_id ) 
 		) { 
-			if ( $msg->key_date > $oldmsg->key_date ) {
+			if ( $msg->key_date < $oldmsg->key_date ) {
 				$obj->remove_pubkey($oldmsg);
+				$oldmsg->link_to_path($obj->{root}."/bad");
 			} else { 
-				print STDERR "Key ".$msg->filename."is an old key, not importing\n"; 
-				$msg->link_to_path($obj->{root}."/old");			
+				print STDERR "Key ".$msg->filename."is newer than an existing I will not do the import\n"; 
+				$msg->link_to_path($obj->{root}."/bad");			
 				setfattr(
 					$obj->{root}."/in/".$msg->filename,
 					"ttltime",
