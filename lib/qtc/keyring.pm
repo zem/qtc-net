@@ -212,13 +212,43 @@ sub validate_tree {
 	my $obj=shift;
 
 	my @tree=keys %{$obj->{tree}};
+	if ( $#tree > 0 ) { 
+		# die "There is more than one root in our Tree this can't be\n";  this was one the message 
+		# that was send here, however we can have more than one key. 
+		# 
+		# we will return the older tree here, this is a bit of a prob because you can "overtake" 
+		# a call but building a real blockchain causes other probs. And I can't use my trustlevels here either 
+		# because the trust is not there when I make the decision. so I may go with an additional 
+		# Proof of Work concept here in the future.
+		my $old_key_date=time+86400; # I hope your system clock is well set  
+		my $old_key_id; # I hope your system clock is well set  
+		foreach my $key_id (@tree) {
+			my $key_date=$obj->{tree}->{$key_id}->{key_obj}->key_date;
+			if ( $old_key_date >  $key_date ) {
+				if ( $old_key_id ) { 
+					delete $obj->{tree}->{$old_key_id};
+					$old_key_date=$key_date; 
+					$old_key_id=$key_id;  
+				}
+			} elsif ( $old_key_date <  $key_date ) {
+				delete $obj->{tree}->{$key_id}; 
+			} elsif ( $old_key_date == $key_date ) {
+				# I know this is not right but, lets drop both of them until we have pow to decide
+				if ( $old_key_id ) { delete $obj->{tree}->{$old_key_id}; }
+				delete $obj->{tree}->{$key_id}; 
+				$old_key_date=$key_date; 
+				$old_key_id='';
+			}
+		}	
+	}
 	if ( $#tree == -1 ) { 
 		print STDERR Dumper($obj);
 		die "Uuuuuuups there are no keys there for $obj->{call}\n";
 	}
 	if ( $#tree > 0 ) { 
-		die "There is more than one root in our Tree this can't be\n"; 
+		die "There is more than one root in our Tree this can't be\n";  
 	}
+
 	# ok here we are
 	$obj->{keys}=[]; 
 	foreach my $key_id (keys %{$obj->{tree}}) { $obj->{tree}->{key_obj}=$obj->{tree}->{$key_id}->{key_obj}; }

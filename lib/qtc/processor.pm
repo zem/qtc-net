@@ -159,8 +159,9 @@ sub keyring {
 	my $call=$msg->call; 
 	my @keys;  
 
-	# we may have a public key here that we should handle at generation
-	if ( $msg->type eq "pubkey" ) {
+	# we may have a self signed public key here that we should handle at 
+	# generation lets check... 
+	if (( $msg->type eq "pubkey" ) and ($msg->key_id eq $msg->signature_key_id)) {
 		#print STDERR $obj->ts_str." adding ".$msg->checksum." to keys\n"; 
 		push @keys, $msg; 
 	}
