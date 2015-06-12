@@ -162,8 +162,9 @@ sub keyring {
 	# we may have a self signed public key here that we should handle at 
 	# generation lets check... 
 	if (( $msg->type eq "pubkey" ) and ($msg->key_id eq $msg->signature_key_id)) {
-		#print STDERR $obj->ts_str." adding ".$msg->checksum." to keys\n"; 
+		print STDERR $obj->ts_str." adding ".$msg->checksum." to keys\n"; 
 		push @keys, $msg; 
+		$obj->keyring_clear($msg->call); 
 	}
 	
 	if ( ! $call ) { die "I need a call to get a keyring for\n"; }
@@ -175,7 +176,7 @@ sub keyring {
 			keys=>\@keys, 
 		);
 	}
-	#print STDERR $obj->ts_str." i am returning the ring now\n"; 
+	print STDERR $obj->ts_str." i am returning the ring now\n"; 
 	return $obj->{keyring}->{$call};
 }
 
@@ -1042,11 +1043,31 @@ sub import_pubkey {
 		) {
 			if ( $msg->key_date < $oldmsg->key_date ) {
 				print STDERR "existing selfsigned Key ".$oldmsg->filename."is newer than this key ".$msg->filename." I will remove the old one from repo\n"; 
+				$oldmsg->link_to_path($obj->{root}."/old");
 				$obj->remove_pubkey($oldmsg);
-				$oldmsg->link_to_path($obj->{root}."/bad");
+				setfattr(
+					$obj->{root}."/in/".$oldmsg->filename,
+					"ttltime",
+					time
+				);
+				setfattr(
+					$obj->{root}."/in/".$oldmsg->filename,
+					"newer_key",
+					$msg->checksum
+				);
 			} else {
 				print STDERR "selfsigned Key ".$msg->filename."is newer than an existing ".$oldmsg->filename." I will not do the import\n"; 
-				$msg->link_to_path($obj->{root}."/bad");
+				$msg->link_to_path($obj->{root}."/old");
+				setfattr(
+					$obj->{root}."/in/".$msg->filename,
+					"ttltime",
+					time
+				);
+				setfattr(
+					$obj->{root}."/in/".$msg->filename,
+					"newer_key",
+					$oldmsg->checksum
+				);
 				return; 
 			}
 		}
@@ -1056,8 +1077,8 @@ sub import_pubkey {
 			( $msg->signature_key_id eq $oldmsg->signature_key_id ) 
 		) { 
 			if ( $msg->key_date < $oldmsg->key_date ) {
-				$obj->remove_pubkey($oldmsg);
 				$oldmsg->link_to_path($obj->{root}."/bad");
+				$obj->remove_pubkey($oldmsg);
 			} else { 
 				print STDERR "Key ".$msg->filename."is newer than an existing I will not do the import\n"; 
 				$msg->link_to_path($obj->{root}."/bad");			
@@ -1114,9 +1135,29 @@ sub remove_pubkey {
 	
 	$msg->unlink_at_path($obj->{root}."/call/".$msg->escaped_call."/pubkey");
 	$msg->unlink_at_path($obj->{root}."/out");
-	
+
 	# keyring cache must be cleared now 
 	$obj->keyring_clear($msg->call); 
+	
+	my @outmsg=$obj->scan_dir(
+		$obj->{root}."/out",
+		".+?_".$msg->escaped_call."_([0-9]|[a-f])+.qtc"
+	);
+	foreach my $outfile (@outmsgs) {
+		my $outmsg=qtc::msg->new(
+			path=>$obj->{root}."/out",
+			filename=>$outfile,
+		);
+		eval {
+			$obj->verify_signature($outmsg);	
+		};
+		if ( $@ ) {
+			print STDERR $@."\nprost pubkey remove signature test of $outfile failed move msg to bad\n"; 
+			
+			$outmsg->link_to_path($obj->{root}."/bad");
+			$obj->remove_msg($outmsg); 
+		}
+	}
 }
 
 

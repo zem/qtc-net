@@ -227,9 +227,9 @@ sub validate_tree {
 			if ( $old_key_date >  $key_date ) {
 				if ( $old_key_id ) { 
 					delete $obj->{tree}->{$old_key_id};
-					$old_key_date=$key_date; 
-					$old_key_id=$key_id;  
 				}
+				$old_key_date=$key_date; 
+				$old_key_id=$key_id;  
 			} elsif ( $old_key_date <  $key_date ) {
 				delete $obj->{tree}->{$key_id}; 
 			} elsif ( $old_key_date == $key_date ) {
@@ -240,6 +240,7 @@ sub validate_tree {
 				$old_key_id='';
 			}
 		}	
+		@tree=keys %{$obj->{tree}};
 	}
 	if ( $#tree == -1 ) { 
 		print STDERR Dumper($obj);
