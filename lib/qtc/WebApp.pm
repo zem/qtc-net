@@ -58,19 +58,31 @@ sub cgiapp_postrun {
 
 sub setup {
 	my $obj = shift;
+	my @multi_publisher_modes;	
+	if (( $ENV{QTC_WEBAPP_USER} )and ($ENV{QTC_WEBAPP_PASS})) { 
+		$obj->q->param("publisher_call", $ENV{QTC_WEBAPP_USER});	
+		$obj->q->param("publisher_password", $ENV{QTC_WEBAPP_PASS});	
+		$obj->{multi_publisher}=0;	
+	} else {
+		$obj->{multi_publisher}=1;	
+		@multi_publisher_modes=(
+			'change_password' => 'mode_change_password',
+			'change_trust' => 'mode_change_trust',
+			'aliases_and_followings' => 'mode_aliases_and_followings',
+			'pubkey_download' => 'mode_pubkey_download',
+			'register_publisher_login' => 'mode_register_publisher_login',
+			'key_management' => 'mode_key_management',
+			'captcha_image' => 'mode_captcha_image',
+		); 
+	}
+	
 	$obj->start_mode('show_telegrams');
 	$obj->mode_param('mode');
 	$obj->run_modes(
-		'captcha_image' => 'mode_captcha_image',
 		'show_telegrams' => 'mode_show_telegrams',
-		'register_publisher_login' => 'mode_register_publisher_login',
-		'key_management' => 'mode_key_management',
-		'pubkey_download' => 'mode_pubkey_download',
 		'send_telegram' => 'mode_send_telegram',
-		'change_password' => 'mode_change_password',
-		'change_trust' => 'mode_change_trust',
-		'aliases_and_followings' => 'mode_aliases_and_followings',
 		'latest_changes' => 'mode_latest_changes',
+		@multi_publisher_modes,
 	);
 	# CONFIGURE
 	if ( ! $obj->{qtc}->{path} ) { $obj->{qtc}->{path}=$ENV{HOME}."/.qtc"; }
@@ -78,6 +90,7 @@ sub setup {
 	if ( ! $obj->{qtc}->{priv_path_prefix} ) { $obj->{qtc}->{priv_path_prefix}=$ENV{HOME}."/.qtc_webapp_credentials"; }
 	if ( ! $obj->{qtc}->{captcha_data_dir} ) { $obj->{qtc}->{captcha_data_dir}=$obj->{qtc}->{priv_path_prefix}."/captcha_data_dir"; }
 	if ( ! $obj->{qtc}->{captcha_output_dir} ) { $obj->{qtc}->{captcha_output_dir}=$obj->{qtc}->{priv_path_prefix}."/captcha_output_dir"; }
+
 
 	# objects ....
 	if ( ! $obj->{qtc}->{query} ) { $obj->{qtc}->{query}=qtc::query->new(path=>$obj->{qtc}->{path}); }
@@ -95,8 +108,8 @@ sub setup {
 	$obj->{qtc}->{exports}->{mode}=1;
 	$obj->{qtc}->{exports}->{call}=1;
 	$obj->{qtc}->{exports}->{type}=1;
-	$obj->{qtc}->{exports}->{publisher_call}=1;
-	$obj->{qtc}->{exports}->{publisher_password}=1;
+	$obj->{qtc}->{exports}->{publisher_call}=$obj->{multi_publisher};
+	$obj->{qtc}->{exports}->{publisher_password}=$obj->{multi_publisher};
 	$obj->{qtc}->{exports}->{list_max_items}=1;
 	$obj->{qtc}->{exports}->{list_offset}=1;
 	
@@ -546,34 +559,36 @@ sub area_misc_buttons {
 					mode=>"send_telegram", 
 					value=>"send telegram",
 				}); 
-				if ( ($obj->q->param("call"))[0] ) {
-					if ( $obj->qtc_query->has_operator(($obj->q->param("call"))[0])) {
-						$r.=$obj->h_misc_button({
-							mode=>"change_trust", 
-							value=>"change trust",
-						}); 
+				if ( $obj->{multi_publisher} ) {
+					if ( ($obj->q->param("call"))[0] ) {
+						if ( $obj->qtc_query->has_operator(($obj->q->param("call"))[0])) {
+							$r.=$obj->h_misc_button({
+								mode=>"change_trust", 
+								value=>"change trust",
+							}); 
+						} 
 					} 
+					$r.="</tr><tr>";
+					$r.=$obj->h_misc_button({
+						mode=>"key_management", 
+						value=>"key management",
+					}); 
+					$r.=$obj->h_misc_button({
+						mode=>"aliases_and_followings", 
+						value=>"aliases and followings",
+					}); 
+					$r.=$obj->h_misc_button({
+						mode=>"change_password", 
+						value=>"change password",
+					}); 
+				}
+				if ( ! $obj->logged_in ) {
+					$r.=$obj->h_misc_button({
+						mode=>"register_publisher_login", 
+						value=>"register login",
+					}); 
 				} 
-				$r.="</tr><tr>";
-				$r.=$obj->h_misc_button({
-					mode=>"key_management", 
-					value=>"key management",
-				}); 
-				$r.=$obj->h_misc_button({
-					mode=>"aliases_and_followings", 
-					value=>"aliases and followings",
-				}); 
-				$r.=$obj->h_misc_button({
-					mode=>"change_password", 
-					value=>"change password",
-				}); 
 			}
-			if ( ! $obj->logged_in ) {
-				$r.=$obj->h_misc_button({
-					mode=>"register_publisher_login", 
-					value=>"register login",
-				}); 
-			} 
 		$r.="</tr>"; 
 	$r.="</table>"; 
 }
@@ -616,8 +631,8 @@ sub render_user_pass_login {
 		}),
 		$obj->h_submit_for_tbl({value=>"publisher login"}), 
 	);
-	$obj->{qtc}->{exports}->{publisher_call}=1;
-	$obj->{qtc}->{exports}->{publisher_password}=1;
+	$obj->{qtc}->{exports}->{publisher_call}=$obj->{multi_publisher};
+	$obj->{qtc}->{exports}->{publisher_password}=$obj->{multi_publisher};
 	
 	#my $mode=$obj->param("mode");
 	#$obj->param("mode", "register_publisher_login"); 
@@ -630,6 +645,7 @@ sub render_user_pass_login {
 sub render_user_pass_logout {
 	my $obj=shift; 
 	my $r;  
+	if ( ! $obj->{multi_publisher} ) { return; } 
 	delete $obj->{qtc}->{exports}->{publisher_call};
 	delete $obj->{qtc}->{exports}->{publisher_password};
 	delete $obj->{qtc}->{exports}->{mode};
@@ -637,8 +653,8 @@ sub render_user_pass_logout {
 		"<tr><td><b>YOUR Callsign:</b></td><td>".($obj->q->param("publisher_call"))[0]."</td></tr>",
 		$obj->h_submit_for_tbl({value=>"publisher logout"}), 
 	);
-	$obj->{qtc}->{exports}->{publisher_call}=1;
-	$obj->{qtc}->{exports}->{publisher_password}=1;
+	$obj->{qtc}->{exports}->{publisher_call}=$obj->{multi_publisher};
+	$obj->{qtc}->{exports}->{publisher_password}=$obj->{multi_publisher};
 	$obj->{qtc}->{exports}->{mode}=1;
 
 	return $r;
