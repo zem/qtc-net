@@ -853,7 +853,7 @@ sub mode_show_telegrams {
 	if ( $type =~ /^((new)|(timeline_new)|(sent))$/ ) { $obj->{qtc}->{no_threads}=1; }
 	my $r; 
 
-	if ( ( $obj->logged_in ) and ( ! ($q->param("call"))[0] ) ) {
+	if ( ( $obj->logged_in ) and ( ! ($q->param("call"))[0] ) and ( $obj->{multi_publisher} ) ) {
 		$q->param("call", ($q->param("publisher_call"))[0]);
 		#$r.="<h3>You may search for telegrams to other calls in the upper left, I display the telegrams to YOUR publisher call until then</h3>"; 
 	}
