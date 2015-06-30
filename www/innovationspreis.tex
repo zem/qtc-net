@@ -2,7 +2,7 @@
 \usepackage{hyperref}
 
 
-\title{QTC-Net Innovations Price Applicaion}
+\title{QTC-Net Innovations Price Application}
 \begin{document}
 \maketitle
 
@@ -20,7 +20,7 @@ The Goal of this project is to create something that:
 \begin{itemize}
 	\item should just use the callsigns for addressing, no routing info 
 	\item should know when somebody owns more than one callsign
-	\item is widely accepted, relieable
+	\item is widely accepted, reliable
 	\item should not fail in case of a catastrophic event
 	\item can legally distributed over ham radio links
 	\item provides more data-safety than a late 80th solution
@@ -28,15 +28,15 @@ The Goal of this project is to create something that:
 
 This is a huge task. To be widely accepted the new thing must fit into almost 
 any existing infrastructures like HamNet, Internet, Packet Radio, DXCluster, 
-QSL Databases, DStar, DMR, APRS, and even Manual Operations, and systems I 
+QSL Databases, D-Star, DMR, APRS, and even Manual Operations, and systems I 
 forgot about. For example, if someone types in a telegram in crzcq someone 
 the receiver who may have his callbook entry on QRZ.com, can read it there. 
-I have choosen these two projects as an example because they have their 
+I have chosen these two projects as an example because they have their 
 differences, and it illustrates perfectly that you to not go with a simple 
 database. \\
 
 If you do someone opens the next database because he does not feel 
-comfortable with your work. However this may happen anyway, qtc-net can deal 
+comfortable with your work. However this may happen anyway, QTC-net can deal 
 with it. \\
 
 All this has lead me to the design of QTC-Net.  
@@ -44,10 +44,10 @@ All this has lead me to the design of QTC-Net.
 
 \section{Architecture}
 
-The main component of qtc net is a public key signed message, which is
-distributed between all nodes\footnote{It except for the bockchain data, 
-it is possible to filter down the amount of messages until the amount 
-of traffic is low enough for your line}.\\
+The main component of QTC net is a public key signed message, which is
+distributed between all nodes\footnote{It except for the users key and 
+aliases data, it is possible to filter down the amount of messages 
+until the amount of traffic is low enough for your line}.\\
 
 A message is one of the following types: 
 
@@ -86,10 +86,10 @@ but who just owns two callsigns. The qsp-to keeps track of this. \\
 The operator message contains a set-of-aliases for the creator of the aliases 
 message (call). For example oe1src and dd5tt but also oe1src-7 and 9a/oe1src 
 are aliases of oe1src. This also means that if there is a resource oe1src-7 
-on aprs it can receive and tell the gateway to qsp (mark as delivered) a qtc-net 
+on aprs it can receive and tell the gateway to qsp (mark as delivered) a QTC-net 
 telegram for oe1src. \\
 
-An operator can also follow several different other cals with the set-of-followings
+An operator can also follow several different other calls with the set-of-followings
 list in the operator message.  If you follow a call, you get every message to that call 
 listed  too when you query for messages to your call, but not as new messages, those 
 messages are getting sorted into a timeline and timeline-new message list\\
@@ -97,12 +97,12 @@ messages are getting sorted into a timeline and timeline-new message list\\
 An Operator can have more than one different public keys, one for each 
 node he is working with. He needs to sign both of them against each other. \\
 
-\subsection{Syncronization}
+\subsection{Synchronization}
 
-The Server Nodes can syncronize each other by using different protocols, right
-now there only is an http based sync protocol defined and implemented, but this
-will change in the near future. The current http based protocol may be used to 
-sync the nodes over HamNet or the Internet. A Syncronization over other radio 
+The Server Nodes can synchronize each other by using different protocols, right
+now there only is an HTTP based sync protocol defined and implemented, but this
+will change in the near future. The current HTTP based protocol may be used to 
+sync the nodes over HamNet or the Internet. A Synchronization over other radio 
 links is also planned.  \\
 
 \section{Development}
@@ -114,13 +114,13 @@ this means that everybody can help with the development, and has easy access
 even to old revisions. The Project has a good reference Documentation about
 every part of the solution to make it easy to understand how it works. \\
 
-This Open Developent is not common some Ham Radio Software, but it should so 
+This Open Development is not common some Ham Radio Software, but it should so 
 because Ham Radio is an Open Radio Service. \\
 
 \section{3rd Party Software}
 
 QTC Net depends on 3rd party Ham Radio Systems utilizing it for telegram
-transport. Currently there is a Web Frontent delivered with the QTC-Net Node
+transport. Currently there is a Web fronted delivered with the QTC-Net Node
 Software, which can be installed on your webserver. This is the same Web
 frontend that powers \url{https://www.qtc-net.org/} \\
 
@@ -130,14 +130,14 @@ gate is, that APRS messages are now stored in QTC-Net if the receiver does
 not answer in time, and is forwarded as soon as the receiving station 
 appears. \\
 
-A third way to access is the DXSpider DXCluster software. There is a funktion 
+A third way to access is the DXSpider DXCluster software. There is a function 
 available which shows how many new QTC messages a spotted call has. So you may
 tell him the messages when you have a QSO with the spotted OP. The DXSpider
 Plugin can also send, show and qsp telegrams in QTC-Net. \\
 
 There is an RSS News Feed Generator for QTC Net. This Piece of software will 
 show you new or timelined QTC Telegrams as RSS Feeds in your newsfeed reader.
-Theese Feeds can also be forwarded to Twitter and other Microblogging sites if
+These Feeds can also be forwarded to Twitter and other Microblogging sites if
 needed. \\ 
 
 Planned Plugins go for a QTC Net enabled PSKMail system together with some 
@@ -148,7 +148,7 @@ PSK31 and CW Bots for shortwave radio access.
 
 \subsection{Age}
 
-The Project is only afew month older than one year due to the fact
+The Project is only a few month older than one year due to the fact
 that there was no Innovation price last year. However it is still a young 
 project. I hope that the Innovations price is defines the project still as 
 new. 
@@ -156,16 +156,16 @@ new.
 \subsection{Public Relations}
 
 You can see the Projects Website and the Development in the Internet. The 
-code is released unter GPLv3 and can be used by everyone. Everyone can help 
+code is released under GPLv3 and can be used by everyone. Everyone can help 
 with the development by submitting Issues on Git-Hub or by Integrating the 
-Projects data into his website. By showing that there is new developent in Ham 
+Projects data into his website. By showing that there is new development in Ham 
 Radio the Project makes our radio service interesting to others.
 
 
 \subsection{Youth empowerment}
 
 New technologies play a key role for Youth empowerment, they show that Ham Radio 
-isn't only an old mans hobby and they are making ham radio atractive to young people 
+isn't only an old mans hobby and they are making ham radio attractive to young people 
 who have an interest to experiment with new technical innovations. During Talks on 
 Hacker Congresses and other Social Media events I was able to attract many young 
 people for Ham Radio and it applications. 
