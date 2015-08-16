@@ -14,7 +14,7 @@ start)
 	EXTRA=""
 	if [ "$TIME" != "" ] 
 	then
-		EXTRA=$EXTRA" -t "'"'$TIME'" '
+		EXTRA=$EXTRA" -t "$TIME' '
 	fi
 	/usr/local/bin/qtc_sync_http.pl \
 		-d $DATA_DIR \
