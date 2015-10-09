@@ -1,0 +1,132 @@
+\documentclass{seminar}
+\usepackage[display]{texpower}
+\usepackage[utf8]{inputenc}
+\usepackage{german}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{hyperref}
+
+%\usepackage[usenames,dvipsnames]{xcolor}
+%\definecolor{ueblue}{rgb}{0,0,0.2}
+%\definecolor{ueblue}{rgb}{0.6,0.6,1}
+%\everymath{\color{yellow}}
+%\everydisplay{\color{yellow}}
+%\pagecolor{ueblue}
+%\pagecolor{ueblue}
+%\color{white}
+
+% comment out to have info centered on slides
+\centerslidesfalse
+\providecommand{\T}[1]{
+	\begin{center}
+		{\bf #1}
+	\end{center}
+	\vspace{2mm}
+	\hrule
+	\vspace{2mm}
+}
+
+\newpagestyle{mypagestyle}%
+{}%
+{https://www.qtc-net.org \hfil \sl QTC-Net Messaging}
+
+
+% maketitle
+\title{QTC-Net Short Telegram Service}
+\author{OE1SRC Hans Freitag }
+
+\begin{document}
+
+\pagestyle{empty}
+\centerslidestrue
+\begin{slide}
+	\maketitle
+	\begin{center}
+		QTC Net, ein Kurztelegramm- und Microblog- system für Amateurfunk
+		{\sf (Rechtschreibfehler sind ein Feature!)}
+	\end{center}
+\end{slide}
+\centerslidesfalse
+
+\pagestyle{mypagestyle}
+
+\begin{slide}
+	\T{Die Idee\ldots}
+	Amateurfunk bietet abseits vom Sprechfunk viele fantastische Möglichkeiten zu kommunizieren, mittlerweile sind auch einige Kurzmitteilungssysteme dabei. QTC Net ist eine Infrastruktur um alle diese Systeme zu vernetzen. \\
+ \pause
+Die Idee selbst ist nicht neu.... 
+\end{slide}
+
+\begin{slide}
+	\T{APRS}
+	Bob Bruniga (WB4APR) hat vor Jahren einmal vorgeschlagen den APRS Backbine zu verwenden um kurzmitteilungssysteme miteinander zu vernetzen. \\ \pause
+	\begin{itemize}
+		\item dezentral, 
+		\item begrenzte Nachrichtenlänge, 
+		\item begrenzte Rufzeichenvarianten, 
+		\item echtzeitmeldesystem, sender und empfänger müssen gleichzeitig aktiv sein
+		\item passwörter werden aus dem Rufzeichen generiert (security)
+	\end{itemize}
+\end{slide}
+
+\begin{slide}
+	\T{Welche Infrastruktur?}
+	\begin{itemize}
+		\item Dezentrale Infrastruktur mit Ortsinformationen? wie E-Mail, oder BBS systeme.
+		\item Zentrale Infrastruktur mit einem Server auf den alle zugreifen?
+		\item Selbstorganisierende dezentrale Infrastruktur ohne Ortsinformationen.
+	\end{itemize}
+\end{slide}
+
+\begin{slide}
+	\T{Geht eine Selbstorganisierende Infrastruktur überhaupt?}
+	Mal sehen was wir wissen: 
+	\begin{itemize}
+		\item Anzahl Funkamateure Weltweit 2,8 Millionen
+		\item Größe einer QTC-Net Nachricht 400-700 Byte. 
+		\item Es gibt eine Auslieferungsbestätigung 360 Byte
+		\item Annahme, jeder verschickt 2 Nachrichten pro Tag. 
+	\end{itemize}
+\end{slide}
+
+\begin{slide}
+	\T{Geht eine Selbstorganisierende Infrastruktur überhaupt?}
+	Etwas Mathe: 
+	$$
+		2.8\cdot10^6 \cdot 2 \cdot (700B+360B) = 5936 \cdot10^6 B \approx 5.5 GB 
+	$$
+\end{slide}
+
+\begin{slide}
+	\T{Haben wir einen Backbone der 5.5 GB Tagesvolumen übersteht?}
+	HamNet Vielleicht? 22 MBit/s. 
+	$$ (22MBit/s\cdot1024\cdot1024)/8=2883584 Byte/s $$
+	$$ 2883584 Byte/s \cdot 86400s \approx 232 GB$$
+	HamNet hat ausreichend reserve. \\
+	Schmalbandigere anbindungen sind in der Lage die für sie 
+	wichtigen Teile des Datenbestandes zu syncronisieren.   
+\end{slide}
+
+\begin{slide}
+	\T{Authentifizierung mit elektronischer Signatur}
+	Eine Amateurfunkaussendung ist für die Öffentlichkeit 
+   bestimmt, das ist gut so, stellt aber bei der 
+	Identitätsprüfung ein problem dar. 
+
+	Signaturen lösen dieses Problem haben den Vorteil, das 
+	kein Passwort über Radiolinks übertragen werden muss.
+\end{slide}
+
+\begin{slide}
+	\T{Nachrichtentypen}
+	\begin{itemize}
+		\item telegram
+		\item qsp empfangsbestätigung
+		\item public key
+		\item key revoke 
+		\item operator Identität
+		\item trust 
+	\end{itemize}
+\end{slide}
+
+\end{document}
